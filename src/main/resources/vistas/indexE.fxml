@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Menu?>
+<?import javafx.scene.control.MenuButton?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="700.0" prefWidth="1300.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.proyecto.neotec.controllers.IndexEController">
+   <children>
+      <HBox fx:id="topDashboard" prefHeight="59.0" prefWidth="1300.0" spacing="10.0" stylesheets="@../css/dashboard.css">
+         <children>
+            <Button fx:id="btnHome" mnemonicParsing="false" onAction="#mostrarHome" prefHeight="40.0" prefWidth="40.0">
+               <graphic>
+                  <ImageView fitHeight="28.0" fitWidth="27.0" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../img/home.png" />
+                     </image>
+                  </ImageView>
+               </graphic>
+            </Button>
+            <MenuButton fx:id="MenuUsuario" mnemonicParsing="false" text="Usuarios">
+               <items>
+                  <MenuItem fx:id="opAgregarUsuario" mnemonicParsing="false" onAction="#mostrarAgregarUsuario" text="Agregar Usuario" />
+                  <MenuItem fx:id="opModificarUsuario" mnemonicParsing="false" onAction="#mostrarModificarUsuario" text="Modificar Usuario" />
+                  <MenuItem fx:id="opEliminarUsuario" mnemonicParsing="false" onAction="#mostrarEliminarUsuario" text="Eliminar Usuario" />
+               </items>
+            </MenuButton>
+            <MenuButton mnemonicParsing="false" prefHeight="41.0" prefWidth="146.0" text="Productos">
+               <items>
+                  <MenuItem mnemonicParsing="false" text="Agregar Productos" />
+                  <MenuItem mnemonicParsing="false" text="Modificar Productos" />
+                  <MenuItem mnemonicParsing="false" text="Eliminar Productos" />
+               </items>
+            </MenuButton>
+            <MenuButton mnemonicParsing="false" prefHeight="42.0" prefWidth="125.0" text="Clientes">
+              <items>
+                 <MenuItem mnemonicParsing="false" text="Agregar Clientes" />
+                 <MenuItem mnemonicParsing="false" text="Modificar Clientes" />
+                 <MenuItem mnemonicParsing="false" text="Eliminar Clientes" />
+              </items>
+            </MenuButton>
+            <MenuButton mnemonicParsing="false" text="Taller">
+               <items>
+                  <Menu text="Equipos">
+                     <items>
+                        <MenuItem text="Agregar Equipo" />
+                        <MenuItem text="Modificar Equipo" />
+                        <MenuItem text="Eliminar Equipo" />
+                     </items>
+                  </Menu>
+                  <Menu text="Presupuestos">
+                     <items>
+                        <MenuItem text="Sacar Presupuesto" />
+                     </items>
+                  </Menu>
+               </items>
+            </MenuButton>
+            <MenuButton mnemonicParsing="false" text="Ventas">
+               <items>
+                  <MenuItem mnemonicParsing="false" text="Registrar Venta" />
+                  <MenuItem mnemonicParsing="false" text="Ver Ventas" />
+               </items>
+            </MenuButton>
+            <MenuButton mnemonicParsing="false" text="Movimientos">
+               <items>
+                  <MenuItem mnemonicParsing="false" text="Caja" />
+                  <MenuItem mnemonicParsing="false" text="Gastos" />
+                  <MenuItem mnemonicParsing="false" text="Pagos" />
+               </items>
+            </MenuButton>
+            <Region prefHeight="49.0" prefWidth="217.0" />
+            <HBox prefHeight="49.0" prefWidth="211.0">
+               <children>
+                  <VBox prefHeight="49.0" prefWidth="161.0">
+                     <children>
+                        <Label fx:id="lblUsuarioSesion" prefHeight="20.0" prefWidth="153.0" text="Martinez, Diego Ismael" />
+                        <Label fx:id="lbldniSesion" prefHeight="20.0" prefWidth="152.0" text="23.455.000" />
+                     </children>
+                  </VBox>
+                  <ImageView fitHeight="45.0" fitWidth="45.0" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../img/user.png" />
+                     </image>
+                  </ImageView>
+               </children>
+            </HBox>
+            <Label text="Empleado" />
+         </children>
+         <padding>
+            <Insets left="20.0" top="10.0" />
+         </padding>
+      </HBox>
+      <Pane fx:id="workspace" layoutY="59.0" prefHeight="642.0" prefWidth="1300.0" style="-fx-background-color: #080a29;" />
+   </children>
+</AnchorPane>

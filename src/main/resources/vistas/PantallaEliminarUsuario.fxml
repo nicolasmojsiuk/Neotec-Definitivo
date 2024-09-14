@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.text.Font?>
+
+
+<Pane prefHeight="642.0" prefWidth="1300.0" style="-fx-background-color: #080a29;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+   <children>
+      <Label layoutX="81.0" layoutY="282.0" text="Pantalla Eliminar Usuario">
+         <font>
+            <Font size="96.0" />
+         </font>
+      </Label>
+   </children>
+</Pane>
