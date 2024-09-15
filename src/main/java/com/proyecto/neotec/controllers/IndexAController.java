@@ -30,14 +30,6 @@ public class IndexAController {
         CargarPantallas.cargar(workspace,"/vistas/PantallaHome.fxml");
     }
 
-    public void mostrarAgregarUsuario(ActionEvent actionEvent) {
-    }
-
-    public void mostrarModificarUsuario(ActionEvent actionEvent) {
-    }
-
-    public void mostrarEliminarUsuario(ActionEvent actionEvent) {
-    }
 
     public void mostrarVerUsuarios() {
         CargarPantallas.cargar(workspace, "/vistas/verUsuarios.fxml");

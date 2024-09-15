@@ -7,6 +7,7 @@ module com.proyecto.neotec {
     requires org.apache.logging.log4j;
     requires mysql.connector.j;
     requires java.naming;
+    requires javafx.web;
 
 
     opens com.proyecto.neotec to javafx.fxml;
@@ -14,5 +15,8 @@ module com.proyecto.neotec {
 
     opens com.proyecto.neotec.controllers to javafx.fxml;
     exports com.proyecto.neotec.controllers;
+
+    opens com.proyecto.neotec.models to javafx.fxml;
+    exports com.proyecto.neotec.models;
 
 }

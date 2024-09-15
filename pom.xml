@@ -58,6 +58,11 @@
             <artifactId>jbcrypt</artifactId>
             <version>0.4</version>
         </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-web</artifactId> <!-- Necesario para WebView -->
+            <version>20</version> <!-- Reemplaza con la versión que estás usando -->
+        </dependency>
     </dependencies>
 
     <build>

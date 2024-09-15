@@ -80,13 +80,26 @@ public class LoginController {
 
             FXMLLoader loader = new FXMLLoader();
 
+            if (!UsuarioDAO.verificarActivo(dni)){
+                // Si devuelve false, informo que las credenciales son inválidas y resto intentos
+                intentos--;
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Inicio de Sesión");
+                alert.setHeaderText("No se pudo iniciar sesion");
+                alert.setContentText("El usuario esta inactivo");
+                alert.showAndWait();
+                return;
+            }
+
             // Verificar el rol del usuario para brindar acceso
             if (UsuarioDAO.verificarRol(dni) == 1) {
                 loader.setLocation(getClass().getResource("/vistas/indexE.fxml"));
                 SesionUsuario.setUsuarioLogueado(UsuarioDAO.obtenerUsuarioPorDni(dni));
+                UsuarioDAO.actualizarUltimoAcceso(dni);
             } else {
                 loader.setLocation(getClass().getResource("/vistas/indexA.fxml"));
                 SesionUsuario.setUsuarioLogueado(UsuarioDAO.obtenerUsuarioPorDni(dni));
+                UsuarioDAO.actualizarUltimoAcceso(dni);
             }
 
             // Cargar la vista correspondiente

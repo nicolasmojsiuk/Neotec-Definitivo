@@ -4,10 +4,7 @@ import com.proyecto.neotec.bbdd.Database;
 import com.proyecto.neotec.models.Usuario;
 import org.mindrot.jbcrypt.BCrypt;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -102,6 +99,131 @@ public class UsuarioDAO {
         return usuario;
     }
 
+    public static String crearUsuario(Usuario usuario) {
+        String mensaje ="";
+        String sql = "INSERT INTO usuarios (nombre, apellido, dni, email, contrasenna, rol, activo, fecha_creacion) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, usuario.getNombre());
+            stmt.setString(2, usuario.getApellido());
+            stmt.setInt(3, usuario.getDni());
+            stmt.setString(4, usuario.getEmail());
+            stmt.setString(5, usuario.getContrasenna());  // Se espera que la contraseña ya esté cifrada con jBCrypt
+            stmt.setInt(6, usuario.getRol().equalsIgnoreCase("Empleado") ? 1 : 0);  // Convertimos el rol de String a int
+            stmt.setInt(7, 1 );
+            int rowsInserted = stmt.executeUpdate();
+            if (rowsInserted > 0) {
+                mensaje = "Usuario creado exitosamente.";
+            }else {
+                mensaje = "No se pudo ingresar el usuario";
+            }
+
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+        return mensaje;
+    }
+
+    public static void cambiarEstadoActivo(int idUsuario, int estado) {
+        String sql = "UPDATE usuarios SET activo = ? WHERE idusuarios = ?";
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, estado); // El nuevo estado es un String ("Activo" o "Inactivo")
+            stmt.setInt(2, idUsuario);
+
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+    }
+
+
+    public static void actualizarUltimoAcceso(int dni) {
+        String sql = "UPDATE usuarios SET ultimo_acceso = NOW() WHERE dni = ?";
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, dni);
+            int rowsUpdated = stmt.executeUpdate();
+
+            if (rowsUpdated == 0) {
+                System.out.println("No se encontró el usuario con DNI: " + dni);
+            }
+
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+    }
+
+
+    public static String modificarUsuarioConContrasenna(Usuario usuarioNuevo) {
+        String mensaje = "";
+        String sql = "UPDATE usuarios SET nombre = ?, apellido = ?, dni = ?, email = ?, contrasenna = ?, fecha_modificacion = NOW() WHERE idusuarios = ?";
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            // Establecer los valores en la sentencia preparada
+            stmt.setString(1, usuarioNuevo.getNombre());
+            stmt.setString(2, usuarioNuevo.getApellido());
+            stmt.setInt(3, usuarioNuevo.getDni());
+            stmt.setString(4, usuarioNuevo.getEmail());
+            stmt.setString(5, usuarioNuevo.getContrasenna());  // Se espera que la contraseña ya esté cifrada con jBCrypt
+            stmt.setInt(6, usuarioNuevo.getRol().equalsIgnoreCase("Empleado") ? 1 : 0);  // Convertimos el rol de String a int
+            stmt.setInt(7, usuarioNuevo.getIdusuarios());  // ID del usuario a actualizar
+
+            // Ejecutar la actualización
+            int rowsUpdated = stmt.executeUpdate();
+            if (rowsUpdated > 0) {
+                mensaje = "Usuario modificado exitosamente (incluye cambio de contraseña)";
+            } else {
+                mensaje = "No se pudo modificar el usuario. Verifique si el usuario existe.";
+            }
+
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+        return mensaje;
+    }
+
+
+    public static String modificarUsuarioSinContrasenna(Usuario usuarioNuevo) {
+        String mensaje = "";
+        String sql = "UPDATE usuarios SET nombre = ?, apellido = ?, dni = ?, email = ?, rol = ?, fecha_modificacion = NOW() WHERE idusuarios = ?";
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            // Establecer los valores en la sentencia preparada
+            stmt.setString(1, usuarioNuevo.getNombre());
+            stmt.setString(2, usuarioNuevo.getApellido());
+            stmt.setInt(3, usuarioNuevo.getDni());
+            stmt.setString(4, usuarioNuevo.getEmail());
+            stmt.setInt(5, usuarioNuevo.getRol().equalsIgnoreCase("Empleado") ? 1 : 0);  // Convertimos el rol de String a int
+            stmt.setInt(6, usuarioNuevo.getIdusuarios());  // ID del usuario a actualizar
+
+            // Ejecutar la actualización
+            int rowsUpdated = stmt.executeUpdate();
+            if (rowsUpdated > 0) {
+                mensaje = "Usuario modificado exitosamente.(No se modifico la contraseña)";
+            } else {
+                mensaje = "No se pudo modificar el usuario. Verifique si el usuario existe.";
+            }
+
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+        return mensaje;
+    }
+
+
+
     public List<Usuario> selectAllUsuarios() {
         List<Usuario> usuarios = new ArrayList<>();
         String sql = "SELECT idusuarios, nombre, apellido, dni, email, rol, activo, ultimo_acceso, fecha_creacion, fecha_modificacion FROM usuarios";
@@ -119,12 +241,38 @@ public class UsuarioDAO {
                 usuario.setEmail(rs.getString("email"));
 
                 // Convertir rol y activo a String
-                usuario.setRol(String.valueOf(rs.getInt("rol"))); // Convertimos el rol a String
+                usuario.setRol(rs.getInt("rol") == 1 ? "Empleado" : "Admin"); // Convertimos el rol a String
                 usuario.setActivo(rs.getInt("activo") == 1 ? "Activo" : "Inactivo"); // Convertimos activo a "Activo"/"Inactivo"
+                // Verificación de "ultimo_acceso"
+                Timestamp ultimoAccesoTimestamp = rs.getTimestamp("ultimo_acceso");
+                String ultimoAcceso;
+                if (ultimoAccesoTimestamp != null) {
+                    ultimoAcceso = String.valueOf(ultimoAccesoTimestamp.toLocalDateTime());
+                } else {
+                    ultimoAcceso = "-";
+                }
+                usuario.setUltimoAcceso(ultimoAcceso);
 
-                usuario.setUltimoAcceso(rs.getTimestamp("ultimo_acceso").toLocalDateTime());
-                usuario.setFechaCreacion(rs.getTimestamp("fecha_creacion").toLocalDateTime());
-                usuario.setFechaModificacion(rs.getTimestamp("fecha_modificacion").toLocalDateTime());
+                // Verificación de "fecha_creacion"
+                Timestamp fechaCreacionTimestamp = rs.getTimestamp("fecha_creacion");
+                String fechaCreacion;
+                if (fechaCreacionTimestamp != null) {
+                    fechaCreacion = String.valueOf(fechaCreacionTimestamp.toLocalDateTime());
+                } else {
+                    fechaCreacion = "-";  // O cualquier valor por defecto
+                }
+                usuario.setFechaCreacion(fechaCreacion);
+
+                // Verificación de "fecha_modificacion"
+                Timestamp fechaModificacionTimestamp = rs.getTimestamp("fecha_modificacion");
+                String fechaModificacion;
+                if (fechaModificacionTimestamp != null) {
+                    fechaModificacion = String.valueOf(fechaModificacionTimestamp.toLocalDateTime());
+                } else {
+                    fechaModificacion = "-";  // O cualquier valor por defecto
+                }
+                usuario.setFechaModificacion(fechaModificacion);
+
 
                 usuarios.add(usuario);
             }
@@ -133,6 +281,34 @@ public class UsuarioDAO {
         }
 
         return usuarios;
+
+    }
+
+    // Método para verificar si el usuario está activo
+    public static boolean verificarActivo(int dni) {
+        int activo;
+        boolean activoBol = true;
+        String query = "SELECT activo FROM usuarios WHERE dni = ?";
+
+        try (Connection connection = Database.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+
+            preparedStatement.setInt(1, dni);
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            if (resultSet.next()) {
+                activo = resultSet.getInt("activo");
+                if (activo == 0){
+                    activoBol = false;
+                }
+            }
+
+
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+
+        return activoBol;
     }
 }
 

@@ -18,11 +18,11 @@
    <children>
       <HBox fx:id="topDashboard" prefHeight="59.0" prefWidth="1300.0" spacing="10.0" stylesheets="@../css/dashboard.css">
          <children>
-            <Button fx:id="btnHome" mnemonicParsing="false" onAction="#mostrarHome" prefHeight="40.0" prefWidth="40.0">
+            <Button fx:id="btnHome" maxHeight="40.0" maxWidth="40.0" minHeight="31.0" minWidth="10.0" mnemonicParsing="false" onAction="#mostrarHome" prefHeight="31.0" prefWidth="32.0">
                <graphic>
-                  <ImageView fitHeight="28.0" fitWidth="27.0" pickOnBounds="true" preserveRatio="true">
+                  <ImageView fitHeight="40.0" fitWidth="40.0" pickOnBounds="true" preserveRatio="true">
                      <image>
-                        <Image url="@../img/home.png" />
+                        <Image url="@../img/logoN.png" />
                      </image>
                   </ImageView>
                </graphic>
@@ -30,9 +30,6 @@
             <MenuButton fx:id="MenuUsuario" minHeight="20.0" minWidth="50.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="130.0" text="Usuarios">
                <items>
                   <MenuItem fx:id="opVerUsuarios" mnemonicParsing="false" onAction="#mostrarVerUsuarios" text="Ver Usuarios" />
-                  <MenuItem fx:id="opAgregarUsuario" mnemonicParsing="false" onAction="#mostrarAgregarUsuario" text="Agregar Usuario" />
-                  <MenuItem fx:id="opModificarUsuario" mnemonicParsing="false" onAction="#mostrarModificarUsuario" text="Modificar Usuario" />
-                  <MenuItem fx:id="opEliminarUsuario" mnemonicParsing="false" onAction="#mostrarEliminarUsuario" text="Eliminar Usuario" />
                </items>
             </MenuButton>
             <MenuButton minHeight="20.0" minWidth="50.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="130.0" text="Productos">
@@ -78,28 +75,31 @@
                   <MenuItem mnemonicParsing="false" text="Pagos" />
                </items>
             </MenuButton>
-            <Separator prefHeight="46.0" prefWidth="120.0" />
-            <HBox alignment="TOP_CENTER" prefHeight="65.0" prefWidth="239.0">
+            <Separator prefHeight="46.0" prefWidth="112.0" />
+            <HBox alignment="TOP_CENTER" prefHeight="57.0" prefWidth="242.0">
                <children>
-                  <VBox prefHeight="51.0" prefWidth="172.0">
+                  <VBox prefHeight="57.0" prefWidth="172.0">
                      <children>
-                        <Label fx:id="lblUsuarioSesion" prefHeight="17.0" prefWidth="175.0" text="Martinez, Diego Ismael" />
-                        <Label fx:id="lblDniSesion" prefHeight="17.0" prefWidth="173.0" text="23.455.000" />
-                        <Label prefHeight="17.0" prefWidth="173.0" text="Administrador" />
+                        <Label fx:id="lblUsuarioSesion" alignment="CENTER_RIGHT" prefHeight="17.0" prefWidth="175.0" text="Martinez, Diego Ismael" textAlignment="RIGHT" />
+                        <Label fx:id="lblDniSesion" alignment="CENTER_RIGHT" prefHeight="17.0" prefWidth="173.0" text="23.455.000" />
+                        <Label alignment="CENTER_RIGHT" prefHeight="17.0" prefWidth="173.0" text="Administrador" />
                      </children>
                   </VBox>
-                  <ImageView fitHeight="45.0" fitWidth="45.0" pickOnBounds="true" preserveRatio="true">
+                  <ImageView fitHeight="47.0" fitWidth="52.0" pickOnBounds="true" preserveRatio="true">
                      <image>
                         <Image url="@../img/user.png" />
                      </image>
                   </ImageView>
                </children>
+               <padding>
+                  <Insets top="-2.0" />
+               </padding>
             </HBox>
          </children>
          <padding>
             <Insets left="20.0" top="10.0" />
          </padding>
       </HBox>
-      <Pane fx:id="workspace" layoutY="68.0" prefHeight="642.0" prefWidth="1300.0" style="-fx-background-color: #080a29;" />
+      <Pane fx:id="workspace" layoutY="67.0" prefHeight="642.0" prefWidth="1300.0" style="-fx-background-color: #060717;" />
    </children>
 </AnchorPane>

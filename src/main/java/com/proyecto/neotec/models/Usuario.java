@@ -6,24 +6,21 @@ public class Usuario {
     private int idusuarios;
     private String nombre;
     private String apellido;
-
-
-
     private String email;
     private int dni;
     private String contrasenna;
     private String rol;
     private String activo;
-    private java.time.LocalDateTime ultimoAcceso;
-    private java.time.LocalDateTime fechaCreacion;
-    private java.time.LocalDateTime fechaModificacion;
+    private String ultimoAcceso;
+    private String fechaCreacion;
+    private String fechaModificacion;
 
     // Constructor vacío
     public Usuario() {}
 
     // Constructor con todos los campos
     public Usuario(int idusuarios, String nombre, String apellido, int dni, String email, String contrasenna, String rol, String activo,
-                   java.time.LocalDateTime ultimoAcceso, java.time.LocalDateTime fechaCreacion, java.time.LocalDateTime fechaModificacion) {
+                   String ultimoAcceso, String fechaCreacion, String fechaModificacion) {
         this.idusuarios = idusuarios;
         this.nombre = nombre;
         this.apellido = apellido;
@@ -35,6 +32,47 @@ public class Usuario {
         this.ultimoAcceso = ultimoAcceso;
         this.fechaCreacion = fechaCreacion;
         this.fechaModificacion = fechaModificacion;
+    }
+
+    public Usuario(String nombre, String apellido, String email, int dni, String contrasenna, String rol, String activo, String ultimoAcceso, String fechaCreacion, String fechaModificacion) {
+        this.nombre = nombre;
+        this.apellido = apellido;
+        this.email = email;
+        this.dni = dni;
+        this.contrasenna = contrasenna;
+        this.rol = rol;
+        this.activo = activo;
+        this.ultimoAcceso = ultimoAcceso;
+        this.fechaCreacion = fechaCreacion;
+        this.fechaModificacion = fechaModificacion;
+    }
+
+    public Usuario(String nombre, String apellido, String email, int dni, String contrasenna, String rol) {
+        this.nombre = nombre;
+        this.apellido = apellido;
+        this.email = email;
+        this.dni = dni;
+        this.contrasenna = contrasenna;
+        this.rol = rol;
+    }
+
+    public Usuario(int idusuarios, String nombre, String apellido, String email, int dni, String rol) {
+        this.idusuarios = idusuarios;
+        this.nombre = nombre;
+        this.apellido = apellido;
+        this.email = email;
+        this.dni = dni;
+        this.rol = rol;
+    }
+
+    public Usuario(int idusuarios, String nombre, String apellido, String email, int dni, String contrasenna, String rol) {
+        this.idusuarios = idusuarios;
+        this.nombre = nombre;
+        this.apellido = apellido;
+        this.email = email;
+        this.dni = dni;
+        this.contrasenna = contrasenna;
+        this.rol = rol;
     }
 
     // Getters y Setters
@@ -102,27 +140,27 @@ public class Usuario {
         this.activo = activo;
     }
 
-    public java.time.LocalDateTime getUltimoAcceso() {
+    public String getUltimoAcceso() {
         return ultimoAcceso;
     }
 
-    public void setUltimoAcceso(java.time.LocalDateTime ultimoAcceso) {
+    public void setUltimoAcceso(String ultimoAcceso) {
         this.ultimoAcceso = ultimoAcceso;
     }
 
-    public java.time.LocalDateTime getFechaCreacion() {
+    public String getFechaCreacion() {
         return fechaCreacion;
     }
 
-    public void setFechaCreacion(java.time.LocalDateTime fechaCreacion) {
+    public void setFechaCreacion(String fechaCreacion) {
         this.fechaCreacion = fechaCreacion;
     }
 
-    public java.time.LocalDateTime getFechaModificacion() {
+    public String getFechaModificacion() {
         return fechaModificacion;
     }
 
-    public void setFechaModificacion(java.time.LocalDateTime fechaModificacion) {
+    public void setFechaModificacion(String fechaModificacion) {
         this.fechaModificacion = fechaModificacion;
     }
 
