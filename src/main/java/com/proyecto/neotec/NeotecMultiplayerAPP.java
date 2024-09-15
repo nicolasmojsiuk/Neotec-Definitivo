@@ -24,6 +24,7 @@ public class NeotecMultiplayerAPP extends Application {
         Scene scene = new Scene(fxmlLoader.load());
         stage.setTitle("Neotec Multiplayer");
         stage.setScene(scene);
+        //este va a servir para cerrar sesion
         VolverPantallas.guardarEscenaAnterior(stage.getScene());
         stage.show();
     }
