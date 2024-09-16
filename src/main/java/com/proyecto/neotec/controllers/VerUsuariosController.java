@@ -53,8 +53,6 @@ public class VerUsuariosController {
 
     @FXML
     public void initialize() {
-        lblUsuarios.setFont(Font.font("PressStart2P-Regular",26));
-
         // Inicializar el DAO y la lista observable
         usuarioDAO = new UsuarioDAO();
         // Cargar datos

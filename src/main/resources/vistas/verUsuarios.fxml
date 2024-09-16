@@ -28,17 +28,17 @@
             <TableColumn fx:id="columna10" prefWidth="146.0" text="Fecha Modificación" />
         </columns>
       </TableView>
-      <Button fx:id="btnActivoInactivo" layoutX="1145.0" layoutY="589.0" mnemonicParsing="false" onAction="#cambiarActivoUsuario" prefHeight="38.0" prefWidth="140.0" text="Activo | Inactivo">
+      <Button fx:id="btnActivoInactivo" layoutX="1136.0" layoutY="583.0" mnemonicParsing="false" onAction="#cambiarActivoUsuario" prefHeight="35.0" prefWidth="140.0" text="Activo | Inactivo">
          <font>
             <Font size="16.0" />
          </font>
       </Button>
-      <Button fx:id="btnMod" layoutX="981.0" layoutY="589.0" mnemonicParsing="false" onAction="#mostrarFormModificarUsuario" prefHeight="38.0" prefWidth="140.0" text="Modificar">
+      <Button fx:id="btnMod" layoutX="981.0" layoutY="583.0" mnemonicParsing="false" onAction="#mostrarFormModificarUsuario" prefHeight="27.0" prefWidth="140.0" text="Modificar">
          <font>
             <Font size="16.0" />
          </font>
       </Button>
-      <Button fx:id="btnCrearUsuario" layoutX="829.0" layoutY="589.0" mnemonicParsing="false" onAction="#mostrarFormCrearUsuario" prefHeight="38.0" prefWidth="130.0" text="Crear">
+      <Button fx:id="btnCrearUsuario" layoutX="826.0" layoutY="583.0" mnemonicParsing="false" onAction="#mostrarFormCrearUsuario" prefHeight="27.0" prefWidth="130.0" text="Crear">
          <font>
             <Font size="16.0" />
          </font>

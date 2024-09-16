@@ -16,7 +16,7 @@
 
 <AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="700.0" prefWidth="1300.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.proyecto.neotec.controllers.IndexAController">
    <children>
-      <HBox fx:id="topDashboard" prefHeight="59.0" prefWidth="1300.0" spacing="10.0" stylesheets="@../css/dashboard.css">
+      <HBox fx:id="topDashboard" prefHeight="59.0" prefWidth="1300.0" spacing="10.0">
          <children>
             <Button fx:id="btnHome" maxHeight="40.0" maxWidth="40.0" minHeight="31.0" minWidth="10.0" mnemonicParsing="false" onAction="#mostrarHome" prefHeight="31.0" prefWidth="32.0">
                <graphic>
@@ -41,9 +41,7 @@
             </MenuButton>
             <MenuButton minHeight="20.0" minWidth="50.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="130.0" text="Clientes">
               <items>
-                 <MenuItem mnemonicParsing="false" text="Agregar Clientes" />
-                 <MenuItem mnemonicParsing="false" text="Modificar Clientes" />
-                 <MenuItem mnemonicParsing="false" text="Eliminar Clientes" />
+                 <MenuItem fx:id="opVerClientes" mnemonicParsing="false" onAction="#mostrarVerClientes" text="Ver Clientes" />
               </items>
             </MenuButton>
             <MenuButton minHeight="20.0" minWidth="50.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="130.0" text="Taller">

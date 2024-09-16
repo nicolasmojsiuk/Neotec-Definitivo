@@ -1,22 +1,19 @@
 package com.proyecto.neotec.controllers;
-
-import com.proyecto.neotec.DAO.UsuarioDAO;
-import com.proyecto.neotec.models.Usuario;
-import javafx.event.ActionEvent;
+import com.proyecto.neotec.DAO.ClienteDAO;
+import com.proyecto.neotec.models.Cliente;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.input.KeyEvent;
 import javafx.stage.Stage;
-import org.mindrot.jbcrypt.BCrypt;
-
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 
-public class CrearUsuarioController {
+public class CrearClienteController {
+    @FXML
+    private Button btnCancelar;
     @FXML
     private TextField txfNombre;
     @FXML
@@ -26,18 +23,11 @@ public class CrearUsuarioController {
     @FXML
     private TextField txfEmail;
     @FXML
-    private TextField pfContrasenna;
-    @FXML
-    private ComboBox<String> cbRol;
-    @FXML
-    private Button btnCrear;
-    @FXML
-    private Button btnCancelar;
+    private TextField txfTelefono;
 
     @FXML
-    public void initialize(){
+    public void initialize() {
         restriccionesCampos(); // Aplicar restricciones a los campos
-        cbRol.getItems().addAll("empleado", "administrador"); // Agregar opciones al ComboBox
     }
 
     // Método para aplicar restricciones a los campos
@@ -53,32 +43,24 @@ public class CrearUsuarioController {
                 event.consume();  // Bloquea el espacio
             }
         });
-
     }
 
-    // Método para validar los datos e intentar crear un usuario
-    public void crearUsuario(){
+    public void crearCliente() {
         String nombre = txfNombre.getText();
         String apellido = txfApellido.getText();
-        String dni = txfDni.getText();
+        String dni = (txfDni.getText());
         String email = txfEmail.getText();
-        String contrasenna = pfContrasenna.getText();
-        String rol = cbRol.getValue();
+        String telefono = txfTelefono.getText();
 
-        if (nombre.isEmpty() || apellido.isEmpty() || dni.isEmpty() || email.isEmpty() || contrasenna.isEmpty() || rol == null) {
+
+        if (nombre.isEmpty() || apellido.isEmpty() || dni.isEmpty() || email.isEmpty() || telefono.isEmpty()) {
             mostrarAlerta("Error", "Por favor, complete todos los campos.", Alert.AlertType.WARNING);
             return;
         }
 
-        // Validar la contraseña (mínimo 8 caracteres)
-        if (contrasenna.length() < 8) {
-            mostrarAlerta("Error", "La contraseña debe tener al menos 8 caracteres.", Alert.AlertType.WARNING);
-            return;
-        }
-
         // Validar el email (debe contener '@' y '.')
-        if (!email.contains("@") || !email.contains(".") || !email.contains(" ")) {
-            mostrarAlerta("Error", "Por favor, ingrese un correo electrónico válido.",Alert.AlertType.WARNING);
+        if (!email.contains("@") || !email.contains(".") || email.contains(" ")) {
+            mostrarAlerta("Error", "Por favor, ingrese un correo electrónico válido.", Alert.AlertType.WARNING);
             return;
         }
 
@@ -86,34 +68,26 @@ public class CrearUsuarioController {
         int ndni;
         ndni = Integer.parseInt(dni);
 
-        //hashear la contraseña antes de pasrsela
-        String contrasennaHash = BCrypt.hashpw(contrasenna, BCrypt.gensalt(12));
+        Cliente clientenuevo = new Cliente(nombre, apellido, email, telefono, ndni);
 
-        Usuario usuarioNuevo = new Usuario(nombre,apellido,email,ndni,contrasennaHash,rol);
-        String mensaje = UsuarioDAO.crearUsuario(usuarioNuevo);
+        String mensaje = ClienteDAO.crearCliente(clientenuevo);
 
+        mostrarAlerta("Creacion De cliente", mensaje, Alert.AlertType.INFORMATION);
 
-        // Aquí puedes continuar con el proceso de creación del usuario (guardar en la base de datos, etc.)
-        mostrarAlerta("Creación de usuario", mensaje, Alert.AlertType.INFORMATION);
         Stage stage = (Stage) btnCancelar.getScene().getWindow();
         stage.close();
     }
 
-    // Método para cerrar el pop-up
-    public void cancelar(){
+    public void cancelar() {
         Stage stage = (Stage) btnCancelar.getScene().getWindow();
         stage.close();
     }
 
-    // Método para mostrar una alerta
     private void mostrarAlerta(String titulo, String mensaje, Alert.AlertType tipo) {
         Alert alert = new Alert(tipo);
         alert.setTitle(titulo);
         alert.setHeaderText(null);
         alert.setContentText(mensaje);
         alert.showAndWait();
-    }
-
-    public void crearCliente() {
     }
 }

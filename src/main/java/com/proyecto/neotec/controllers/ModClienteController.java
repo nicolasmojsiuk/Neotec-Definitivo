@@ -1,6 +1,8 @@
 package com.proyecto.neotec.controllers;
 
+import com.proyecto.neotec.DAO.ClienteDAO;
 import com.proyecto.neotec.DAO.UsuarioDAO;
+import com.proyecto.neotec.models.Cliente;
 import com.proyecto.neotec.models.Usuario;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -11,8 +13,9 @@ import org.mindrot.jbcrypt.BCrypt;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 
-public class ModUsuarioController {
-    private Usuario usuarioModificacion;
+public class ModClienteController {
+
+    private Cliente clientemodificacion;
 
     @FXML
     private TextField txfNombre;
@@ -23,13 +26,13 @@ public class ModUsuarioController {
     @FXML
     private TextField txfEmail;
     @FXML
-    private PasswordField pfContrasenna;
-    @FXML
-    private ComboBox<String> cbRol;
+    private TextField txfTelefono;
     @FXML
     private Button btnMod;
     @FXML
     private Button btnCancelar;
+
+
 
     @FXML
     public void initialize() {
@@ -52,38 +55,35 @@ public class ModUsuarioController {
     }
 
 
-    public void setUsuario(Usuario usuario) {
-        this.usuarioModificacion = usuario;
+    public void setCliente(Cliente cliente) {
+        this.clientemodificacion = cliente;
         cargarDatosActuales();
     }
 
     private void cargarDatosActuales() {
-        if (usuarioModificacion == null) {
+        if (clientemodificacion == null) {
             mostrarAlerta("Error", "No se ha seleccionado ningún usuario.", Alert.AlertType.WARNING);
             return;
         }
-        txfNombre.setText(usuarioModificacion.getNombre());
-        txfApellido.setText(usuarioModificacion.getApellido());
-        txfDni.setText(String.valueOf(usuarioModificacion.getDni()));
-        txfEmail.setText(usuarioModificacion.getEmail());
-        // Es poco común mostrar la contraseña, pero si es necesario
-        pfContrasenna.setText(usuarioModificacion.getContrasenna());
-        // Establecer el valor del ComboBox
-        cbRol.setValue(usuarioModificacion.getRol());
+        txfNombre.setText(clientemodificacion.getNombre());
+        txfApellido.setText(clientemodificacion.getApellido());
+        txfDni.setText(String.valueOf(clientemodificacion.getDni()));
+        txfEmail.setText(clientemodificacion.getEmail());
+        txfTelefono.setText(clientemodificacion.getTelefono());
     }
 
+
     @FXML
-    public void guardarUsuario() {
+    public void guardarCliente() {
         // Obtener los datos de los campos
         String nombre = txfNombre.getText();
         String apellido = txfApellido.getText();
         String dni = txfDni.getText();
         String email = txfEmail.getText();
-        String contrasenna = pfContrasenna.getText();
-        String rol = cbRol.getValue();
+        String telefono = txfTelefono.getText();
 
         // Validar que todos los campos estén completos
-        if (nombre.isEmpty() || apellido.isEmpty() || dni.isEmpty() || email.isEmpty() || rol == null) {
+        if (nombre.isEmpty() || apellido.isEmpty() || dni.isEmpty() || email.isEmpty() || telefono.isEmpty()) {
             mostrarAlerta("Error", "Por favor, complete todos los campos.", Alert.AlertType.ERROR);
             return;
         }
@@ -95,8 +95,7 @@ public class ModUsuarioController {
         }
 
         // Obtener el id del usuario que se va a modificar
-        int id = usuarioModificacion.getIdusuarios();
-        String mensaje = "";
+        int id = clientemodificacion.getIdclientes();
 
         // Convertir DNI a int
         int ndni;
@@ -107,25 +106,10 @@ public class ModUsuarioController {
             return;
         }
 
-        // Verificar si la contraseña fue proporcionada o está vacía
-        if (contrasenna == null || contrasenna.isEmpty()) {
-            // Actualizar sin cambiar la contraseña
-            Usuario usuarioNuevo = new Usuario(id, nombre, apellido, email, ndni, rol);
-            mensaje = UsuarioDAO.modificarUsuarioSinContrasenna(usuarioNuevo);
-        } else {
-            // Validar la contraseña (mínimo 8 caracteres)
-            if (contrasenna.length() < 8) {
-                mostrarAlerta("Error", "La contraseña debe tener al menos 8 caracteres.", Alert.AlertType.ERROR);
-                return;
-            }
 
-            // Hashear la contraseña nueva
-            String contrasennaHash = BCrypt.hashpw(contrasenna, BCrypt.gensalt(12));
-
-            // Actualizar con la nueva contraseña hasheada
-            Usuario usuarioNuevo = new Usuario(id, nombre, apellido, email, ndni, contrasennaHash, rol);
-            mensaje = UsuarioDAO.modificarUsuarioConContrasenna(usuarioNuevo);
-        }
+            // Actualizar cliente
+        Cliente clienteModificar = new Cliente(id, nombre, apellido,email,telefono,ndni);
+        String mensaje = ClienteDAO.modificarCliente(clienteModificar);
 
         // Mostrar mensaje de confirmación
         mostrarAlerta("Modificación de usuario", mensaje, Alert.AlertType.INFORMATION);
@@ -134,6 +118,8 @@ public class ModUsuarioController {
         Stage stage = (Stage) btnCancelar.getScene().getWindow();
         stage.close();
     }
+
+
 
     @FXML
     public void cancelar() {
@@ -148,5 +134,4 @@ public class ModUsuarioController {
         alert.setContentText(mensaje);
         alert.showAndWait();
     }
-
 }

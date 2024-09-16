@@ -1,4 +1,4 @@
-package com.proyecto.neotec;
+package com.proyecto.neotec.controllers;
 
 import com.proyecto.neotec.util.SesionUsuario;
 import javafx.animation.PauseTransition;
