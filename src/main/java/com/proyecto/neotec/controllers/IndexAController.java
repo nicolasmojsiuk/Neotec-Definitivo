@@ -35,6 +35,7 @@ public class IndexAController {
         CargarPantallas.cargar(workspace, "/vistas/verUsuarios.fxml");
     }
     public void mostrarVerClientes() {CargarPantallas.cargar(workspace, "/vistas/verClientes.fxml");}
+    public void mostrarVerProductos(){CargarPantallas.cargar(workspace, "/vistas/verProductos.fxml");}
 
 
 }

@@ -8,6 +8,7 @@ module com.proyecto.neotec {
     requires mysql.connector.j;
     requires java.naming;
     requires javafx.web;
+    requires java.desktop;
 
 
     opens com.proyecto.neotec to javafx.fxml;

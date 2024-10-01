@@ -34,9 +34,7 @@
             </MenuButton>
             <MenuButton minHeight="20.0" minWidth="50.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="130.0" text="Productos">
                <items>
-                  <MenuItem mnemonicParsing="false" text="Agregar Productos" />
-                  <MenuItem mnemonicParsing="false" text="Modificar Productos" />
-                  <MenuItem mnemonicParsing="false" text="Eliminar Productos" />
+                  <MenuItem fx:id="verProductos" mnemonicParsing="false" onAction="#mostrarVerProductos" text="Ver Productos" />
                </items>
             </MenuButton>
             <MenuButton minHeight="20.0" minWidth="50.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="130.0" text="Clientes">
