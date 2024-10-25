@@ -310,5 +310,44 @@ public class UsuarioDAO {
 
         return activoBol;
     }
+
+    public Usuario obtenerUsuarioPorId(int responsable) {
+        Usuario usuario = null;
+        String query = "SELECT * FROM usuarios WHERE idusuarios = ?";
+
+        try (Connection connection = Database.getConnection(); // Obtén la conexión desde tu clase Database
+             PreparedStatement statement = connection.prepareStatement(query)) {
+
+            // Establece el parámetro de la consulta
+            statement.setInt(1, responsable);
+
+            // Ejecuta la consulta
+            ResultSet resultSet = statement.executeQuery();
+
+            // Procesa el resultado
+            if (resultSet.next()) {
+                // Crea el objeto Usuario basado en los datos de la base de datos
+                usuario = new Usuario();
+                usuario.setNombre(resultSet.getString("nombre"));
+                usuario.setApellido(resultSet.getString("apellido"));
+                usuario.setDni(resultSet.getInt("dni"));
+                usuario.setContrasenna(resultSet.getString("contrasenna"));
+                usuario.setActivo(String.valueOf(resultSet.getBoolean("activo")));
+                int rol= resultSet.getInt("rol");
+                String rolUsuario = "";
+                if (rol==1){
+                    rolUsuario = "Empleado";
+                }else{
+                    rolUsuario = "Administrador";
+                }
+                usuario.setRol(rolUsuario);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace(); // Maneja las excepciones adecuadamente
+        }
+
+        return usuario;
+    }
 }
 

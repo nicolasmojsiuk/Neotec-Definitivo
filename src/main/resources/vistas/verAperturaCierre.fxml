@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<Pane prefHeight="642.0" prefWidth="1300.0" style="-fx-background-color: #060717;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.proyecto.neotec.controllers.VerAperturaCierreCajaController">
+   <children>
+      <Label fx:id="lblUsuarios" layoutX="26.0" layoutY="14.0" text="Caja: Apertura/Cierre">
+         <font>
+            <Font size="29.0" />
+         </font>
+      </Label>
+      <VBox alignment="CENTER" layoutX="26.0" layoutY="106.0" prefHeight="431.0" prefWidth="512.0" spacing="10.0" style="-fx-border-color: white;">
+         <children>
+            <Label fx:id="lblUsuarios1" text="Caja Actual">
+               <font>
+                  <Font size="29.0" />
+               </font>
+            </Label>
+            <HBox prefHeight="42.0" prefWidth="455.0">
+               <children>
+                  <Label fx:id="lblUsuarios11" prefHeight="30.0" prefWidth="215.0" text="Estado">
+                     <font>
+                        <Font size="20.0" />
+                     </font>
+                  </Label>
+                  <TextField fx:id="txfEstado" editable="false" prefHeight="25.0" prefWidth="294.0" />
+               </children>
+            </HBox>
+            <HBox layoutX="10.0" layoutY="10.0" prefHeight="42.0" prefWidth="455.0">
+               <children>
+                  <Label fx:id="lblFechahoraApCi" prefHeight="30.0" prefWidth="215.0" text="Fecha y hora apertura">
+                     <font>
+                        <Font size="20.0" />
+                     </font>
+                  </Label>
+                  <TextField fx:id="txfFechayhora" editable="false" prefHeight="25.0" prefWidth="294.0" />
+               </children>
+            </HBox>
+            <HBox layoutX="10.0" layoutY="52.0" prefHeight="42.0" prefWidth="455.0">
+               <children>
+                  <Label fx:id="lblSaldoInicialFinal" prefHeight="30.0" prefWidth="215.0" text="Saldo inicial">
+                     <font>
+                        <Font size="20.0" />
+                     </font>
+                  </Label>
+                  <TextField fx:id="txfSaldoInicialFinal" editable="false" prefHeight="25.0" prefWidth="294.0" />
+               </children>
+            </HBox>
+            <HBox layoutX="10.0" layoutY="166.0" prefHeight="42.0" prefWidth="455.0">
+               <children>
+                  <Label fx:id="lblUsuarios111211" prefHeight="30.0" prefWidth="215.0" text="Saldo Actual">
+                     <font>
+                        <Font size="20.0" />
+                     </font>
+                  </Label>
+                  <TextField fx:id="txfSaldoActual" editable="false" prefHeight="25.0" prefWidth="294.0" />
+               </children>
+            </HBox>
+            <HBox layoutX="10.0" layoutY="199.0" prefHeight="42.0" prefWidth="455.0">
+               <children>
+                  <Label fx:id="lblUsuarios1112111" prefHeight="30.0" prefWidth="215.0" text="Responsable">
+                     <font>
+                        <Font size="20.0" />
+                     </font>
+                  </Label>
+                  <TextField fx:id="txfResponsable" editable="false" prefHeight="25.0" prefWidth="294.0" />
+               </children>
+            </HBox>
+            <Button fx:id="btnAbrirCerrar" alignment="CENTER" contentDisplay="CENTER" mnemonicParsing="false" onAction="#verAbrirCerrarCaja" prefHeight="27.0" prefWidth="130.0" text="Abrir/Cerrar">
+               <font>
+                  <Font size="16.0" />
+               </font>
+            </Button>
+         </children>
+         <padding>
+            <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+         </padding>
+      </VBox>
+      <VBox alignment="CENTER" layoutX="561.0" layoutY="106.0" prefHeight="431.0" prefWidth="725.0" style="-fx-border-color: white;">
+         <children>
+            <Label fx:id="lblUsuarios12" text="Historial">
+               <font>
+                  <Font size="29.0" />
+               </font>
+            </Label>
+            <TableView prefHeight="356.0" prefWidth="698.0">
+              <columns>
+                <TableColumn prefWidth="99.0" text="Accion" />
+                <TableColumn prefWidth="210.0" text="Saldo Inicial/ Final" />
+                  <TableColumn prefWidth="202.0" text="Fecha y hora" />
+                  <TableColumn prefWidth="195.0" text="Responsable" />
+              </columns>
+            </TableView>
+         </children>
+         <padding>
+            <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+         </padding>
+      </VBox>
+      <Button alignment="CENTER" contentDisplay="CENTER" layoutX="1114.0" layoutY="573.0" mnemonicParsing="false" prefHeight="42.0" prefWidth="172.0" text="Retirar Efectivo">
+         <font>
+            <Font size="16.0" />
+         </font>
+      </Button>
+      <Button alignment="CENTER" contentDisplay="CENTER" layoutX="916.0" layoutY="573.0" mnemonicParsing="false" prefHeight="42.0" prefWidth="172.0" text="Agregar Efectivo">
+         <font>
+            <Font size="16.0" />
+         </font>
+      </Button>
+   </children>
+   <padding>
+      <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+   </padding>
+</Pane>

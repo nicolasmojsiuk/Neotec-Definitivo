@@ -66,9 +66,9 @@
                   <MenuItem mnemonicParsing="false" text="Ver Ventas" />
                </items>
             </MenuButton>
-            <MenuButton minHeight="20.0" minWidth="50.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="130.0" text="Movimientos">
+            <MenuButton minHeight="20.0" minWidth="50.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="130.0" text="Caja">
                <items>
-                  <MenuItem mnemonicParsing="false" text="Caja" />
+                  <MenuItem mnemonicParsing="false" onAction="#mostrarAperturaCierreCaja" text="Apertura/Cierre" />
                   <MenuItem mnemonicParsing="false" text="Gastos" />
                   <MenuItem mnemonicParsing="false" text="Pagos" />
                </items>

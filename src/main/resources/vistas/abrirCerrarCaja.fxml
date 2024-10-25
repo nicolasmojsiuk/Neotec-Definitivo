@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="259.0" prefWidth="348.0" style="-fx-background-color: #060717;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.proyecto.neotec.controllers.VerAperturaCierreCajaController">
+   <children>
+      <ImageView fitHeight="69.0" fitWidth="66.0" pickOnBounds="true" preserveRatio="true">
+         <image>
+            <Image url="@../img/logoN.png" />
+         </image>
+      </ImageView>
+      <Label fx:id="lblCaja" alignment="CENTER" layoutX="97.0" layoutY="13.0" prefHeight="43.0" prefWidth="142.0" text="Caja">
+         <font>
+            <Font size="29.0" />
+         </font>
+      </Label>
+      <VBox layoutX="18.0" layoutY="95.0" prefHeight="87.0" prefWidth="312.0" spacing="10.0">
+         <children>
+            <Label fx:id="lblSaldo" prefHeight="30.0" prefWidth="157.0" text="Saldo">
+               <font>
+                  <Font name="System Italic" size="20.0" />
+               </font>
+            </Label>
+            <TextField fx:id="txfSaldo" />
+         </children>
+      </VBox>
+      <Button fx:id="btnAbrirCerrarCaja" layoutX="130.0" layoutY="208.0" mnemonicParsing="false" onAction="#abrirCerrarCaja" prefHeight="30.0" prefWidth="99.0" text="Abrir">
+         <font>
+            <Font size="19.0" />
+         </font>
+      </Button>
+   </children>
+</AnchorPane>
