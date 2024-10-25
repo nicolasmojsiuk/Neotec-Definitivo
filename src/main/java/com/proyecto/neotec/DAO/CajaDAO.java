@@ -2,15 +2,12 @@ package com.proyecto.neotec.DAO;
 
 import com.proyecto.neotec.bbdd.Database;
 import com.proyecto.neotec.models.Caja;
-import com.proyecto.neotec.models.Cliente;
 import com.proyecto.neotec.models.Usuario;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class CajaDAO {
     public Caja selectDatosCajaActual() {
@@ -44,7 +41,7 @@ public class CajaDAO {
         return caja;
     }
 
-    public void abrirCerrarCaja(Caja cajaActual, float saldo) {
+    public String abrirCerrarCaja(Caja cajaActual, float saldo) {
         String mensaje = "";
         String sql = "INSERT INTO caja (estado, saldoInicial, saldoFinal, responsable,fechaHora) VALUES (?,?,?,?,NOW())";
 

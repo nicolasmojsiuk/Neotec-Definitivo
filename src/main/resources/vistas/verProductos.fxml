@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.text.Font?>
+
+<Pane fx:id="productos" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="657.0" prefWidth="1302.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.proyecto.neotec.controllers.VerProductoController">
+   <children>
+      <TableView fx:id="tablaProductos" layoutX="14.0" layoutY="71.0" prefHeight="475.0" prefWidth="1264.0">
+         <columns>
+            <TableColumn fx:id="columna1" prefWidth="87.19997882843018" text="N°" />
+            <TableColumn fx:id="columna2" prefWidth="188.8000030517578" text="Codigo del Producto" />
+            <TableColumn fx:id="columna3" prefWidth="171.199951171875" text="Marca" />
+            <TableColumn fx:id="columna4" prefWidth="138.4000244140625" text="Cantidad" />
+            <TableColumn fx:id="columna5" prefWidth="149.60003662109375" text="Precio-Costo" />
+            <TableColumn fx:id="columna6" prefWidth="144.79998779296875" text="Precio Unitario" />
+            <TableColumn fx:id="columna7" prefWidth="185.59991455078125" text="Descripcion" />
+            <TableColumn fx:id="columna8" prefWidth="196.800048828125" text="Nombre del Producto" />
+         </columns>
+      </TableView>
+      <Label layoutX="14.0" layoutY="14.0" text="Productos">
+         <font>
+            <Font size="29.0" />
+         </font>
+      </Label>
+      <Button fx:id="btnCrearProducto" layoutX="828.0" layoutY="569.0" mnemonicParsing="false" onAction="#mostrarCrearProducto" prefHeight="27.0" prefWidth="130.0" text="Crear">
+         <font>
+            <Font size="16.0" />
+         </font>
+      </Button>
+      <Button fx:id="btnMod" layoutX="977.0" layoutY="569.0" mnemonicParsing="false" onAction="#mostrarModificarProducto" prefHeight="35.0" prefWidth="140.0" text="Modificar">
+         <font>
+            <Font size="16.0" />
+         </font>
+      </Button>
+      <Button fx:id="btnEliminar" layoutX="1138.0" layoutY="569.0" mnemonicParsing="false" onAction="#eliminarProducto" prefHeight="35.0" prefWidth="140.0" text="Eliminar">
+         <font>
+            <Font size="16.0" />
+         </font>
+      </Button>
+   </children>
+</Pane>

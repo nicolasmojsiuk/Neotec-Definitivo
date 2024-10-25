@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Spinner?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<Pane fx:id="panePrincipal" prefHeight="750.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.proyecto.neotec.controllers.CrearPresupuestoController">
+    <Label layoutX="292.0" layoutY="14.0" text="Presupuesto de Reparación">
+      <font>
+         <Font size="18.0" />
+      </font></Label>
+   <VBox layoutX="85.0" layoutY="55.0" prefHeight="160.0" prefWidth="630.0">
+      <children>
+      
+                      <GridPane hgap="10" vgap="10">
+              <Label text="Nombre del Cliente:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+              <TextField fx:id="clienteNombre" editable="false" GridPane.columnIndex="1" />
+      
+                          <Label text="Dispositivo:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+              <TextField fx:id="equipoId" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+      
+                          <Label text="Descripción del Equipo:" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+              <TextArea fx:id="equipoDescripcion" editable="false" prefHeight="51.0" prefRowCount="2" prefWidth="368.0" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+      
+                          <columnConstraints>
+                  <ColumnConstraints />
+                  <ColumnConstraints />
+              </columnConstraints>
+              <rowConstraints>
+                  <RowConstraints />
+                  <RowConstraints />
+                  <RowConstraints />
+                  <RowConstraints />
+              </rowConstraints>
+          </GridPane>
+      </children>
+   </VBox>
+    <TableView fx:id="tablaProductos" layoutX="16.0" layoutY="228.0" prefHeight="250.0" prefWidth="584.0">
+        <columns>
+            <TableColumn fx:id="columnaId" prefWidth="94.0" text="ID" />
+            <TableColumn fx:id="columnaNombre" prefWidth="257.0" text="Nombre" />
+            <TableColumn fx:id="columnaPrecioUnitario" minWidth="0.0" prefWidth="110.0" text="Precio Unitario" />
+            <TableColumn fx:id="columnaCantidadUtilizada" minWidth="0.0" prefWidth="122.0" text="Cantidad utilizada" />
+        </columns>
+    </TableView>
+   <VBox layoutX="46.0" layoutY="508.0" prefHeight="180.0" prefWidth="354.0" spacing="20.0">
+      <children>
+      
+          <GridPane hgap="10" prefHeight="25.0" prefWidth="323.0" vgap="10">
+              <Label prefHeight="17.0" prefWidth="209.0" text="Costo de reparación:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+              <TextField fx:id="costoReparacion" editable="false" prefHeight="25.0" prefWidth="97.0" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+              <columnConstraints>
+                  <ColumnConstraints maxWidth="165.0" minWidth="160.0" prefWidth="165.0" />
+                  <ColumnConstraints maxWidth="184.0" minWidth="179.0" prefWidth="179.0" />
+              </columnConstraints>
+              <rowConstraints>
+                  <RowConstraints />
+              </rowConstraints>
+          </GridPane>
+      
+          <GridPane hgap="10" prefHeight="25.0" prefWidth="323.0" vgap="10">
+              <Label prefHeight="17.0" prefWidth="167.0" text="Costo de Mano de Obra:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+              <TextField fx:id="manoDeObra" prefHeight="25.0" prefWidth="183.0" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+              <columnConstraints>
+                  <ColumnConstraints />
+                  <ColumnConstraints />
+              </columnConstraints>
+              <rowConstraints>
+                  <RowConstraints />
+              </rowConstraints>
+          </GridPane>
+      
+          <GridPane hgap="10" prefHeight="25.0" prefWidth="323.0" vgap="10">
+              <Label prefHeight="17.0" prefWidth="167.0" text="Tiempo estimado en días:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+            <Spinner fx:id="tiempoReparacion" prefHeight="25.0" prefWidth="65.0" GridPane.columnIndex="1" />
+              <columnConstraints>
+                  <ColumnConstraints />
+                  <ColumnConstraints />
+              </columnConstraints>
+              <rowConstraints>
+                  <RowConstraints />
+              </rowConstraints>
+          </GridPane>
+      
+          <GridPane hgap="10" prefHeight="25.0" prefWidth="323.0" vgap="10">
+              <Label prefHeight="17.0" prefWidth="167.0" text="Total Presupuestado" />
+              <TextField fx:id="totalPresupuestado" editable="false" prefHeight="25.0" prefWidth="176.0" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+              <columnConstraints>
+                  <ColumnConstraints />
+                  <ColumnConstraints />
+              </columnConstraints>
+              <rowConstraints>
+                  <RowConstraints />
+              </rowConstraints>
+          </GridPane>
+      </children>
+   </VBox>
+
+    <Label layoutX="565.0" layoutY="508.0" text="Firma del Cliente:" />
+    <TextArea layoutX="528.0" layoutY="532.0" prefHeight="125.0" prefWidth="191.0" />
+
+    <Button fx:id="btnImprimir" layoutX="565.0" layoutY="669.0" mnemonicParsing="false" onAction="#imprimir" prefHeight="36.0" prefWidth="116.0" text="Imprimir" />
+   <TableView fx:id="tablaBotones" layoutX="600.0" layoutY="228.0" prefHeight="250.0" prefWidth="162.0">
+      <columns>
+         <TableColumn fx:id="columnaBotones" minWidth="0.0" prefWidth="167.0" text="Añadir" />
+      </columns>
+   </TableView>
+
+    <padding>
+        <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+    </padding>
+</Pane>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.text.Font?>
+
+<Pane fx:id="workspace" prefHeight="642.0" prefWidth="1300.0" style="-fx-background-color: #060717;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.proyecto.neotec.controllers.VerEquiposController">
+    <children>
+        <Label fx:id="lblEquipos" layoutX="14.0" layoutY="8.0" text="Equipos">
+            <font>
+                <Font size="29.0" />
+            </font>
+        </Label>
+        <TableView fx:id="tablaEquipos" layoutX="6.0" layoutY="55.0" prefHeight="516.0" prefWidth="1287.0">
+            <columns>
+                <TableColumn fx:id="columna1" prefWidth="41.0" text="N°" />
+                <TableColumn fx:id="columna2" prefWidth="170.0" text="Dueño" />
+                <TableColumn fx:id="columna3" prefWidth="170.0" text="Estado" />
+                <TableColumn fx:id="columna4" prefWidth="119.0" text="Observaciones" />
+                <TableColumn fx:id="columna5" prefWidth="95.0" text="dispositivo" />
+                <TableColumn fx:id="columna6" prefWidth="95.0" text="Activo/Inactivo" />
+                <TableColumn fx:id="columna7" prefWidth="157.0" text="fecha de ingreso" />
+                <TableColumn fx:id="columna8" prefWidth="95.0" text="ultima modificación" />
+                <TableColumn fx:id="columna9" prefWidth="95.0" text="fecha de salida" />
+
+            </columns>
+        </TableView>
+        <Button fx:id="btnActivoInactivo" layoutX="1136.0" layoutY="583.0" mnemonicParsing="false" onAction="#EliminarEquipo" prefHeight="35.0" prefWidth="140.0" text="Activo | Inactivo">
+            <font>
+                <Font size="16.0" />
+            </font>
+        </Button>
+        <Button fx:id="btnMod" layoutX="981.0" layoutY="583.0" mnemonicParsing="false" onAction="#mostrarFormModificarEquipos" prefHeight="27.0" prefWidth="140.0" text="Modificar">
+            <font>
+                <Font size="16.0" />
+            </font>
+        </Button>
+        <Button fx:id="btnAgregarEquipo" layoutX="826.0" layoutY="583.0" mnemonicParsing="false" onAction="#mostrarFormAgregarEquipos" prefHeight="27.0" prefWidth="130.0" text="Crear">
+            <font>
+                <Font size="16.0" />
+            </font>
+        </Button>
+      <Button fx:id="btnVerImagenes" layoutX="679.0" layoutY="583.0" mnemonicParsing="false" onAction="#mostrarImagenes" prefHeight="27.0" prefWidth="130.0" text="Ver imagenes">
+         <font>
+            <Font size="16.0" />
+         </font>
+      </Button>
+      <Button fx:id="btnPresupuesto" layoutX="25.0" layoutY="583.0" mnemonicParsing="false" onAction="#sacarPresupuesto" prefHeight="35.0" prefWidth="164.0" text="Sacar Presupuesto">
+         <font>
+            <Font size="16.0" />
+         </font>
+      </Button>
+    </children>
+</Pane>

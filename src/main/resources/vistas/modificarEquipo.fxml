@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.String?>
+<?import javafx.collections.FXCollections?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="666.0" prefWidth="348.0" style="-fx-background-color: #060717;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.proyecto.neotec.controllers.ModificarEquipoController">
+    <children>
+        <ImageView fitHeight="69.0" fitWidth="66.0" pickOnBounds="true" preserveRatio="true">
+            <image>
+                <Image url="@../img/logoN.png" />
+            </image>
+        </ImageView>
+        <Label layoutX="78.0" layoutY="13.0" text="Modificar Equipo">
+            <font>
+                <Font size="29.0" />
+            </font>
+        </Label>
+        <VBox layoutX="20.0" layoutY="86.0" prefHeight="455.0" prefWidth="312.0" spacing="10.0">
+            <children>
+                <Label text="Dueño">
+                    <font>
+                        <Font name="System Italic" size="20.0" />
+                    </font>
+                </Label>
+                <TextField fx:id="txfDuenno" />
+                <Label layoutX="10.0" layoutY="10.0" text="Estado">
+                    <font>
+                        <Font name="System Italic" size="20.0" />
+                    </font>
+                </Label>
+
+                <ComboBox fx:id="tipoEstado" layoutX="10.0" layoutY="145.0" prefHeight="25.0" prefWidth="316.0">
+                    <items>
+                        <FXCollections fx:factory="observableArrayList">
+                            <String fx:value="Ingresado" />
+                            <String fx:value="En espera de revisión" />
+                            <String fx:value="Revisión" />
+                            <String fx:value="En espera de autorización" />
+                            <String fx:value="Autorizado" />
+                            <String fx:value="Cancelado" />
+                            <String fx:value="Reparado" />
+                            <String fx:value="Pagado" />
+                        </FXCollections>
+                    </items>
+                </ComboBox>
+
+                <Label layoutX="10.0" layoutY="52.0" text="Dispositivo">
+                    <font>
+                        <Font name="System Italic" size="20.0" />
+                    </font>
+                </Label>
+                <TextField fx:id="txfDispositivo" />
+                <Label layoutX="10.0" layoutY="94.0" text="Observaciones">
+                    <font>
+                        <Font name="System Italic" size="20.0" />
+                    </font>
+                </Label>
+                <TextArea fx:id="txtAreaObservaciones" prefHeight="97.0" prefWidth="312.0" />
+            <Label text="Activo/Inactivo">
+               <font>
+                  <Font name="System Italic" size="20.0" />
+               </font>
+            </Label>
+            <ComboBox fx:id="Activo" prefHeight="25.0" prefWidth="316.0">
+               <items>
+                  <FXCollections fx:factory="observableArrayList">
+                     <String fx:value="Activo" />
+                     <String fx:value="Inactivo" />
+                  </FXCollections>
+               </items>
+            </ComboBox>
+            </children>
+        </VBox>
+        <Button fx:id="btnCancelar" layoutX="44.0" layoutY="609.0" mnemonicParsing="false" onAction="#cancelar" prefHeight="40.0" prefWidth="99.0" text="Cancelar">
+            <font>
+                <Font size="19.0" />
+            </font>
+        </Button>
+        <Button fx:id="btnMod" layoutX="202.0" layoutY="609.0" mnemonicParsing="false" onAction="#modificar" prefHeight="30.0" prefWidth="99.0" text="Crear">
+            <font>
+                <Font size="19.0" />
+            </font>
+        </Button>
+    </children>
+</AnchorPane>

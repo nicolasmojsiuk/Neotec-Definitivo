@@ -3,6 +3,7 @@ package com.proyecto.neotec.controllers;
 import javafx.event.ActionEvent;
 
 public class IndexEController {
+
     public void mostrarHome(ActionEvent actionEvent) {
     }
 
