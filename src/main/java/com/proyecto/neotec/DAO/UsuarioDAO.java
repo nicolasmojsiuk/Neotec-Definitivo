@@ -77,6 +77,7 @@ public class UsuarioDAO {
             if (resultSet.next()) {
                 // Crea el objeto Usuario basado en los datos de la base de datos
                 usuario = new Usuario();
+                usuario.setIdusuarios(resultSet.getInt("idusuarios"));
                 usuario.setNombre(resultSet.getString("nombre"));
                 usuario.setApellido(resultSet.getString("apellido"));
                 usuario.setDni(resultSet.getInt("dni"));
@@ -311,7 +312,7 @@ public class UsuarioDAO {
         return activoBol;
     }
 
-    public Usuario obtenerUsuarioPorId(int responsable) {
+    public static Usuario obtenerUsuarioPorId(int responsable) {
         Usuario usuario = null;
         String query = "SELECT * FROM usuarios WHERE idusuarios = ?";
 

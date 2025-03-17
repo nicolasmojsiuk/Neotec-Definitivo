@@ -1,7 +1,7 @@
 package com.proyecto.neotec.models;
 
 public class Presupuestos {
-    private int costoReparacion;
+    private int costosVariables;
     private int idpresupuesto;
     private int idEquipo;
     private String propietario;
@@ -10,6 +10,52 @@ public class Presupuestos {
     private int manoDeObra;
     private int precioTotal;
     private int diasEstimados;
+    private String fechaHora;
+    private String observaciones;
+    private float totalProductos;
+
+    public Presupuestos(int costosVariables, int idpresupuesto, int idEquipo, String propietario, String equipo, int estado, int manoDeObra, int precioTotal, int diasEstimados, String fechaHora, String observaciones, float totalProductos) {
+        this.costosVariables = costosVariables;
+        this.idpresupuesto = idpresupuesto;
+        this.idEquipo = idEquipo;
+        this.propietario = propietario;
+        this.equipo = equipo;
+        this.estado = estado;
+        this.manoDeObra = manoDeObra;
+        this.precioTotal = precioTotal;
+        this.diasEstimados = diasEstimados;
+        this.fechaHora = fechaHora;
+        this.observaciones = observaciones;
+        this.totalProductos = totalProductos;
+    }
+
+    public Presupuestos() {
+
+    }
+
+    public String getObservaciones() {
+        return observaciones;
+    }
+
+    public void setObservaciones(String observaciones) {
+        this.observaciones = observaciones;
+    }
+
+    public float getTotalProductos() {
+        return totalProductos;
+    }
+
+    public void setTotalProductos(float totalProductos) {
+        this.totalProductos = totalProductos;
+    }
+
+    public String getFechaHora() {
+        return fechaHora;
+    }
+
+    public void setFechaHora(String fechaHora) {
+        this.fechaHora = fechaHora;
+    }
 
     public String getPropietario() {
         return propietario;
@@ -35,12 +81,12 @@ public class Presupuestos {
         this.diasEstimados = diasEstimados;
     }
 
-    public int getCostoReparacion() {
-        return costoReparacion;
+    public int getCostosVariables() {
+        return costosVariables;
     }
 
-    public void setCostoReparacion(int costoReparacion) {
-        this.costoReparacion = costoReparacion;
+    public void setCostosVariables(int costosVariables) {
+        this.costosVariables = costosVariables;
     }
 
     public int getIdpresupuesto() {

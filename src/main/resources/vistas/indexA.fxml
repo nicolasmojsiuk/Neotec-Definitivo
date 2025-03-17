@@ -46,29 +46,34 @@
                <items>
                   <Menu text="Equipos">
                      <items>
-                        <MenuItem text="Agregar Equipo" />
-                        <MenuItem text="Modificar Equipo" />
-                        <MenuItem text="Eliminar Equipo" />
+                        <MenuItem onAction="#mostrarVerEquipos" text="Ver Equipos" />
                      </items>
                   </Menu>
                   <Menu text="Presupuestos">
                      <items>
-                        <MenuItem text="Sacar Presupuesto" />
+                        <MenuItem onAction="#mostrarVerPresupuestos" text="Ver Presupuestos" />
                      </items>
                   </Menu>
                </items>
             </MenuButton>
             <MenuButton minHeight="20.0" minWidth="50.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="130.0" text="Ventas">
                <items>
-                  <MenuItem mnemonicParsing="false" text="Registrar Venta" />
-                  <MenuItem mnemonicParsing="false" text="Ver Ventas" />
+                  <MenuItem mnemonicParsing="false" onAction="#mostrarNuevaVenta" text="Nueva Venta" />
+                  <MenuItem mnemonicParsing="false" onAction="#mostrarHistorialVentas" text="Historial Ventas" />
                </items>
             </MenuButton>
             <MenuButton minHeight="20.0" minWidth="50.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="130.0" text="Caja">
                <items>
-                  <MenuItem mnemonicParsing="false" onAction="#mostrarAperturaCierreCaja" text="Apertura/Cierre" />
-                  <MenuItem mnemonicParsing="false" text="Gastos" />
-                  <MenuItem mnemonicParsing="false" text="Pagos" />
+                  <MenuItem mnemonicParsing="false" onAction="#mostrarCajaAperturaCierre" text="Apertura/Cierre" />
+                  <MenuItem mnemonicParsing="false" onAction="#mostrarVerMovimientos" text="Movimientos" />
+                  <MenuItem mnemonicParsing="false" onAction="#establecerCaja" text="Establecer caja" />
+               </items>
+            </MenuButton>
+            <MenuButton layoutX="772.0" layoutY="20.0" minHeight="20.0" minWidth="50.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="130.0" text="Balances">
+               <items>
+                  <MenuItem mnemonicParsing="false" text="Producto mas vendido" />
+                  <MenuItem mnemonicParsing="false" text="Mejores clientes" />
+                  <MenuItem mnemonicParsing="false" text="Ganacias" />
                </items>
             </MenuButton>
             <Separator prefHeight="46.0" prefWidth="112.0" />

@@ -12,6 +12,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.stage.Stage;
 import org.mindrot.jbcrypt.BCrypt;
 
+import java.util.List;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 
@@ -21,6 +22,8 @@ public class ModProductoController {
     private Button btnCancelar;
     @FXML
     private Button btnModificar;
+    @FXML
+    public ComboBox cbCategoria;
     @FXML
     private TextField txtNomProducto;
     @FXML
@@ -38,8 +41,17 @@ public class ModProductoController {
     @FXML
     public void initialize() {
         restriccionesCampos();
+        cargarCategorias();
+
     }
 
+    private void cargarCategorias() {
+        ProductosDAO productosDAO = new ProductosDAO();
+        List<String> nombresCategorias = productosDAO.selectNombresCategorias();
+        for (String nombre : nombresCategorias) {
+            cbCategoria.getItems().add(nombre);
+        }
+    }
     private void restriccionesCampos() {
         // Permitir solo números en el campo de cantidad
         Pattern pattern = Pattern.compile("\\d*");
@@ -88,6 +100,7 @@ public class ModProductoController {
         txtPUnitarioProducto.setText(String.valueOf(productoMod.getPrecioUnitario()));
         txtPCostoProducto.setText(String.valueOf(productoMod.getPrecioCosto()));
         txtDescProducto.setText(productoMod.getDescripcion());
+        cbCategoria.getSelectionModel().select(productoMod.getCategoriaInt());
     }
 
     @FXML
@@ -100,6 +113,10 @@ public class ModProductoController {
         String precioU = txtPUnitarioProducto.getText();
         String desc = txtDescProducto.getText();
         String nomP = txtNomProducto.getText();
+        int cat = cbCategoria.getSelectionModel().getSelectedIndex();
+        if (cat<0){
+            cat=0;
+        }
 
         // Validar que todos los campos estén completos
         if (codigoP.isEmpty() || marca.isEmpty() || cantidad.isEmpty() || precioC.isEmpty() || precioU.isEmpty() || desc.isEmpty() || nomP.isEmpty()) {
@@ -118,6 +135,7 @@ public class ModProductoController {
             // Crear el producto modificado
             Productos productos = new Productos(nomP, codigoP, marca, cant, pC, pU, desc);
             productos.setIdProductos(id); // Establecer el ID del producto
+            productos.setCategoriaInt(cat);
 
             // Llamar a modificarProducto y obtener resultado
             String resultado = ProductosDAO.modificarProducto(productos);

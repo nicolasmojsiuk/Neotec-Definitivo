@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Spinner?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.shape.Line?>
+<?import javafx.scene.text.Font?>
+
+<Pane fx:id="workspace" prefHeight="642.0" prefWidth="1300.0" style="-fx-background-color: #060717;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+   <children>
+      <Label fx:id="lblPresupuestos" layoutX="16.0" layoutY="14.0" prefHeight="43.0" prefWidth="184.0" text="Nueva Venta">
+         <font>
+            <Font size="29.0" />
+         </font>
+      </Label>
+      <Label fx:id="lblUsuarios11" layoutX="20.0" layoutY="118.0" prefHeight="30.0" prefWidth="192.0" text="DNI:">
+         <font>
+            <Font size="20.0" />
+         </font>
+      </Label>
+      <TextField fx:id="txfDniCliente" layoutX="80.0" layoutY="121.0" prefHeight="7.0" prefWidth="192.0" />
+      <Label fx:id="lblUsuarios112" layoutX="304.0" layoutY="119.0" prefHeight="30.0" prefWidth="192.0" text="Nombre:">
+         <font>
+            <Font size="20.0" />
+         </font>
+      </Label>
+      <Label fx:id="lblPresupuestos1" layoutX="25.0" layoutY="72.0" text="Cliente">
+         <font>
+            <Font size="26.0" />
+         </font>
+      </Label>
+      <Line endX="528.0" layoutX="124.0" layoutY="71.0" startX="-107.0" stroke="WHITE" strokeWidth="3.0" />
+      <Line endX="528.5" endY="2.5" layoutX="124.0" layoutY="164.0" startX="-105.5" startY="1.5" stroke="WHITE" strokeWidth="3.0" />
+      <TextField fx:id="txfNombreCliente" editable="false" layoutX="400.0" layoutY="122.0" prefHeight="25.0" prefWidth="238.0" />
+      <Line endX="518.5" endY="4.0" layoutX="134.0" layoutY="161.0" startX="518.5" startY="-89.5" stroke="WHITE" strokeWidth="3.0" />
+      <Line endX="522.0" endY="-9.0" layoutX="-505.0" layoutY="173.0" startX="522.0" startY="-101.0" stroke="WHITE" strokeWidth="3.0" />
+      <HBox alignment="CENTER" layoutX="15.0" layoutY="177.0" prefHeight="49.0" prefWidth="1275.0" style="-fx-border-color: white; -fx-border-width: 3;">
+         <children>
+            <HBox alignment="CENTER" prefHeight="37.0" prefWidth="220.0" spacing="5.0">
+               <children>
+                  <Label fx:id="lblUsuarios111" alignment="CENTER_RIGHT" contentDisplay="CENTER" prefHeight="30.0" prefWidth="53.0" text="Codigo" />
+                  <TextField fx:id="txfCodigo" onAction="#cargarLinea" onInputMethodTextChanged="#cargarLinea" prefHeight="25.0" prefWidth="156.0" />
+               </children>
+            </HBox>
+            <HBox alignment="CENTER" prefHeight="37.0" prefWidth="265.0" spacing="5.0">
+               <children>
+                  <Label fx:id="lblUsuarios1114" alignment="CENTER_RIGHT" contentDisplay="CENTER" prefHeight="30.0" prefWidth="69.0" text="Producto" />
+                  <TextField fx:id="txfProducto" editable="false" prefHeight="25.0" prefWidth="212.0" />
+               </children>
+            </HBox>
+            <HBox alignment="CENTER" prefHeight="37.0" prefWidth="243.0" spacing="5.0">
+               <children>
+                  <Label fx:id="lblUsuarios11141" alignment="CENTER_RIGHT" contentDisplay="CENTER" prefHeight="30.0" prefWidth="72.0" text="Precio" />
+                  <TextField fx:id="txfPrecio" editable="false" prefHeight="25.0" prefWidth="202.0" />
+               </children>
+            </HBox>
+            <HBox alignment="CENTER" prefHeight="43.0" prefWidth="245.0" spacing="5.0">
+               <children>
+                  <Label fx:id="lblUsuarios111411" alignment="CENTER_RIGHT" contentDisplay="CENTER" prefHeight="30.0" prefWidth="80.0" text="Cantidad" />
+                  <Spinner fx:id="spCantidad" editable="true" prefHeight="25.0" prefWidth="129.0" />
+               </children>
+            </HBox>
+            <HBox alignment="CENTER" prefHeight="32.0" prefWidth="274.0" spacing="5.0">
+               <children>
+                  <Label fx:id="lblUsuarios111412" alignment="CENTER_RIGHT" contentDisplay="CENTER" prefHeight="30.0" prefWidth="107.0" text="Total linea" />
+                  <TextField fx:id="txfTotalLinea" editable="false" prefHeight="25.0" prefWidth="150.0" />
+               </children>
+            </HBox>
+         </children>
+      </HBox>
+      <Button fx:id="btnAgregarLinea" layoutX="1130.0" layoutY="362.0" mnemonicParsing="false" prefHeight="43.0" prefWidth="156.0" text="AGREGAR LINEA" />
+      <Button fx:id="btnEliminarLinea" layoutX="1130.0" layoutY="415.0" mnemonicParsing="false" prefHeight="43.0" prefWidth="156.0" text="ELIMINAR LINEA" />
+      <Button fx:id="btnCerrarTicket" layoutX="1130.0" layoutY="577.0" mnemonicParsing="false" prefHeight="43.0" prefWidth="156.0" text="CERRAR TICKET" />
+      <Button fx:id="btnCancelarTicket" layoutX="1130.0" layoutY="523.0" mnemonicParsing="false" prefHeight="43.0" prefWidth="156.0" text="CANCELAR TICKET" />
+      <TableView layoutX="16.0" layoutY="240.0" prefHeight="380.0" prefWidth="1101.0">
+        <columns>
+          <TableColumn prefWidth="200.0" text="Codigo" />
+          <TableColumn prefWidth="275.0" text="Producto" />
+            <TableColumn prefWidth="257.0" text="Precio U" />
+            <TableColumn prefWidth="109.0" text="Cantidad" />
+            <TableColumn prefWidth="259.0" text="Total Linea" />
+        </columns>
+      </TableView>
+      <Button fx:id="btnIngresoManual" layoutX="1130.0" layoutY="240.0" mnemonicParsing="false" prefHeight="43.0" prefWidth="156.0" text="INGRESO MANUAL" />
+      <Button fx:id="btnConfirmarCliente" layoutX="668.0" layoutY="71.0" mnemonicParsing="false" onAction="#buscarCliente" prefHeight="40.0" prefWidth="40.0">
+         <graphic>
+            <ImageView fitHeight="30.0" fitWidth="30.0" pickOnBounds="true" preserveRatio="true">
+               <image>
+                  <Image url="@../img/cheque.png" />
+               </image>
+            </ImageView>
+         </graphic>
+      </Button>
+      <Button fx:id="btnCancelarCliente" layoutX="668.0" layoutY="126.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="40.0">
+         <graphic>
+            <ImageView fitHeight="30.0" fitWidth="30.0" pickOnBounds="true" preserveRatio="true">
+               <image>
+                  <Image url="@../img/marca-x.png" />
+               </image>
+            </ImageView>
+         </graphic>
+      </Button>
+   </children>
+</Pane>

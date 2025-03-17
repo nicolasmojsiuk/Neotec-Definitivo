@@ -1,0 +1,5 @@
+/* Estilo para agregar un borde blanco a las ventanas */
+.root {
+    -fx-border-color: gray;
+    -fx-border-width: 2px;
+}

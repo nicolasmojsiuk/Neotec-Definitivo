@@ -31,10 +31,10 @@
           <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
         </rowConstraints>
          <children>
-            <ImageView fx:id="img1" fitHeight="243.0" fitWidth="626.0" pickOnBounds="true" preserveRatio="true" />
-            <ImageView fx:id="img2" fitHeight="243.0" fitWidth="626.0" layoutX="10.0" layoutY="12.0" pickOnBounds="true" preserveRatio="true" GridPane.rowIndex="1" />
-            <ImageView fx:id="img3" fitHeight="243.0" fitWidth="626.0" layoutX="10.0" layoutY="257.0" pickOnBounds="true" preserveRatio="true" GridPane.columnIndex="1" />
-            <ImageView fx:id="img4" fitHeight="243.0" fitWidth="626.0" layoutX="636.0" layoutY="12.0" pickOnBounds="true" preserveRatio="true" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+            <ImageView fx:id="img1" fitHeight="243.0" fitWidth="626.0" onMouseClicked="#abrirImagen0" pickOnBounds="true" preserveRatio="true" />
+            <ImageView fx:id="img2" fitHeight="243.0" fitWidth="626.0" layoutX="10.0" layoutY="12.0" onMouseClicked="#abrirImagen1" pickOnBounds="true" preserveRatio="true" GridPane.rowIndex="1" />
+            <ImageView fx:id="img3" fitHeight="243.0" fitWidth="626.0" layoutX="10.0" layoutY="257.0" onMouseClicked="#abrirImagen2" pickOnBounds="true" preserveRatio="true" GridPane.columnIndex="1" />
+            <ImageView fx:id="img4" fitHeight="243.0" fitWidth="626.0" layoutX="636.0" layoutY="12.0" onMouseClicked="#abrirImagen3" pickOnBounds="true" preserveRatio="true" GridPane.columnIndex="1" GridPane.rowIndex="1" />
          </children>
       </GridPane>
    </children>

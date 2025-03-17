@@ -77,7 +77,7 @@ public class CrearUsuarioController {
         }
 
         // Validar el email (debe contener '@' y '.')
-        if (!email.contains("@") || !email.contains(".") || !email.contains(" ")) {
+        if (!email.contains("@") || !email.contains(".") || email.contains(" ")) {
             mostrarAlerta("Error", "Por favor, ingrese un correo electrónico válido.",Alert.AlertType.WARNING);
             return;
         }

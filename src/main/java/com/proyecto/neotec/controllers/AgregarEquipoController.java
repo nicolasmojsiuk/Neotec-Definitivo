@@ -91,7 +91,7 @@ public class AgregarEquipoController {
         fileChooser.setTitle("Seleccionar Imágenes");
 
         // Filtrar para solo mostrar archivos de imagen
-        FileChooser.ExtensionFilter imageFilter = new FileChooser.ExtensionFilter("Imágenes (JPG, PNG)", "*.jpg", "*.png");
+        FileChooser.ExtensionFilter imageFilter = new FileChooser.ExtensionFilter("Imágenes (JPG, PNG, JPEG)", "*.jpg", "*.png","*.jpeg");
         fileChooser.getExtensionFilters().add(imageFilter);
 
         // Permitir seleccionar múltiples archivos

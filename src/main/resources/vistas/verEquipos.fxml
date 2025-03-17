@@ -14,7 +14,7 @@
                 <Font size="29.0" />
             </font>
         </Label>
-        <TableView fx:id="tablaEquipos" layoutX="6.0" layoutY="55.0" prefHeight="516.0" prefWidth="1287.0">
+        <TableView fx:id="tablaEquipos" layoutX="11.0" layoutY="55.0" prefHeight="516.0" prefWidth="1275.0">
             <columns>
                 <TableColumn fx:id="columna1" prefWidth="41.0" text="N°" />
                 <TableColumn fx:id="columna2" prefWidth="170.0" text="Dueño" />
@@ -48,7 +48,7 @@
             <Font size="16.0" />
          </font>
       </Button>
-      <Button fx:id="btnPresupuesto" layoutX="25.0" layoutY="583.0" mnemonicParsing="false" onAction="#sacarPresupuesto" prefHeight="35.0" prefWidth="164.0" text="Sacar Presupuesto">
+      <Button fx:id="btnPresupuesto" layoutX="25.0" layoutY="583.0" mnemonicParsing="false" onAction="#crearPresupuesto" prefHeight="35.0" prefWidth="164.0" text="Crear Presupuesto">
          <font>
             <Font size="16.0" />
          </font>

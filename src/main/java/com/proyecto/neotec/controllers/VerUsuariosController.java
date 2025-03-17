@@ -90,7 +90,7 @@ public class VerUsuariosController {
             Stage stage = new Stage();
             stage.setTitle("Crear Usuario");
             stage.setScene(scene);
-            stage.initModality(Modality.APPLICATION_MODAL); // Bloquea la ventana principal hasta que el pop-up se cierre
+            stage.initModality(Modality.APPLICATION_MODAL);
             // Mostrar el pop-up
             stage.showAndWait();
             cargarDatos();
@@ -105,9 +105,11 @@ public class VerUsuariosController {
 
         if (usuarioSeleccionado != null) {
             int idUsuario = usuarioSeleccionado.getIdusuarios(); // Obtener el ID del usuario seleccionado
+
             // Cambiar el estado actual de "Activo" a "Inactivo" y viceversa
             String estadoNuevoString = usuarioSeleccionado.getActivo().equals("Activo") ? "Inactivo" : "Activo";
             int nuevoEstado;
+
             //pasarlo a int
             if(estadoNuevoString == "Activo"){
                 nuevoEstado=1;
@@ -119,10 +121,12 @@ public class VerUsuariosController {
             UsuarioDAO.cambiarEstadoActivo(idUsuario, nuevoEstado);
             // Actualizar el estado del usuario en la tabla
             cargarDatos();
+
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setTitle("Activacion / Desactivacion");
             alert.setContentText("Se ha cambiado el estado del usuario "+usuarioSeleccionado.getNombre()+" "+usuarioSeleccionado.getApellido());
             alert.showAndWait();
+
         } else {
             // Mostrar alerta o mensaje indicando que no hay un usuario seleccionado
             Alert alert = new Alert(Alert.AlertType.WARNING);

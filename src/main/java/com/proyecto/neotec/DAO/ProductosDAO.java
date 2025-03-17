@@ -13,30 +13,36 @@ import java.util.List;
 
 public class ProductosDAO {
     public List<Productos> selectAllProductos() {
-        List<Productos> Productos = new ArrayList<>();
-        String sql = "SELECT idproductos,codigoProducto, marca, cantidad, precioCosto, precioUnitario, descripcion, nombreProducto FROM productos";
+        List<Productos> listaProductos = new ArrayList<>();
+        String sql = "SELECT p.idproductos, p.codigoProducto, p.marca, p.idcategoria, p.cantidad, p.precioCosto, p.precioUnitario, p.descripcion, p.nombreProducto, c.nombre FROM productos p INNER JOIN categoriaproductos c ON p.idcategoria = c.idcategoriaProductos";
+
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                Productos productos = new Productos();
-                productos.setIdProductos(rs.getInt("idproductos"));
-                productos.setCodigoProducto(rs.getString("codigoProducto"));
-                productos.setMarca(rs.getString("marca"));
-                productos.setCantidad(rs.getInt("cantidad"));
-                productos.setPrecioCosto(rs.getInt("precioCosto"));
-                productos.setPrecioUnitario(rs.getInt("precioUnitario"));
-                productos.setDescripcion(rs.getString("descripcion"));
-                productos.setNombreProducto(rs.getString("nombreProducto"));
 
-                Productos.add(productos);
+            while (rs.next()) {
+                Productos producto = new Productos();
+                producto.setIdProductos(rs.getInt("idproductos"));
+                producto.setCodigoProducto(rs.getString("codigoProducto"));
+                producto.setMarca(rs.getString("marca"));
+                producto.setCantidad(rs.getInt("cantidad"));
+                producto.setPrecioCosto(rs.getInt("precioCosto"));
+                producto.setPrecioUnitario(rs.getInt("precioUnitario"));
+                producto.setDescripcion(rs.getString("descripcion"));
+                producto.setNombreProducto(rs.getString("nombreProducto"));
+                producto.setCategoriaString(rs.getString("nombre"));
+                producto.setCategoriaInt(rs.getInt("idcategoria"));
+                listaProductos.add(producto);
+
             }
+
         } catch (SQLException e) {
             Database.handleSQLException(e);
         }
 
-        return Productos;
+        return listaProductos;
     }
+
     public List<Productos> obtenerProductoPresupuesto(int idProductos) {
         List<Productos> productos = new ArrayList<>();
         String sql = "SELECT codigoProducto, nombreProducto, precioUnitario FROM productos WHERE idproductos = ?";
@@ -62,7 +68,7 @@ public class ProductosDAO {
     }
 
     public static String agregarProducto(Productos producto) {
-        String sql = "INSERT INTO productos (codigoProducto, marca, cantidad, precioCosto, precioUnitario, descripcion,nombreProducto) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO productos (codigoProducto, marca, cantidad, precioCosto, precioUnitario, descripcion,nombreProducto,idcategoria) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         if (producto.getCodigoProducto() == null || producto.getCodigoProducto().isEmpty()) {
             throw new IllegalArgumentException("El código del producto no puede ser nulo o vacío");
         }
@@ -76,10 +82,11 @@ public class ProductosDAO {
             pstmt.setString(1, producto.getCodigoProducto());
             pstmt.setString(2, producto.getMarca());
             pstmt.setInt(3, producto.getCantidad());
-            pstmt.setInt(4, producto.getPrecioCosto());
-            pstmt.setInt(5, producto.getPrecioUnitario());
+            pstmt.setFloat(4, producto.getPrecioCosto());
+            pstmt.setFloat(5, producto.getPrecioUnitario());
             pstmt.setString(6, producto.getDescripcion());
             pstmt.setString(7, producto.getNombreProducto());
+            pstmt.setInt(8, producto.getCategoriaInt());
 
             pstmt.executeUpdate();
             return "Éxito";
@@ -89,9 +96,9 @@ public class ProductosDAO {
         }
     }
 
-    public static String modificarProducto( Productos producto) {
+    public static String modificarProducto(Productos producto) {
         String mensaje = "";
-        String sql = "UPDATE productos SET codigoProducto = ?, marca = ?, cantidad = ?, precioCosto = ?, precioUnitario = ?,descripcion =?,nombreProducto= ? WHERE idproductos = ?";
+        String sql = "UPDATE productos SET codigoProducto = ?, marca = ?, cantidad = ?, precioCosto = ?, precioUnitario = ?,descripcion =?,nombreProducto= ?,idcategoria=? WHERE idproductos = ?";
 
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -100,11 +107,12 @@ public class ProductosDAO {
             stmt.setString(1, producto.getCodigoProducto());
             stmt.setString(2, producto.getMarca());
             stmt.setInt(3, producto.getCantidad());
-            stmt.setInt(4, producto.getPrecioCosto());
-            stmt.setInt(5, producto.getPrecioUnitario());
+            stmt.setFloat(4, producto.getPrecioCosto());
+            stmt.setFloat(5, producto.getPrecioUnitario());
             stmt.setString(6, producto.getDescripcion());
             stmt.setString(7, producto.getNombreProducto());
-            stmt.setInt(8, producto.getIdProductos());
+            stmt.setInt(8, producto.getCategoriaInt());
+            stmt.setInt(9, producto.getIdProductos());
 
             // Ejecutar la actualización
             int rowsUpdated = stmt.executeUpdate();
@@ -119,6 +127,7 @@ public class ProductosDAO {
         }
         return mensaje;
     }
+
     public static void eliminarProductoSeleccionado(Productos producto) {
         String mensaje = "";
         String sql = "DELETE FROM productos WHERE codigoProducto = ?";
@@ -198,6 +207,7 @@ public class ProductosDAO {
 
         return cantidad;
     }
+
     public int obtenerIDconCodigoProducto(String codigo) {
         String query = "SELECT idProductos FROM productos WHERE codigoProducto = ?";
         int idProducto = -1; // Inicializar con un valor predeterminado en caso de error
@@ -252,4 +262,44 @@ public class ProductosDAO {
     }
 
 
+    public List<String> selectNombresCategorias() {
+        List<String> nombresCategorias = new ArrayList<>();
+        String sql = "SELECT nombre FROM categoriaproductos";
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                nombresCategorias.add(rs.getString("nombre")); // Asegúrate de que 'nombre' es el nombre correcto de la columna
+            }
+        } catch (SQLException e) {
+            Database.handleSQLException(e); // Manejo de excepción
+        }
+
+        return nombresCategorias;
+    }
+
+    public Productos obtenerProductoLinea(String codigo) {
+        Productos producto = new Productos();
+        String sql = "SELECT idproductos, codigoProducto, nombreProducto, precioUnitario FROM productos WHERE codigoProducto = ?";
+
+        try (Connection connection = Database.getConnection();
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
+
+            stmt.setString(1, codigo);
+
+            try (ResultSet resultSet = stmt.executeQuery()) {
+                if (resultSet.next()) {
+                    producto.setIdProductos(resultSet.getInt("idproductos"));
+                    producto.setCodigoProducto(resultSet.getString("codigoProducto"));
+                    producto.setNombreProducto(resultSet.getString("nombreProducto"));
+                    producto.setPrecioUnitario(resultSet.getInt("precioUnitario"));
+                }
+            }
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+        return producto;
+    }
 }

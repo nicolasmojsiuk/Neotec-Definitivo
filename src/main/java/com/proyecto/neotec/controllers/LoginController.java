@@ -107,7 +107,7 @@ public class LoginController {
             Scene escena = new Scene(root);
             Stage primaryStage = (Stage) txfUsuario.getScene().getWindow();
             primaryStage.setScene(escena);
-            primaryStage.setTitle("Obebici");
+            primaryStage.setTitle("Neotec Multiplayer");
 
             // Centrar la ventana en la pantalla
             Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();
@@ -139,7 +139,20 @@ public class LoginController {
     }
 
     @FXML
-    public void recuperarContrasenna(ActionEvent actionEvent) {
-        // Implementar lógica para recuperar la contraseña si es necesario
+    public void recuperarContrasenna() throws IOException {
+        Stage stage = (Stage) pfContrasenna.getScene().getWindow();
+        VolverPantallas.guardarEscenaAnterior(stage.getScene());
+        FXMLLoader loader = new FXMLLoader();
+        loader.setLocation(getClass().getResource("/vistas/recuperarContrasenia.fxml"));
+        Parent root = loader.load();
+        Scene escena = new Scene(root);
+        Stage primaryStage = (Stage) txfUsuario.getScene().getWindow();
+        primaryStage.setScene(escena);
+        primaryStage.setTitle("Neotec Multiplayer");
+        // Centrar la ventana en la pantalla
+        Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();
+        primaryStage.setX((screenBounds.getWidth() - primaryStage.getWidth()) / 2);
+        primaryStage.setY((screenBounds.getHeight() - primaryStage.getHeight()) / 2);
+        primaryStage.show();
     }
 }

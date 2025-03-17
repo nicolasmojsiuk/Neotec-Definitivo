@@ -11,14 +11,15 @@
    <children>
       <TableView fx:id="tablaProductos" layoutX="14.0" layoutY="71.0" prefHeight="475.0" prefWidth="1264.0">
          <columns>
-            <TableColumn fx:id="columna1" prefWidth="87.19997882843018" text="N°" />
-            <TableColumn fx:id="columna2" prefWidth="188.8000030517578" text="Codigo del Producto" />
-            <TableColumn fx:id="columna3" prefWidth="171.199951171875" text="Marca" />
-            <TableColumn fx:id="columna4" prefWidth="138.4000244140625" text="Cantidad" />
-            <TableColumn fx:id="columna5" prefWidth="149.60003662109375" text="Precio-Costo" />
-            <TableColumn fx:id="columna6" prefWidth="144.79998779296875" text="Precio Unitario" />
-            <TableColumn fx:id="columna7" prefWidth="185.59991455078125" text="Descripcion" />
-            <TableColumn fx:id="columna8" prefWidth="196.800048828125" text="Nombre del Producto" />
+            <TableColumn fx:id="columna1" prefWidth="72.0" text="N°" />
+            <TableColumn fx:id="columna2" prefWidth="150.0" text="Codigo del Producto" />
+            <TableColumn fx:id="columna3" prefWidth="150.0" text="Marca" />
+            <TableColumn fx:id="columna4" prefWidth="150.0" text="Nombre" />
+            <TableColumn fx:id="columna5" prefWidth="150.0" text="Descripcion" />
+            <TableColumn fx:id="columna6" prefWidth="150.0" text="Categoria" />
+            <TableColumn fx:id="columna7" prefWidth="150.0" text="Precio de costo" />
+            <TableColumn fx:id="columna8" prefWidth="150.0" text="Precio unitario" />
+            <TableColumn fx:id="columna9" prefWidth="150.0" text="Cantidad" />
          </columns>
       </TableView>
       <Label layoutX="14.0" layoutY="14.0" text="Productos">
@@ -37,6 +38,11 @@
          </font>
       </Button>
       <Button fx:id="btnEliminar" layoutX="1138.0" layoutY="569.0" mnemonicParsing="false" onAction="#eliminarProducto" prefHeight="35.0" prefWidth="140.0" text="Eliminar">
+         <font>
+            <Font size="16.0" />
+         </font>
+      </Button>
+      <Button fx:id="btnSeleccionar" layoutX="586.0" layoutY="569.0" mnemonicParsing="false" onAction="#mostrarCrearProducto" prefHeight="27.0" prefWidth="130.0" text="Seleccionar" visible="false">
          <font>
             <Font size="16.0" />
          </font>

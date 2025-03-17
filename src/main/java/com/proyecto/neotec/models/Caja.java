@@ -1,36 +1,41 @@
 package com.proyecto.neotec.models;
 
-import javafx.fxml.FXML;
-import javafx.scene.control.TextField;
+import java.time.LocalDateTime;
 
 public class Caja {
-    public int idoperacion;
-    public String fechayhora;
+    public int idcaja;
     public String estado;
-    public float saldoInicial;
-    public float saldoFinal;
-    public Usuario reponsable;
+    public float saldoActual;
+    public String ultimoCambio;
+
+    public Caja(int idcaja, String estado, float saldoActual, String ultimoCambio) {
+        this.idcaja = idcaja;
+        this.estado = estado;
+        this.saldoActual = saldoActual;
+        this.ultimoCambio = ultimoCambio;
+    }
 
     public Caja() {
     }
 
-    public int getIdoperacion() {
-        return idoperacion;
+    public Caja(int idcaja) {
+        this.idcaja = idcaja;
     }
 
-    public void setIdoperacion(int idoperacion) {
-        this.idoperacion = idoperacion;
+    public String getUltimoCambio() {
+        return ultimoCambio;
     }
 
-    public String getFechayhora() {
-        return fechayhora;
+    public void setUltimoCambio(String ultimoCambio) {
+        this.ultimoCambio = ultimoCambio;
     }
 
-    public void setFechayhora(String fechayhoraApertura) {
-        this.fechayhora = fechayhoraApertura;
+    public int getIdcaja() {
+        return idcaja;
     }
 
-
+    public void setIdcaja(int idcaja) {
+        this.idcaja = idcaja;
     }
 
     public String getEstado() {
@@ -41,27 +46,11 @@ public class Caja {
         this.estado = estado;
     }
 
-    public float getSaldoInicial() {
-        return saldoInicial;
+    public float getSaldoActual() {
+        return this.saldoActual;
     }
 
-    public void setSaldoInicial(float saldoInicial) {
-        this.saldoInicial = saldoInicial;
-    }
-
-    public float getSaldoFinal() {
-        return saldoFinal;
-    }
-
-    public void setSaldoFinal(float saldoFinal) {
-        this.saldoFinal = saldoFinal;
-    }
-
-    public Usuario getReponsable() {
-        return reponsable;
-    }
-
-    public void setReponsable(Usuario reponsable) {
-        this.reponsable = reponsable;
+    public void setSaldoActual(float saldoActual) {
+        this.saldoActual = saldoActual;
     }
 }

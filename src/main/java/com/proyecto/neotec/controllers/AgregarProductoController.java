@@ -12,6 +12,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.stage.Stage;
 
 import javax.swing.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
@@ -28,6 +29,8 @@ public class AgregarProductoController {
     @FXML
     public TextField txtMarcaProducto;
     @FXML
+    public ComboBox cbCategoria;
+    @FXML
     public TextField txtCantidadProducto;
     @FXML
     public TextField txtPUnitarioProducto;
@@ -37,8 +40,19 @@ public class AgregarProductoController {
     public TextArea txtDescProducto;
     @FXML
     public void initialize() {
-        restriccionesCampos(); // Aplicar restricciones a los campos
+        restriccionesCampos();
+        cargarCategorias();
+
     }
+
+    private void cargarCategorias() {
+        ProductosDAO productosDAO = new ProductosDAO();
+        List<String> nombresCategorias = productosDAO.selectNombresCategorias();
+        for (String nombre : nombresCategorias) {
+            cbCategoria.getItems().add(nombre);
+        }
+    }
+
 
     // Método para aplicar restricciones a los campos
     private void restriccionesCampos() {
@@ -82,6 +96,13 @@ public class AgregarProductoController {
         String precioU = txtPUnitarioProducto.getText();
         String desc = txtDescProducto.getText();
         String nomP = txtNomProducto.getText();
+        int cat = cbCategoria.getSelectionModel().getSelectedIndex();
+
+        System.out.println("indice categoia:"+cat);
+
+        if (cat < 0){
+            cat=0;
+        }
 
         System.out.println("Código del producto: '" + codigoP + "'");
         System.out.println("Marca: '" + marca + "'");
@@ -105,16 +126,13 @@ public class AgregarProductoController {
         pU = Integer.parseInt(precioU);
 
         Productos productoNuevo = new Productos(nomP,codigoP,marca,cant,pC,pU,desc);
+        productoNuevo.setCategoriaInt(cat);
         try {
             ProductosDAO.agregarProducto(productoNuevo);
         } catch (IllegalArgumentException e) {
             // Manejo del error, tal vez mostrando un mensaje al usuario
             System.out.println("Error al agregar producto: " + e.getMessage());
         }
-
-
-
-
         Stage stage = (Stage) btnCrear.getScene().getWindow();
         stage.close();
     }

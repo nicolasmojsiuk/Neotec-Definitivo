@@ -17,6 +17,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 
 public class VerProductoController {
@@ -42,11 +43,19 @@ public class VerProductoController {
     private TableColumn<Productos, String> columna7;
     @FXML
     private TableColumn<Productos, String> columna8;
+    @FXML
+    private TableColumn<Productos, String> columna9;
 
 
     @FXML
     private ObservableList<Productos> producto;
     private ProductosDAO productosDAO;
+    private Stage stage;
+
+    public Button btnEliminar;
+    public Button btnMod;
+    public Button btnCrearProducto;
+    public Button btnSeleccionar;
 
     @FXML
     public void initialize() {
@@ -62,13 +71,15 @@ public class VerProductoController {
         columna1.setCellValueFactory(new PropertyValueFactory<>("idProductos"));
         columna2.setCellValueFactory(new PropertyValueFactory<>("codigoProducto"));
         columna3.setCellValueFactory(new PropertyValueFactory<>("marca"));
-        columna4.setCellValueFactory(new PropertyValueFactory<>("cantidad"));
-        columna5.setCellValueFactory(new PropertyValueFactory<>("precioCosto"));
-        columna6.setCellValueFactory(new PropertyValueFactory<>("precioUnitario"));
-        columna7.setCellValueFactory(new PropertyValueFactory<>("descripcion"));
-        columna8.setCellValueFactory(new PropertyValueFactory<>("nombreProducto"));
+        columna4.setCellValueFactory(new PropertyValueFactory<>("nombreProducto"));
+        columna5.setCellValueFactory(new PropertyValueFactory<>("descripcion"));
+        columna6.setCellValueFactory(new PropertyValueFactory<>("categoriaString"));
+        columna7.setCellValueFactory(new PropertyValueFactory<>("precioCosto"));
+        columna8.setCellValueFactory(new PropertyValueFactory<>("precioUnitario"));
+        columna9.setCellValueFactory(new PropertyValueFactory<>("cantidad"));
 
         List<Productos> listaProductos = productosDAO.selectAllProductos();
+
         // Limpiar la lista observable y agregar los nuevos datos
         producto.clear();
         producto.addAll(listaProductos);
@@ -164,5 +175,29 @@ public class VerProductoController {
         alert.setHeaderText(null);
         alert.setContentText(mensaje);
         alert.showAndWait();
+    }
+    public void setStage(Stage stage) {
+        this.stage = stage;
+    }
+
+    public List<Productos> SeleccionarProductoPresupuesto() {
+        Productos selectedProduct = tablaProductos.getSelectionModel().getSelectedItem();
+
+        // Validamos si hay un producto seleccionado
+        if (selectedProduct != null) {
+            System.out.println("Seleccionado: " + selectedProduct.getNombreProducto());
+            System.out.println("id: " + selectedProduct.getIdProductos());
+            stage.close();
+            return productosDAO.obtenerProductoPresupuesto(selectedProduct.getIdProductos());
+        } else {
+            System.out.println("No se ha seleccionado ningún producto.");
+            return Collections.emptyList();
+        }
+    }
+    public void ocultarBotones() {
+        btnEliminar.setVisible(false);
+        btnMod.setVisible(false);
+        btnCrearProducto.setVisible(false);
+        btnSeleccionar.setVisible(true);
     }
 }

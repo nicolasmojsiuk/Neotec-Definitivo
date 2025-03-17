@@ -5,13 +5,17 @@ public class Productos {
     private String codigoProducto;
     private String marca;
     private int cantidad;
-    private int precioCosto;
-    private int precioUnitario;
+    private float precioCosto;
+    private float precioUnitario;
     private String descripcion;
     private String nombreProducto;
+    private String categoriaString;
+    private int categoriaInt;
+    private float totalLinea;
+
 
     // Constructor completo
-    public Productos(int idproductos, String codigoProducto, String marca, int cantidad, int precioCosto, int precioUnitario, String descripcion, String nombreProducto) {
+    public Productos(int idproductos, String codigoProducto, String marca, int cantidad, float precioCosto, float precioUnitario, String descripcion, String nombreProducto) {
         this.idproductos = idproductos;
         this.codigoProducto = codigoProducto;
         this.marca = marca;
@@ -26,8 +30,10 @@ public class Productos {
     public Productos() {
     }
 
+
+
     // Constructor para crear un nuevo producto
-    public Productos(String nomP, String codigoP, String marca, int cant, int pC, int pU, String desc) {
+    public Productos(String nomP, String codigoP, String marca, int cant, float pC, float pU, String desc) {
         this.nombreProducto = nomP;
         this.codigoProducto = codigoP;
         this.marca = marca;
@@ -38,6 +44,40 @@ public class Productos {
     }
 
     // Getters y setters
+
+
+    public float getTotalLinea() {
+        return totalLinea;
+    }
+
+    public void setTotalLinea(float totalLinea) {
+        this.totalLinea = totalLinea;
+    }
+
+    public int getIdproductos() {
+        return idproductos;
+    }
+
+    public void setIdproductos(int idproductos) {
+        this.idproductos = idproductos;
+    }
+
+    public String getCategoriaString() {
+        return categoriaString;
+    }
+
+    public void setCategoriaString(String categoriaString) {
+        this.categoriaString = categoriaString;
+    }
+
+    public int getCategoriaInt() {
+        return categoriaInt;
+    }
+
+    public void setCategoriaInt(int categoriaInt) {
+        this.categoriaInt = categoriaInt;
+    }
+
     public int getIdProductos() {
         return idproductos;
     }
@@ -70,19 +110,19 @@ public class Productos {
         this.cantidad = cantidad;
     }
 
-    public int getPrecioCosto() {
+    public float getPrecioCosto() {
         return precioCosto;
     }
 
-    public void setPrecioCosto(int precioCosto) {
+    public void setPrecioCosto(float precioCosto) {
         this.precioCosto = precioCosto;
     }
 
-    public int getPrecioUnitario() {
+    public float getPrecioUnitario() {
         return precioUnitario;
     }
 
-    public void setPrecioUnitario(int precioUnitario) {
+    public void setPrecioUnitario(float precioUnitario) {
         this.precioUnitario = precioUnitario;
     }
 

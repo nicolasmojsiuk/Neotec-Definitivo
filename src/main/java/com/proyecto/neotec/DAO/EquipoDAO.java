@@ -234,4 +234,38 @@ public class EquipoDAO {
         return equipos;
     }
 
+    public Equipos obtenerEquipoPorId(int idequipo) {
+        Equipos equipo = null; // Inicializar en null para evitar devolver un objeto vacío
+        String sql = "SELECT idequipos, idclientes, estado, observaciones, dispositivo, activo, fechaIngreso, fechaModificacion, fechaSalida FROM equipos WHERE idequipos = ?";
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idequipo);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    equipo = new Equipos(); // Instanciar solo si hay resultados
+                    equipo.setId(rs.getInt("idequipos"));
+                    equipo.setIdcliente(rs.getInt("idclientes"));
+                    equipo.setEstado(rs.getInt("estado"));
+                    equipo.setObservaciones(rs.getString("observaciones"));
+                    equipo.setDispositivo(rs.getString("dispositivo"));
+                    equipo.setActivo(rs.getInt("activo"));
+
+                    equipo.setFechaIngreso(obtenerFecha(rs, "fechaIngreso"));
+                    equipo.setFechaModificacion(obtenerFecha(rs, "fechaModificacion"));
+                    equipo.setFechaSalida(obtenerFecha(rs, "fechaSalida"));
+                }
+            }
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+        return equipo;
+    }
+
+    // Método auxiliar para manejar fechas evitando código repetitivo
+    private String obtenerFecha(ResultSet rs, String columna) throws SQLException {
+        Timestamp timestamp = rs.getTimestamp(columna);
+        return (timestamp != null) ? timestamp.toLocalDateTime().toString() : "-";
+    }
 }

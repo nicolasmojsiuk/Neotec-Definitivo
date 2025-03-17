@@ -282,7 +282,7 @@ public class VerEquiposController {
         }
     }
 
-    public void sacarPresupuesto(ActionEvent actionEvent) {
+    public void crearPresupuesto() {
         Equipos equipoSeleccionado = tablaEquipos.getSelectionModel().getSelectedItem();
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/vistas/crearPresupuestos.fxml"));
@@ -291,24 +291,20 @@ public class VerEquiposController {
             CrearPresupuestoController controller = loader.getController();
             // Pasar el usuario seleccionado al controlador
             controller.setEquipo(equipoSeleccionado);
-
             // Crear una nueva escena para el pop-up
             Scene scene = new Scene(root);
-
             // Crear un nuevo Stage (ventana) para el pop-up
             Stage stage = new Stage();
-            stage.setTitle("Sacar Presupuesto");
+            stage.setTitle("Crear Presupuesto");
             stage.setScene(scene);
             stage.initModality(Modality.APPLICATION_MODAL); // Bloquea la ventana principal hasta que el pop-up se cierre
-
             // Establecer el Stage en el controlador
             controller.setStage(stage);
-
             // Mostrar el pop-up
             stage.showAndWait();
         } catch (IOException e) {
             e.printStackTrace();
-            mostrarAlerta("Error", "Error al cargar la ventana de modificación.", Alert.AlertType.ERROR);
+            mostrarAlerta("Error", "No se puede crear presupuestos en este momento.", Alert.AlertType.ERROR);
         }
     }
 }

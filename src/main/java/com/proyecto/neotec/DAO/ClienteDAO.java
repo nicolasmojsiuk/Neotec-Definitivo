@@ -2,7 +2,6 @@ package com.proyecto.neotec.DAO;
 
 import com.proyecto.neotec.bbdd.Database;
 import com.proyecto.neotec.models.Cliente;
-import com.proyecto.neotec.models.Usuario;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -111,6 +110,109 @@ public class ClienteDAO {
         }
         return mensaje;
     }
+    public String obtenerNombre(int id) {
+        String sql = "SELECT nombre FROM clientes WHERE idclientes = ?";
+        String nombre = "";
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
+            // Establece el parámetro en el PreparedStatement
+            stmt.setInt(1, id);
 
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    nombre = rs.getString("nombre");
+                }
+            }
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+        return nombre;
+    }
+
+    public String obtenerNombrePorDni(int dni) {
+        String sql = "SELECT nombre, apellido FROM clientes WHERE dni = ?";
+        String nombre = "";
+        String apellido = "";
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            // Establece el parámetro en el PreparedStatement
+            stmt.setInt(1, dni);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    nombre = rs.getString("nombre");
+                    apellido = rs.getString("apellido");
+                }
+            }
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+        String nombreCompleto = nombre+" "+apellido;
+        return nombreCompleto;
+    }
+
+    public String obtenerNombreCompletoPorId(int id) {
+        String sql = "SELECT nombre, apellido FROM clientes WHERE idclientes = ?";
+        String nombre = "";
+        String apellido = "";
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            // Establece el parámetro en el PreparedStatement
+            stmt.setInt(1, id);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    nombre = rs.getString("nombre");
+                    apellido = rs.getString("apellido");
+                }
+            }
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+        String nombreCompleto = nombre+" "+apellido;
+        return nombreCompleto;
+    }
+
+    public int obtenerIdPorDni(int dni) {
+        String sql = "SELECT idclientes FROM clientes WHERE dni = ?";
+        int id = 0;
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            // Establece el parámetro en el PreparedStatement
+            stmt.setInt(1, dni);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                     id = rs.getInt("idclientes");
+                }
+            }
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+        return id;
+    }
+
+    public int obtenerDniPorId(int id) {
+        String sql = "SELECT dni FROM clientes WHERE idclientes = ?";
+        int dni = 0;
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            // Establece el parámetro en el PreparedStatement
+            stmt.setInt(1, id);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    dni = rs.getInt("dni");
+                }
+            }
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+        return dni;
+    }
 }
