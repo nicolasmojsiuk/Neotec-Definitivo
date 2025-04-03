@@ -74,9 +74,6 @@ public class AgregarEquipoController {
                 mostrarAlerta("Error", "No se pudo agregar el equipo", Alert.AlertType.ERROR);
             }
         }
-//        btnAgregarIMG.setOnAction(event -> e){
-//            btnAgregarIMG.setVisible(false);
-//        }
     }
 
     private void mostrarAlerta(String titulo, String mensaje, Alert.AlertType alerta) {

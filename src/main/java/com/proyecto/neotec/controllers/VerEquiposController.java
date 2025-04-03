@@ -6,6 +6,8 @@ import com.proyecto.neotec.models.Cliente;
 import com.proyecto.neotec.models.Equipos;
 import com.proyecto.neotec.util.CargarPantallas;
 import com.proyecto.neotec.util.VolverPantallas;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -14,20 +16,36 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class VerEquiposController {
-
+    @FXML
+    public TextField txtBuscardor;
+    @FXML
+    public ToggleButton toggleCliente;
+    @FXML
+    public ToggleButton toggleDispositivo;
+    @FXML
+    public ToggleButton toggleActivos;
+    @FXML
+    public DatePicker dateFechaEntrada;
+    @FXML
+    public ToggleButton toggleInactivos;
+    @FXML
+    public DatePicker dateFechaSalida;
+    @FXML
+    public Button btnEstados;
     @FXML
     private Button btnMod;
     @FXML
@@ -52,7 +70,6 @@ public class VerEquiposController {
     private TableColumn<Equipos, String> columna9;
     @FXML
     private Pane workspace;
-
     private EquipoDAO equipoDAO;
     private ObservableList<Equipos> equipos;
 
@@ -64,10 +81,42 @@ public class VerEquiposController {
     public void initialize() {
         Scene scene = btnMod.getScene();
         VolverPantallas.guardarEscenaAnterior(scene);
-        equipoDAO = new EquipoDAO();
         // Cargar datos
         cargarDatos();
+        txtBuscardor.setDisable(true);
+        ToggleGroup toggleGroup = new ToggleGroup();
+        toggleCliente.setToggleGroup(toggleGroup);
+        toggleDispositivo.setToggleGroup(toggleGroup);
+        // Listener para detectar cambios en la selección
+        toggleGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue == toggleCliente) {
+                txtBuscardor.setDisable(false);
+                Buscar();
+            } else if (newValue == toggleDispositivo) {
+                txtBuscardor.setDisable(false);
+                Buscar();
+            }else if (newValue == null){
+                txtBuscardor.setDisable(true);
+                cargarDatos();
+            }
+        });
+        ToggleGroup toggleGroupEstados = new ToggleGroup();
+        toggleActivos.setToggleGroup(toggleGroupEstados);
+        toggleInactivos.setToggleGroup(toggleGroupEstados);
+        toggleGroupEstados.selectedToggleProperty().addListener((observable, oldValue, newValue)->{
+            if (newValue == toggleActivos){
+                BuscarActivosInnactivos(1);
+                } else if (newValue == toggleInactivos) {
+                BuscarActivosInnactivos(0);
+            }
+        });
     }
+
+    private void BuscarActivosInnactivos(int estado) {
+        EquipoDAO equipoDAO = new EquipoDAO();
+        tablaEquipos.setItems((ObservableList<Equipos>) equipoDAO.filtrarPorEstado(estado));
+    }
+
 
     private void cargarDatos() {
         equipos = FXCollections.observableArrayList();
@@ -107,6 +156,7 @@ public class VerEquiposController {
 
     @FXML
     public void EliminarEquipo(ActionEvent actionEvent) {
+
         // Verifica si hay un equipo seleccionado en la tabla
         Equipos equipo = tablaEquipos.getSelectionModel().getSelectedItem();
 
@@ -282,7 +332,7 @@ public class VerEquiposController {
         }
     }
 
-    public void crearPresupuesto() {
+    public void sacarPresupuesto(ActionEvent actionEvent) {
         Equipos equipoSeleccionado = tablaEquipos.getSelectionModel().getSelectedItem();
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/vistas/crearPresupuestos.fxml"));
@@ -291,21 +341,111 @@ public class VerEquiposController {
             CrearPresupuestoController controller = loader.getController();
             // Pasar el usuario seleccionado al controlador
             controller.setEquipo(equipoSeleccionado);
+
             // Crear una nueva escena para el pop-up
             Scene scene = new Scene(root);
+
             // Crear un nuevo Stage (ventana) para el pop-up
             Stage stage = new Stage();
-            stage.setTitle("Crear Presupuesto");
+            stage.setTitle("Sacar Presupuesto");
             stage.setScene(scene);
             stage.initModality(Modality.APPLICATION_MODAL); // Bloquea la ventana principal hasta que el pop-up se cierre
+
             // Establecer el Stage en el controlador
             controller.setStage(stage);
+
             // Mostrar el pop-up
             stage.showAndWait();
         } catch (IOException e) {
             e.printStackTrace();
-            mostrarAlerta("Error", "No se puede crear presupuestos en este momento.", Alert.AlertType.ERROR);
+            mostrarAlerta("Error", "Error al cargar la ventana de modificación.", Alert.AlertType.ERROR);
         }
+    }
+
+    public void Buscar() {
+        Timeline timeline = new Timeline(
+                new KeyFrame(Duration.millis(1000), event -> {
+                    buscarClientes(txtBuscardor.getText()); // Llama al método con el texto del buscador
+                })
+        );
+        timeline.setCycleCount(1);
+
+        // Listener para detectar cambios en el texto
+        txtBuscardor.textProperty().addListener((observable, oldValue, newValue) -> {
+            timeline.stop(); // Detener la búsqueda si el usuario sigue escribiendo
+
+            if (!newValue.trim().isEmpty()) {
+                timeline.playFromStart(); // Reiniciar el temporizador de 1 segundo
+            } else {
+                actualizarTabla(new ArrayList<>()); // Vaciar la tabla si el campo está vacío
+            }
+        });
+    }
+
+    private void buscarClientes(String text) {
+        ClienteDAO clienteDAO = new ClienteDAO();
+        List<Cliente> clientes = clienteDAO.buscarClientes(text); // Obtener lista de clientes
+        actualizarTabla(clientes);
+    }
+
+    private void actualizarTabla(List<Cliente> clientes) {
+        EquipoDAO dao = new EquipoDAO();
+        List<Equipos> equipos = dao.obtenerEquiposPorClientes(clientes);
+        // Aquí puedes actualizar la tabla con la lista de equipos obtenida
+        tablaEquipos.getItems().setAll(equipos);
+    }
+
+
+
+    public void DefinirEstados(ActionEvent actionEvent) {
+
+            Dialog<String> dialog = new Dialog<>();
+            dialog.setTitle("Seleccionar Estado");
+            dialog.setHeaderText("Por favor, elige un estado:");
+
+            // Crear el ComboBox con opciones de estado
+            ComboBox<String> comboBox = new ComboBox<>();
+            List<String> estados = List.of(
+                    "Ingresado", "Revisión", "Espera autorización",
+                    "Autorizado", "Cancelado", "Reparado",
+                    "Pagado", "Entregado"
+            );
+
+            comboBox.getItems().addAll(estados);
+            comboBox.setValue(estados.get(0)); // Preseleccionar el primer estado
+
+            // Agregar el ComboBox al contenido del diálogo
+            VBox content = new VBox(10, new Label("Selecciona:"), comboBox);
+            dialog.getDialogPane().setContent(content);
+
+            // Agregar botones al diálogo
+            ButtonType btnAceptar = new ButtonType("Aceptar", ButtonBar.ButtonData.OK_DONE);
+            ButtonType btnCancelar = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
+            dialog.getDialogPane().getButtonTypes().addAll(btnAceptar, btnCancelar);
+
+            // Configurar resultado cuando se presiona "Aceptar"
+            dialog.setResultConverter(dialogButton ->
+                    dialogButton == btnAceptar ? comboBox.getValue() : null
+            );
+
+            // Mostrar el diálogo y obtener el resultado
+            Optional<String> resultado = dialog.showAndWait();
+
+            resultado.ifPresent(estadoSeleccionado -> {
+                System.out.println("Estado seleccionado: " + estadoSeleccionado);
+                Alert alert = new Alert(Alert.AlertType.INFORMATION, "Seleccionaste el estado: " + estadoSeleccionado, ButtonType.OK);
+                alert.showAndWait();
+            });
+    }
+
+    // Este es el método que limpia los recursos
+    public void limpiarRecursos() {
+        // Detener el Timeline
+//        if (timeline != null) {
+//            timeline.stop();
+//        }
+
+        // Aquí puedes limpiar otros recursos como listeners si es necesario
     }
 }
 

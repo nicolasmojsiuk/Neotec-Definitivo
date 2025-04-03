@@ -2,6 +2,7 @@ package com.proyecto.neotec.DAO;
 
 import com.proyecto.neotec.bbdd.Database;
 import com.proyecto.neotec.models.Cliente;
+import com.proyecto.neotec.models.Equipos;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -63,6 +64,8 @@ public class ClienteDAO {
         }
         return mensaje;
     }
+
+
 
 
     public static void cambiarEstadoActivo(int idCliente, int estado) {
@@ -172,8 +175,7 @@ public class ClienteDAO {
         } catch (SQLException e) {
             Database.handleSQLException(e);
         }
-        String nombreCompleto = nombre+" "+apellido;
-        return nombreCompleto;
+        return nombre+" "+apellido;
     }
 
     public int obtenerIdPorDni(int dni) {
@@ -215,4 +217,34 @@ public class ClienteDAO {
         }
         return dni;
     }
+
+    public List<Cliente> buscarClientes(String text) {
+        String sql = "SELECT * FROM clientes WHERE nombre LIKE ?";
+        List<Cliente> clientes = new ArrayList<>();
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, "%" + text + "%"); // Búsqueda parcial
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Cliente cliente = new Cliente();
+                    cliente.setIdclientes(rs.getInt("idclientes"));
+                    cliente.setNombre(rs.getString("nombre"));
+                    cliente.setApellido(rs.getString("apellido"));
+                    cliente.setEmail(rs.getString("email"));
+                    cliente.setTelefono(rs.getString("telefono"));
+                    cliente.setDni(rs.getInt("dni"));
+                    cliente.setActivo(rs.getInt("activo") == 1 ? "Activo" : "Inactivo");
+
+                    clientes.add(cliente);
+                }
+            }
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+
+        return clientes;
+    }
+
 }

@@ -12,10 +12,10 @@ import com.itextpdf.layout.element.Table;
 import com.itextpdf.layout.property.TextAlignment;
 import com.itextpdf.layout.property.UnitValue;
 import com.proyecto.neotec.DAO.ClienteDAO;
-import com.proyecto.neotec.DAO.EquipoDAO;
 import com.proyecto.neotec.DAO.PresupuestoDAO;
 import com.proyecto.neotec.DAO.ProductosDAO;
 import com.proyecto.neotec.models.Equipos;
+import com.proyecto.neotec.models.Presupuestos;
 import com.proyecto.neotec.models.Productos;
 import com.proyecto.neotec.util.MostrarAlerta;
 import com.proyecto.neotec.util.TextFieldSoloNumeros;
@@ -39,8 +39,7 @@ import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-public class CrearPresupuestoController {
-
+public class ModificarPresupuestoController {
     @FXML
     private Spinner<Integer> spCantidad;
     @FXML
@@ -74,27 +73,32 @@ public class CrearPresupuestoController {
     @FXML
     private Button btnAgregarLinea;
 
+    // Declarar la variable como atributo de clase
+    private ObservableList<Productos> productosPresupuestos = FXCollections.observableArrayList();
+
     private ObservableList<Productos> productosUtilizados;
     private Stage stage;
     private Equipos equipo;
-
-
+    private Presupuestos presupuesto;
 
     @FXML
     public void initialize() {
         //TODO: Atajo de teclas
+
         Platform.runLater(() -> {
             Scene scene = btnAgregarLinea.getScene();
             scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
                 if (event.getCode() == KeyCode.ENTER) {
                     btnAgregarLinea.fire();
                     event.consume(); // evita que el Enter haga otra acción como saltar de campo
+
                 }
             });
         });
 
         productosUtilizados = FXCollections.observableArrayList();
         tablaProductos.setItems(productosUtilizados);
+
         vincularTabla(); // Configura las columnas correctamente
 
         // Inicializar el Spinner de cantidad con valores predeterminados
@@ -118,6 +122,33 @@ public class CrearPresupuestoController {
         });
     }
 
+    private void cargarCampos() {
+        txaObs.setText(presupuesto.getObservaciones());
+        txfCostosVariables.setText(String.valueOf(presupuesto.getCostosVariables()));
+        txfManoDeObra.setText(String.valueOf(presupuesto.getCostosVariables()));
+        spTiempoReparacion.setValueFactory(
+                new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 365, presupuesto.getDiasEstimados())
+        );
+        txfTotalPresupuestado.setText(String.valueOf(presupuesto.getPrecioTotal()));
+        cargarProductosDesdePresupuesto(presupuesto.getIdpresupuesto());
+    }
+    private void cargarProductosDesdePresupuesto(int idPresupuesto) {
+        ProductosDAO productosDAO = new ProductosDAO();
+        productosPresupuestos.clear();
+        productosPresupuestos.addAll(productosDAO.obtenerProductosPorPresupuesto(idPresupuesto));
+
+        for (Productos p : productosPresupuestos) {
+            // Calculamos el total de la línea: cantidad * precio unitario
+            p.setTotalLinea(p.getCantidad() * p.getPrecioUnitario());
+
+        }
+        productosUtilizados.setAll(productosPresupuestos);
+        tablaProductos.setItems(productosUtilizados);
+    }
+
+
+
+
     private void vincularTabla() {
         // Configuración de columnas
         columnaProducto.setCellValueFactory(new PropertyValueFactory<>("nombreProducto"));
@@ -139,38 +170,43 @@ public class CrearPresupuestoController {
         this.stage = stage;
     }
 
-
     public void agregarLinea() {
         String codigo = txfCodigo.getText().trim();
 
-        // Verificar si el código está vacío
         if (codigo.isEmpty()) {
             MostrarAlerta.mostrarAlerta("Creación de Presupuesto", "Ingrese el código de un producto para agregarlo al presupuesto.", Alert.AlertType.WARNING);
             return;
         }
 
-        // Obtener el producto por código
         ProductosDAO pd = new ProductosDAO();
         Productos productoLinea = pd.obtenerProductoLinea(codigo);
 
-        // Verificar si el producto existe
         if (productoLinea == null || productoLinea.getNombreProducto() == null) {
             MostrarAlerta.mostrarAlerta("Ventas", "Producto no encontrado.", Alert.AlertType.WARNING);
             return;
         }
 
-        // Obtener la cantidad del Spinner
+        // 🚨 Verificar si el ID es válido
+        if (productoLinea.getIdProductos() <= 0) {
+            MostrarAlerta.mostrarAlerta("Error", "El producto con código " + codigo + " tiene un ID inválido.", Alert.AlertType.ERROR);
+            return;
+        }
+
         Integer cantidad = spCantidad.getValue();
         if (cantidad == null || cantidad <= 0) {
             MostrarAlerta.mostrarAlerta("Creación de Presupuesto", "Ingrese una cantidad válida.", Alert.AlertType.WARNING);
             return;
         }
 
-        // Calcular el total de la línea
         productoLinea.setCantidad(cantidad);
         productoLinea.setTotalLinea(cantidad * productoLinea.getPrecioUnitario());
 
-        // Agregar el producto a la lista y actualizar la tabla
+        // 🛑 Depuración: Imprimir datos antes de agregar
+        System.out.println("Producto agregado:");
+        System.out.println("   - ID Producto: " + productoLinea.getIdProductos());
+        System.out.println("   - Nombre: " + productoLinea.getNombreProducto());
+        System.out.println("   - Cantidad: " + productoLinea.getCantidad());
+
         productosUtilizados.add(productoLinea);
         calculatTotal();
         txfCodigo.clear();
@@ -178,28 +214,41 @@ public class CrearPresupuestoController {
     }
 
     public void calculatTotal() {
-        // verifica si el TextField está vacío y asigna un valor por defecto
-        float costosVariables = txfCostosVariables.getText().isEmpty() ? 0 : Float.parseFloat(txfCostosVariables.getText());
-        float manoDeObra = txfManoDeObra.getText().isEmpty() ? 0 : Float.parseFloat(txfManoDeObra.getText());
-        float totalProductos = 0;
+        // Obtener los valores de los campos de texto y validarlos
+        float manoDeObra = 0;
+        String manoDeObraText = txfManoDeObra.getText();
+        if (!manoDeObraText.isEmpty()) {
+            manoDeObra = Float.parseFloat(manoDeObraText);
+        }
 
+        float costosVariables = 0;
+        String costosVariablesText = txfCostosVariables.getText();
+        if (!costosVariablesText.isEmpty()) {
+            costosVariables = Float.parseFloat(costosVariablesText);
+        }
+
+        // El total de los productos debe calcularse de acuerdo con la lista de productos utilizados
+        float totalProductos = 0;
         for (Productos p1 : productosUtilizados) {
             totalProductos += p1.getTotalLinea();
         }
 
+        // Calcular el total general
         float totalGeneral = totalProductos + manoDeObra + costosVariables;
+
+        // Actualizar la interfaz de usuario (si es necesario)
+        // Por ejemplo, actualizar el campo de total
         txfTotalPresupuestado.setText(String.valueOf(totalGeneral));
     }
 
-
     public void generarPDF() {
         int respuesta = guardarPresupuesto();
-        if (respuesta==-1){
-            MostrarAlerta.mostrarAlerta("Crear Presupuesto","Error al crear el presupuesto, no se generara el PDF", Alert.AlertType.WARNING);
+        if (respuesta == -1) {
+            MostrarAlerta.mostrarAlerta("Modificar Presupuesto", "Error al modificar el presupuesto, no se generará el PDF", Alert.AlertType.WARNING);
             return;
         }
 
-        //TODO obtener fecha y hora de la bbdd para que coincida con el pdf
+        //TODO obtener fecha y hora de la BBDD para que coincida con el PDF
         PresupuestoDAO pd = new PresupuestoDAO();
         LocalDateTime fechaYhora = pd.obtenerFechaHora(respuesta);
 
@@ -208,8 +257,11 @@ public class CrearPresupuestoController {
         try {
             String fechaHora = fechaYhora.format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
             String fechaHoraFormateada = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"));
+
+            // Usa la misma ruta y nombre del archivo para sobrescribirlo
             destino = "C:/PRESUPUESTOS_NEOTEC/Presupuesto_" + respuesta + ".pdf";
 
+            // El PdfWriter sobrescribirá el archivo existente
             PdfWriter writer = new PdfWriter(destino);
             PdfDocument pdf = new PdfDocument(writer);
             Document document = new Document(pdf);
@@ -220,12 +272,12 @@ public class CrearPresupuestoController {
                     .setFontSize(14)
                     .setBold();
             document.add(titulo);
-            Paragraph subtitulo = new Paragraph("Los presupuestos estan sujetos a cambios dependiendo el tiempo de respuesta del cliente.")
+            Paragraph subtitulo = new Paragraph("Los presupuestos están sujetos a cambios dependiendo el tiempo de respuesta del cliente.")
                     .setTextAlignment(TextAlignment.CENTER)
                     .setFontSize(11);
             document.add(subtitulo);
 
-            // Info del ticket y cliente
+            // Información del ticket y cliente
             Table infoTable = new Table(new float[]{2, 3});
             infoTable.setWidth(UnitValue.createPercentValue(100));
 
@@ -288,27 +340,21 @@ public class CrearPresupuestoController {
                     .setFontSize(11)
                     .setBold();
             document.add(subtitulo3);
+
             String observaciones = "-";
-            if (! txaObs.getText().isEmpty()){
+            if (!txaObs.getText().isEmpty()) {
                 observaciones = txaObs.getText();
             }
-            Paragraph subtitulo4 = new Paragraph(observaciones)
-                    .setTextAlignment(TextAlignment.CENTER)
-                    .setFontSize(11);
-            document.add(subtitulo4);
+            document.add(new Paragraph(observaciones));
 
-
-            //calcular totales
-            // verifica si el TextField está vacío y asigna un valor por defecto
-            float costosVariables = txfCostosVariables.getText().isEmpty() ? 0 : Float.parseFloat(txfCostosVariables.getText());
-            float manoDeObra = txfManoDeObra.getText().isEmpty() ? 0 : Float.parseFloat(txfManoDeObra.getText());
+            float costosVariables = Float.parseFloat(txfCostosVariables.getText());
+            float manoDeObra = Float.parseFloat(txfManoDeObra.getText());
             float totalProductos = 0;
             for (Productos p1 : productosUtilizados){
                 totalProductos = totalProductos+p1.getTotalLinea();
             }
             float totalGeneral = totalProductos+manoDeObra+costosVariables;
             txfTotalPresupuestado.setText(String.valueOf(totalGeneral));
-
             // Totales
             Paragraph totalp = new Paragraph("Total productos: $" + totalProductos)
                     .setTextAlignment(TextAlignment.RIGHT)
@@ -345,56 +391,74 @@ public class CrearPresupuestoController {
             document.close();
 
             System.out.println("✅ Presupuesto generado en: " + destino);
+            document.close();
+            MostrarAlerta.mostrarAlerta("Modificar Presupuesto", "El presupuesto se ha modificado y el PDF ha sido actualizado.", Alert.AlertType.INFORMATION);
 
         } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        //Abrir el pdf
-        try {
-            File file = new File(destino); // "destino" es la ruta del PDF que generaste
-            if (file.exists()) {
-                Desktop.getDesktop().open(file);
-            } else {
-                System.out.println("Error al abrir el archivo");
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+            MostrarAlerta.mostrarAlerta("Error al generar el PDF", "Hubo un problema al generar el PDF: " + e.getMessage(), Alert.AlertType.ERROR);
         }
     }
     public int guardarPresupuesto() {
+        // Obtener id equipo y totales para actualizar el presupuesto
         int idequipo = equipo.getId();
-        PresupuestoDAO presupuestoDAO = new PresupuestoDAO();
-        if (presupuestoDAO.existePresupuestoParaEquipo(idequipo)) {
-            MostrarAlerta.mostrarAlerta("Crear Presupuesto", "Ya existe un presupuesto para este equipo.", Alert.AlertType.WARNING);
-            return -1;
-        }
+        float costosVariables = Float.parseFloat(txfCostosVariables.getText());
+        float manoDeObra = Float.parseFloat(txfManoDeObra.getText());
 
-        float costosVariables = txfCostosVariables.getText().isEmpty() ? 0 : Float.parseFloat(txfCostosVariables.getText());
-        float manoDeObra = txfManoDeObra.getText().isEmpty() ? 0 : Float.parseFloat(txfManoDeObra.getText());
+        // Calcular el total de productos utilizados
         float totalProductos = 0;
         for (Productos p1 : productosUtilizados) {
             totalProductos += p1.getTotalLinea();
         }
+
+        // Calcular el total general del presupuesto
         float totalGeneral = totalProductos + manoDeObra + costosVariables;
         String observaciones = txaObs.getText();
+
+        // Instancia de PresupuestoDAO
         PresupuestoDAO pd = new PresupuestoDAO();
-        int respuesta = pd.insertPresupuesto(spTiempoReparacion.getValue(), costosVariables, manoDeObra, totalGeneral, idequipo, totalProductos, observaciones);
 
-        if (respuesta == -1) {
-            MostrarAlerta.mostrarAlerta("Crear Presupuesto", "Error: El equipo ya tiene asociado un presupuesto.", Alert.AlertType.WARNING);
-            return -1;
-        }
+        // Primero, actualizar el presupuesto
+        int respuesta = pd.modificarPresupuesto(
+                presupuesto.getIdpresupuesto(),
+                spTiempoReparacion.getValue(),
+                costosVariables,
+                manoDeObra,
+                totalGeneral,
+                idequipo,
+                totalProductos,
+                observaciones
+        );
 
+        // Luego, guardar los productos utilizados en el presupuesto
         guardarProductosPresupuestos(respuesta);
+
         return respuesta;
     }
 
     private void guardarProductosPresupuestos(int idpresupuesto) {
         PresupuestoDAO pd = new PresupuestoDAO();
-        for (Productos p1 : productosUtilizados){
-            System.out.println("intento de insercion");
-            pd.insertProductoPresupuesto(idpresupuesto,p1.getIdProductos(), p1.getCantidad());
+        ProductosDAO productosDao = new ProductosDAO();
+        for (Productos p1 : productosUtilizados) {
+            System.out.println("Intentando insertar producto en presupuesto:");
+            System.out.println("   - ID Producto: " + p1.getIdProductos());
+            System.out.println("   - Cantidad: " + p1.getCantidad());
+
+            if (!productosDao.productoExiste(p1.getIdProductos())) {
+                System.out.println("⚠ ERROR: El producto con ID " + p1.getIdProductos() + " NO EXISTE en la base de datos.");
+                continue; // Evita la inserción si el producto no existe
+            }
+            if(pd.verificarProductoPresupuesto(idpresupuesto,p1.getIdProductos())){
+                pd.insertProductoPresupuesto(idpresupuesto, p1.getIdProductos(), p1.getCantidad());
+                System.out.println("✅ Producto válido, insertando en la tabla productopresupuesto...");
+
+            }
+
         }
+    }
+
+
+    public void setPresupuesto(Presupuestos presupuesto) {
+        this.presupuesto = presupuesto;
+        cargarCampos();
     }
 }

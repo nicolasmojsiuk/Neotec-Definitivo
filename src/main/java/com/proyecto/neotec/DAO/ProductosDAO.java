@@ -43,42 +43,17 @@ public class ProductosDAO {
         return listaProductos;
     }
 
-    public List<Productos> obtenerProductoPresupuesto(int idProductos) {
-        List<Productos> productos = new ArrayList<>();
-        String sql = "SELECT codigoProducto, nombreProducto, precioUnitario FROM productos WHERE idproductos = ?";
-
-        try (Connection connection = Database.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
-
-            stmt.setInt(1, idProductos);
-
-            try (ResultSet resultSet = stmt.executeQuery()) {
-                if (resultSet.next()) {
-                    Productos producto = new Productos();
-                    producto.setCodigoProducto(resultSet.getString("codigoProducto"));
-                    producto.setNombreProducto(resultSet.getString("nombreProducto"));
-                    producto.setPrecioUnitario(resultSet.getInt("precioUnitario"));
-                    productos.add(producto);  // Añadir el producto a la lista
-                }
-            }
-        } catch (SQLException e) {
-            Database.handleSQLException(e);
-        }
-        return productos;
-    }
 
     public static String agregarProducto(Productos producto) {
         String sql = "INSERT INTO productos (codigoProducto, marca, cantidad, precioCosto, precioUnitario, descripcion,nombreProducto,idcategoria) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         if (producto.getCodigoProducto() == null || producto.getCodigoProducto().isEmpty()) {
             throw new IllegalArgumentException("El código del producto no puede ser nulo o vacío");
         }
-
         try (Connection conn = Database.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             if (conn == null) {
                 return "Error: No se pudo establecer la conexión con la base de datos.";
             }
-
             pstmt.setString(1, producto.getCodigoProducto());
             pstmt.setString(2, producto.getMarca());
             pstmt.setInt(3, producto.getCantidad());
@@ -87,7 +62,6 @@ public class ProductosDAO {
             pstmt.setString(6, producto.getDescripcion());
             pstmt.setString(7, producto.getNombreProducto());
             pstmt.setInt(8, producto.getCategoriaInt());
-
             pstmt.executeUpdate();
             return "Éxito";
         } catch (SQLException e) {
@@ -197,9 +171,9 @@ public class ProductosDAO {
             // Si existe un resultado, asignar la cantidad
             if (rs.next()) {
                 cantidad = rs.getInt("cantidad");
-                System.out.println("Cantidad obtenida: " + cantidad);
+
             } else {
-                System.out.println("No se encontró el producto con ID: " + idProductos);
+
             }
         } catch (SQLException e) {
             Database.handleSQLException(e);
@@ -228,40 +202,6 @@ public class ProductosDAO {
         return idProducto; // Retornar el ID del producto o -1 si no se encontró
     }
 
-
-    public List<Productos> selectProductosUtilizados(int idPresupuesto) {
-        List<Productos> productosUtilizados = new ArrayList<>();
-        String sql = "SELECT IDproductos, cantidadUtilizada FROM producto_presupuesto WHERE IDpresupuestos = ?";
-
-        try (Connection conn = Database.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setInt(1, idPresupuesto);
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    int idProducto = rs.getInt("IDproductos");
-                    int cantidadUtilizada = rs.getInt("cantidadUtilizada");
-
-                    // Obtener detalles del producto usando el idProducto
-                    List<Productos> productoDetalles = obtenerProductoPresupuesto(idProducto);
-
-                    // Agregar la cantidad utilizada al producto
-                    if (!productoDetalles.isEmpty()) {
-                        Productos producto = productoDetalles.get(0); // Supongo que obtienes un solo producto
-                        producto.setCantidad(cantidadUtilizada);  // Suponiendo que tu clase `Productos` tiene un campo `cantidad`
-                        productosUtilizados.add(producto);
-                    }
-                }
-            }
-        } catch (SQLException e) {
-            Database.handleSQLException(e);
-        }
-
-        return productosUtilizados;
-    }
-
-
     public List<String> selectNombresCategorias() {
         List<String> nombresCategorias = new ArrayList<>();
         String sql = "SELECT nombre FROM categoriaproductos";
@@ -281,25 +221,75 @@ public class ProductosDAO {
     }
 
     public Productos obtenerProductoLinea(String codigo) {
-        Productos producto = new Productos();
-        String sql = "SELECT idproductos, codigoProducto, nombreProducto, precioUnitario FROM productos WHERE codigoProducto = ?";
+        String query = "SELECT idproductos, nombreProducto, precioUnitario FROM productos WHERE codigoProducto = ?";
+        Productos producto = null;
+
+        try (Connection con = Database.getConnection();
+             PreparedStatement ps = con.prepareStatement(query)) {
+
+            ps.setString(1, codigo);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                producto = new Productos();
+                producto.setIdProductos(rs.getInt("idproductos")); // 🚨 Asegurar que el ID se está asignando
+                producto.setNombreProducto(rs.getString("nombreProducto"));
+                producto.setPrecioUnitario(rs.getFloat("precioUnitario"));
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return producto;
+    }
+
+    public List<Productos> obtenerProductosPorPresupuesto(int idPresupuesto) {
+        List<Productos> productos = new ArrayList<>();
+        String query = "SELECT p.idproductos, p.nombreProducto, p.precioUnitario, pp.cantidadUtilizada " +
+                "FROM productopresupuesto pp " +
+                "JOIN productos p ON pp.IDproductos = p.idproductos " +
+                "WHERE pp.IDpresupuestos = ?";
 
         try (Connection connection = Database.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
+             PreparedStatement stmt = connection.prepareStatement(query)) {
 
-            stmt.setString(1, codigo);
+            stmt.setInt(1, idPresupuesto);
+            ResultSet rs = stmt.executeQuery();
 
-            try (ResultSet resultSet = stmt.executeQuery()) {
-                if (resultSet.next()) {
-                    producto.setIdProductos(resultSet.getInt("idproductos"));
-                    producto.setCodigoProducto(resultSet.getString("codigoProducto"));
-                    producto.setNombreProducto(resultSet.getString("nombreProducto"));
-                    producto.setPrecioUnitario(resultSet.getInt("precioUnitario"));
-                }
+            System.out.println("🔍 Buscando productos para el presupuesto ID: " + idPresupuesto);
+
+            while (rs.next()) {
+                Productos producto = new Productos();
+                producto.setIdProductos(rs.getInt("idproductos"));
+                producto.setNombreProducto(rs.getString("nombreProducto"));
+                producto.setPrecioUnitario(rs.getFloat("precioUnitario"));
+                producto.setCantidad(rs.getInt("cantidadUtilizada")); // Asigna la cantidad utilizada
+
+                productos.add(producto);
+                System.out.println("✅ Producto agregado: ID=" + producto.getIdProductos() + " - " + producto.getNombreProducto());
             }
+
         } catch (SQLException e) {
             Database.handleSQLException(e);
         }
-        return producto;
+        return productos;
     }
+
+    public boolean productoExiste(int idProducto) {
+        String query = "SELECT COUNT(*) FROM productos WHERE idproductos = ?";
+        try (Connection connection = Database.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)){
+            statement.setInt(1, idProducto);
+            ResultSet rs = statement.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+
 }

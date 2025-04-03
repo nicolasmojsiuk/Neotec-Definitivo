@@ -9,12 +9,12 @@
 
 <Pane fx:id="workspace" prefHeight="642.0" prefWidth="1300.0" style="-fx-background-color: #060717;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.proyecto.neotec.controllers.verPresupuestosController">
     <children>
-        <Label fx:id="lblPresupuestos" layoutX="20.0" layoutY="8.0" text="Presupuestos">
+        <Label fx:id="lblPresupuestos" layoutX="14.0" layoutY="8.0" text="Presupuestos">
             <font>
                 <Font size="29.0" />
             </font>
         </Label>
-        <TableView fx:id="tablaPresupuestos" layoutX="20.0" layoutY="51.0" prefHeight="510.0" prefWidth="1263.0">
+        <TableView fx:id="tablaPresupuestos" layoutX="20.0" layoutY="64.0" prefHeight="506.0" prefWidth="1262.0">
             <columns>
                 <TableColumn fx:id="columna1" prefWidth="67.0" text="N°" />
                 <TableColumn fx:id="columna2" prefWidth="280.0" text="Equipo" />
@@ -31,12 +31,17 @@
                 <Font size="16.0" />
             </font>
         </Button>
-      <Button fx:id="btnCrearPresupuesto" layoutX="877.0" layoutY="574.0" mnemonicParsing="false" onAction="#crearPresupuesto" prefHeight="35.0" prefWidth="199.0" text="Crear presupuesto">
-         <font>
-            <Font size="16.0" />
-         </font>
-      </Button>
-      <Button fx:id="btnModPresu" layoutX="668.0" layoutY="574.0" mnemonicParsing="false" onAction="#modificarPresupuesto" prefHeight="35.0" prefWidth="199.0" text="Modificar presupuesto ">
+        <Button fx:id="btnCrearPresupuesto" layoutX="877.0" layoutY="574.0" mnemonicParsing="false" onAction="#crearPresupuesto" prefHeight="35.0" prefWidth="199.0" text="Crear presupuesto">
+            <font>
+                <Font size="16.0" />
+            </font>
+        </Button>
+        <Button fx:id="btnModPresu" layoutX="668.0" layoutY="574.0" mnemonicParsing="false" onAction="#modificarPresupuesto" prefHeight="35.0" prefWidth="199.0" text="Modificar presupuesto ">
+            <font>
+                <Font size="16.0" />
+            </font>
+        </Button>
+      <Button fx:id="btnPagarPresupuesto" layoutX="460.0" layoutY="574.0" mnemonicParsing="false" onAction="#pagarPresupuesto" prefHeight="35.0" prefWidth="199.0" text="Pagar Presupuesto">
          <font>
             <Font size="16.0" />
          </font>
