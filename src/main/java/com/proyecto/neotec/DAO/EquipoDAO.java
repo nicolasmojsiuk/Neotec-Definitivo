@@ -10,7 +10,6 @@ import java.util.List;
 
 public class EquipoDAO {
     public List<Equipos> selectAllEquipos() {
-
         List<Equipos> equipos = new ArrayList<>();
         String sql = "SELECT idequipos, idclientes, estado, observaciones,dispositivo,activo, fechaIngreso, fechaModificacion,fechaSalida FROM equipos";
 
@@ -61,7 +60,7 @@ public class EquipoDAO {
         return equipos;
     }
 
-    public boolean AgregarEquipo(Equipos equipos) {
+    public boolean AgregarEquipoConImagenes(Equipos equipos) {
         String sql = "INSERT INTO equipos (idclientes,dispositivo,estado,observaciones,activo,img1,img2,img3,img4,fechaIngreso) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -85,15 +84,15 @@ public class EquipoDAO {
     }
 
     public boolean ModificarEquipo(Equipos equipos){
-        String sql = "UPDATE equipos SET idclientes = ?, dispositivo = ?, estado = ?, observaciones = ?, fechaModificacion = now() WHERE idequipos = ?";
+        String sql = "UPDATE equipos SET idclientes = ?, dispositivo = ?, estado = ?, observaciones = ?, activo = ?,  fechaModificacion = now() WHERE idequipos = ?";
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-
             stmt.setInt(1, equipos.getIdcliente());
             stmt.setString(2, equipos.getDispositivo());
             stmt.setInt(3, equipos.getEstado());
             stmt.setString(4, equipos.getObservaciones());
-            stmt.setInt(5,equipos.getId());
+            stmt.setInt(5, equipos.getActivo());
+            stmt.setInt(6, equipos.getId());
             stmt.executeUpdate();
             return true;
         } catch (SQLException e) {
@@ -102,8 +101,7 @@ public class EquipoDAO {
         }
     }
 
-
-        // Método para obtener las imágenes desde la base de datos y devolver una lista de rutas
+    // Método para obtener las imágenes desde la base de datos y devolver una lista de rutas
     public List<String> obtenerImagenes(Equipos equipo) {
         List<String> rutasImagenes = new ArrayList<>();
 
@@ -158,7 +156,7 @@ public class EquipoDAO {
         }
     }
 
-    public int obtenerIDCliente(String duenno) {
+    public int obtenerIDCliente(String dni) {
         int idCliente = 0;
         String query = "SELECT idclientes FROM clientes WHERE dni = ?";
 
@@ -166,7 +164,7 @@ public class EquipoDAO {
              PreparedStatement stmt = conn.prepareStatement(query)) {
 
             // Establecer el valor del parámetro de la consulta
-            stmt.setString(1, duenno);
+            stmt.setString(1, dni);
 
             // Ejecutar la consulta y obtener el resultado
             ResultSet rs = stmt.executeQuery();
@@ -201,30 +199,12 @@ public class EquipoDAO {
             if (rs.next()) {
                 dni = (rs.getString("dni"));
             }
-
         } catch (SQLException e) {
             Database.handleSQLException(e);
         }
-
         // Retornar el valor de dni (puede ser vacío si no hay coincidencia)
         return dni;
     }
-
-    public void cambiarEstadoActivo(int idEquipo, int nuevoEstado) {
-        String sql = "UPDATE equipos SET activo = ? WHERE idequipos = ?";
-
-        try (Connection conn = Database.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setInt(1, nuevoEstado);
-            stmt.setInt(2, idEquipo);
-
-            stmt.executeUpdate();
-        } catch (SQLException e) {
-            Database.handleSQLException(e);
-        }
-    }
-
     public Equipos obtenerPropietario(int idEquipo) {
         Equipos equipos = new Equipos();
         String sql = "SELECT dispositivo, idclientes FROM equipos WHERE idequipos = ?";
@@ -310,6 +290,7 @@ public class EquipoDAO {
                 query.append(",");
             }
         }
+
         query.append(")");
 
         try (Connection conn = Database.getConnection();
@@ -343,24 +324,30 @@ public class EquipoDAO {
 
         return equipos;
     }
-    public List<Equipos> filtrarPorEstado(int estado) {
+
+    public List<Equipos> filtrarActivoInnactivo(int estado) {
         List<Equipos> equipos = new ArrayList<>();
-        String query = "SELECT * FROM equipo WHERE estado = ?";
+        String query = "SELECT * FROM equipos WHERE activo = ?"; // Filtrando por estado
 
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
-
             stmt.setInt(1, estado);
             ResultSet rs = stmt.executeQuery();
-
+            EquipoDAO equipoDAO = new EquipoDAO(); // Crear solo una instancia
             while (rs.next()) {
-                EquipoDAO equipoDAO= new  EquipoDAO();
                 Equipos equipo = new Equipos();
+
                 equipo.setId(rs.getInt("idequipos"));
-                equipo.setDispositivo(rs.getString("dispositivo"))        ;
-                equipo.setObservaciones(rs.getString("descripcion"));
+                equipo.setDispositivo(rs.getString("dispositivo"));
                 equipo.setActivo(rs.getInt("activo"));
+                equipo.setEstado(rs.getInt("estado"));
+                equipo.setFechaIngreso(rs.getString("fechaIngreso"));
+                equipo.setFechaModificacion(rs.getString("fechaModificacion"));
+                equipo.setFechaSalida(rs.getString("fechaSalida"));
+                equipo.setObservaciones(rs.getString("observaciones"));
+                // Obtener el propietario
                 equipo.setIdcliente(equipoDAO.obtenerPropietario(equipo.getId()).getIdcliente());
+
                 equipos.add(equipo);
             }
 
@@ -369,6 +356,227 @@ public class EquipoDAO {
         }
 
         return equipos;
+    }
+
+
+
+    public List<Equipos> filtrarPorEstadoEquipo(int estado) {
+        List<Equipos> equipos = new ArrayList<>();
+        String query = "SELECT * FROM equipos WHERE estado = ?"; // Filtrando por estado
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setInt(1, estado);
+            ResultSet rs = stmt.executeQuery();
+            EquipoDAO equipoDAO = new EquipoDAO(); // Crear solo una instancia
+            while (rs.next()) {
+                Equipos equipo = new Equipos();
+
+                equipo.setId(rs.getInt("idequipos"));
+                equipo.setDispositivo(rs.getString("dispositivo"));
+                equipo.setActivo(rs.getInt("activo"));
+                equipo.setEstado(rs.getInt("estado"));
+                equipo.setFechaIngreso(rs.getString("fechaIngreso"));
+                equipo.setFechaModificacion(rs.getString("fechaModificacion"));
+                equipo.setFechaSalida(rs.getString("fechaSalida"));
+                equipo.setObservaciones(rs.getString("observaciones"));
+                // Obtener el propietario
+                equipo.setIdcliente(equipoDAO.obtenerPropietario(equipo.getId()).getIdcliente());
+
+                equipos.add(equipo);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return equipos;
+    }
+    public boolean AgregarEquipoSinImagenes(Equipos equipoSinImagenes) {
+        String sql = "INSERT INTO equipos (idclientes, dispositivo, estado, observaciones, activo, fechaIngreso) VALUES (?, ?, ?, ?, ?, NOW())";
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, equipoSinImagenes.getIdcliente());
+            stmt.setString(2, equipoSinImagenes.getDispositivo());
+    //ver
+            System.out.println("estado de equipo sin imagenes "+equipoSinImagenes.getEstado());
+            stmt.setInt(3, equipoSinImagenes.getEstado());
+            stmt.setString(4, equipoSinImagenes.getObservaciones());
+            stmt.setInt(5, 1); // Estado activo predeterminado
+            stmt.executeUpdate();
+            return true;
+
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+            return false; // Retornar false si hubo una excepción
+        }
+    }
+
+    public boolean equipoTieneImagenes(int idEquipo) {
+        String query = "SELECT img1, img2, img3, img4 FROM equipos WHERE idequipos = ?";
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setInt(1, idEquipo);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                return rs.getString("img1") != null || rs.getString("img2") != null ||
+                        rs.getString("img3") != null || rs.getString("img4") != null;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public List<Equipos> buscarDispositivo(String text) {
+        String sql = "SELECT * FROM equipos WHERE dispositivo LIKE ?";
+        List<Equipos> equipos = new ArrayList<>();
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, "%" + text + "%"); // Búsqueda parcial
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Equipos equipo = new Equipos();
+                    equipo.setId(rs.getInt("idequipos"));
+                    equipo.setDispositivo(rs.getString("dispositivo"));
+                    equipo.setActivo(rs.getInt("activo"));
+                    equipo.setEstado(rs.getInt("estado"));
+                    equipo.setIdcliente(rs.getInt("idclientes"));
+                    equipo.setFechaIngreso(rs.getString("fechaIngreso"));
+                    equipo.setFechaModificacion(rs.getString("fechaModificacion"));
+                    equipo.setFechaSalida(rs.getString("fechaSalida"));
+                    equipo.setObservaciones(rs.getString("observaciones"));
+
+                    equipos.add(equipo);
+                }
+            }
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+        return equipos;
+    }
+
+    public boolean verificarEstadoEquipo(int idEquipo, int estadoEsperado) {
+        String sql = "SELECT estado FROM equipos WHERE idequipos = ?";
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idEquipo);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                int estadoBD = rs.getInt("estado");
+                return estadoBD == estadoEsperado;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
+    public List<Equipos> buscarPorFechaIngreso(String texto) {
+        List<Equipos> equipos = new ArrayList<>();
+        String query = "SELECT * FROM equipos WHERE DATE(fechaIngreso) = ?";
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+
+            stmt.setString(1, texto); // formato "yyyy-MM-dd"
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Equipos equipo = new Equipos();
+                    equipo.setId(rs.getInt("idequipos"));
+                    equipo.setDispositivo(rs.getString("dispositivo"));
+                    equipo.setActivo(rs.getInt("activo"));
+                    equipo.setEstado(rs.getInt("estado"));
+                    equipo.setIdcliente(rs.getInt("idclientes"));
+                    equipo.setFechaIngreso(rs.getString("fechaIngreso"));
+                    equipo.setFechaModificacion(rs.getString("fechaModificacion"));
+                    equipo.setFechaSalida(rs.getString("fechaSalida"));
+                    equipo.setObservaciones(rs.getString("observaciones"));
+                    equipos.add(equipo);
+                }
+            }
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+        return equipos;
+    }
+
+
+    public List<Equipos> buscarFechaSalida(String texto) {
+        List<Equipos> equipos = new ArrayList<>();
+        String query = "SELECT * FROM equipos WHERE DATE(fechaSalida) = ?";
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+
+            stmt.setString(1, texto); // texto debe ser en formato "yyyy-MM-dd"
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Equipos equipo = new Equipos();
+                    equipo.setId(rs.getInt("idequipos"));
+                    equipo.setDispositivo(rs.getString("dispositivo"));
+                    equipo.setActivo(rs.getInt("activo"));
+                    equipo.setEstado(rs.getInt("estado"));
+                    equipo.setIdcliente(rs.getInt("idclientes"));
+                    equipo.setFechaIngreso(rs.getString("fechaIngreso"));
+                    equipo.setFechaModificacion(rs.getString("fechaModificacion"));
+                    equipo.setFechaSalida(rs.getString("fechaSalida"));
+                    equipo.setObservaciones(rs.getString("observaciones"));
+                    equipos.add(equipo);
+                }
+            }
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+        return equipos;
+    }
+    public int obtenerEstadoEquipoIdDesdeBD(String descripcion) {
+        String query = "SELECT idestadosequipos FROM estadosequipos WHERE descripcion = ?";
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+
+            stmt.setString(1, descripcion);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("idestadosequipos");
+                }
+            }
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+        return -1; // Estado no encontrado
+    }
+
+    public String obtenerDescripcionEstadoEquipoDesdeBD(int idEstado) {
+        String query = "SELECT descripcion FROM estadosequipos WHERE idestadosequipos = ?";
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+
+            stmt.setInt(1, idEstado);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("descripcion");
+                }
+            }
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+        return "Desconocido"; // ID no válido
     }
 
 

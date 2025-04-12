@@ -66,12 +66,7 @@ public class PresupuestoDAO {
     }
 
     public int insertPresupuesto(int tiempoEstimado, float costoVariable, float costoManoObra, float totalGeneral, int idEquipo, float totalProductos, String obs) {
-        if (existePresupuestoParaEquipo(idEquipo)) {
-            System.out.println("⚠ No se puede crear el presupuesto: Ya existe uno registrado para este equipo.");
-            return -1; // Indica que no se pudo insertar
-        }
-
-        String query = "INSERT INTO presupuestos (idEquipo, costosVariables, estado, precioTotal, diasEstimados, costoManoDeObra, totalProductos, observaciones, fechaHora) VALUES (?, ?, 2, ?, ?, ?, ?, ?, NOW())";
+        String query = "INSERT INTO presupuestos (idEquipo, costosVariables, precioTotal, diasEstimados, costoManoDeObra, totalProductos, observaciones, estado, fechaHora) VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW())";
         int IDgenerado = -1;
 
         try (Connection conn = Database.getConnection();
@@ -95,7 +90,9 @@ public class PresupuestoDAO {
         } catch (SQLException e) {
             Database.handleSQLException(e);
         }
-
+        EquipoDAO cambiarestadoEquipo = new EquipoDAO();
+        //Se cambia de revisión a Espera autorización el equipo:
+        cambiarestadoEquipo.actualizarEstadoEquipo(idEquipo,1);
         return IDgenerado;
     }
 
@@ -196,5 +193,139 @@ public class PresupuestoDAO {
 
         return false; // No se encontró el producto en el presupuesto
     }
+
+    public void cambiarEstadoPresupuesto(Presupuestos presupuesto, int estadoSeleccionado) {
+
+        String query = "UPDATE presupuestos SET estado = ? WHERE idpresupuestos = ?";
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+
+            stmt.setInt(1, estadoSeleccionado);
+            stmt.setInt(2, presupuesto.getIdpresupuesto());
+
+            int filasAfectadas = stmt.executeUpdate();
+
+            if (filasAfectadas > 0) {
+                System.out.println("Estado del presupuesto actualizado correctamente.");
+            } else {
+                System.out.println("No se encontró el presupuesto con ID: " + presupuesto.getIdpresupuesto());
+            }
+
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+    }
+
+    public int obtenerEstadoIntDesdeBD(String descripcion) {
+        String query = "SELECT idestadospresupuestos FROM estadospresupuestos WHERE descripcion = ?";
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+
+            stmt.setString(1, descripcion);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("idestadospresupuestos");
+                }
+            }
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+        return -1; // Estado no encontrado
+    }
+
+    public String obtenerDescripcionEstadoDesdeBD(int idEstado) {
+        String query = "SELECT descripcion FROM estadospresupuestos WHERE idestadospresupuestos = ?";
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+
+            stmt.setInt(1, idEstado);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("descripcion");
+                }
+            }
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+        return "Desconocido"; // ID no válido
+    }
+
+    public boolean verificarEstadoPresupuesto(Presupuestos pr, int estadoEsperado) {
+        String sql = "SELECT estado FROM presupuestos WHERE idpresupuestos = ?";
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, pr.getIdpresupuesto());
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    int estadoActual = rs.getInt("estado");
+                    return estadoActual == estadoEsperado;
+                }
+            }
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+
+        return false; // Si no se encontró el presupuesto o hubo error
+    }
+    public boolean estaPagadoEnEstado(int idPresupuesto) {
+        String sql = "SELECT 1 FROM presupuestos WHERE idpresupuestos = ? AND estado = 4 LIMIT 1";
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idPresupuesto);
+            ResultSet rs = stmt.executeQuery();
+            return rs.next();
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+
+        // Método para obtener el presupuesto asociado a un equipo
+        public Presupuestos obtenerPresupuestoPorIdEquipo(int idEquipo) {
+            Presupuestos presupuesto = null;
+            // SQL para obtener el presupuesto con el idEquipo
+            String query = "SELECT * FROM presupuestos WHERE idEquipo = ?";
+
+            try (Connection conn = Database.getConnection(); // Usamos un método para obtener la conexión
+                 PreparedStatement stmt = conn.prepareStatement(query)) {
+
+                // Establecer el valor del idEquipo en la consulta
+                stmt.setInt(1, idEquipo);
+
+                // Ejecutar la consulta
+                ResultSet rs = stmt.executeQuery();
+
+                // Si se encuentra el presupuesto, creamos el objeto y lo devolvemos
+                if (rs.next()) {
+                    presupuesto = new Presupuestos();
+                    presupuesto.setIdpresupuesto(rs.getInt("idpresupuestos"));
+                    presupuesto.setIdEquipo(rs.getInt("idEquipo"));
+                    presupuesto.setCostosVariables(rs.getInt("costosVariables"));
+                    presupuesto.setEstado(rs.getInt("estado"));
+                    presupuesto.setPrecioTotal(rs.getInt("precioTotal"));
+                    presupuesto.setDiasEstimados(rs.getInt("diasEstimados"));
+                    presupuesto.setManoDeObra(rs.getInt("costoManoDeObra"));
+                    presupuesto.setObservaciones(rs.getString("observaciones"));
+                    presupuesto.setTotalProductos(rs.getFloat("totalProductos"));
+                    presupuesto.setFechaHora(rs.getString("fechaHora"));
+                }
+            } catch (SQLException e) {
+                e.printStackTrace(); // Manejo de errores
+            }
+
+            return presupuesto; // Devuelve el presupuesto encontrado o null si no existe
+        }
 
 }

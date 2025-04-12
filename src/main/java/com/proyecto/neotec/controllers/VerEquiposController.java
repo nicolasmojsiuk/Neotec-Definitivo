@@ -2,9 +2,10 @@ package com.proyecto.neotec.controllers;
 
 import com.proyecto.neotec.DAO.ClienteDAO;
 import com.proyecto.neotec.DAO.EquipoDAO;
+import com.proyecto.neotec.DAO.PresupuestoDAO;
 import com.proyecto.neotec.models.Cliente;
 import com.proyecto.neotec.models.Equipos;
-import com.proyecto.neotec.util.CargarPantallas;
+import com.proyecto.neotec.util.MostrarAlerta;
 import com.proyecto.neotec.util.VolverPantallas;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -25,6 +26,8 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -70,7 +73,7 @@ public class VerEquiposController {
     private TableColumn<Equipos, String> columna9;
     @FXML
     private Pane workspace;
-    private EquipoDAO equipoDAO;
+
     private ObservableList<Equipos> equipos;
 
     // Constructor sin argumentos
@@ -91,49 +94,66 @@ public class VerEquiposController {
         toggleGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue == toggleCliente) {
                 txtBuscardor.setDisable(false);
-                Buscar();
+                BuscarporCliente();
             } else if (newValue == toggleDispositivo) {
                 txtBuscardor.setDisable(false);
-                Buscar();
+                BuscarporDispositivo();
             }else if (newValue == null){
                 txtBuscardor.setDisable(true);
+                txtBuscardor.setText("");
                 cargarDatos();
             }
         });
         ToggleGroup toggleGroupEstados = new ToggleGroup();
         toggleActivos.setToggleGroup(toggleGroupEstados);
         toggleInactivos.setToggleGroup(toggleGroupEstados);
-        toggleGroupEstados.selectedToggleProperty().addListener((observable, oldValue, newValue)->{
-            if (newValue == toggleActivos){
-                BuscarActivosInnactivos(1);
-                } else if (newValue == toggleInactivos) {
-                BuscarActivosInnactivos(0);
+        
+        toggleGroupEstados.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue != null) {
+                ToggleButton selectedToggle = (ToggleButton) newValue;
+                if (selectedToggle.equals(toggleActivos)) {
+                    BuscarActivosInnactivos(1);
+                } else if (selectedToggle.equals(toggleInactivos)) {
+                    BuscarActivosInnactivos(0);
+                }
+            }else {
+                cargarDatos();
             }
         });
+        //evitar ingreso manual para no tener problemas.
+        dateFechaEntrada.getEditor().setDisable(true);
+        dateFechaEntrada.setEditable(false);
+
+        dateFechaSalida.getEditor().setDisable(true);
+        dateFechaSalida.setEditable(false);
+
+        dateFechaEntrada.valueProperty().addListener((observable,oldValue, newValue)->{
+            buscarPorFechaEntrada(dateFechaEntrada);
+        });
+        dateFechaSalida.valueProperty().addListener((observable, oldvalue, newValue) ->{
+            buscarPorFechasalida(dateFechaSalida);
+        });
     }
-
-    private void BuscarActivosInnactivos(int estado) {
-        EquipoDAO equipoDAO = new EquipoDAO();
-        tablaEquipos.setItems((ObservableList<Equipos>) equipoDAO.filtrarPorEstado(estado));
-    }
-
-
     private void cargarDatos() {
+        EquipoDAO equipoDAO = new EquipoDAO();
         equipos = FXCollections.observableArrayList();
         // Configurar columnas
         columna1.setCellValueFactory(new PropertyValueFactory<>("id"));
-        columna2.setCellValueFactory(new PropertyValueFactory<>("idcliente"));
-        columna3.setCellValueFactory(cellData -> {
-            // Obtener el valor de estado del objeto `Equipos`
+        columna2.setCellValueFactory(cellData -> {
+            int idCliente = cellData.getValue().getIdcliente();
+            ClienteDAO clienteDAO = new ClienteDAO();
+            String nombreCompleto = clienteDAO.obtenerNombreCompletoPorId(idCliente);
+            return new SimpleStringProperty(nombreCompleto);
+        });
+        columna3.setCellValueFactory(cellData -> {// Obtener el valor de estado del objeto `Equipos`
             int estadoInt = cellData.getValue().getEstado();
             // Convertir el valor int a una cadena de texto usando el método anterior
-            String estadoString = obtenerEstadoString(estadoInt);
+            String estadoString = equipoDAO.obtenerDescripcionEstadoEquipoDesdeBD(estadoInt);
             // Retornar como una `SimpleStringProperty` para que la tabla pueda manejarlo
             return new SimpleStringProperty(estadoString);
         });
         columna4.setCellValueFactory(new PropertyValueFactory<>("observaciones"));
         columna5.setCellValueFactory(new PropertyValueFactory<>("dispositivo"));
-        columna6.setCellValueFactory(new PropertyValueFactory<>("activo"));
         columna6.setCellValueFactory(cellData -> {
             // Obtener el valor activo del objeto `Equipos`
             int activoInt = cellData.getValue().getActivo();
@@ -145,7 +165,6 @@ public class VerEquiposController {
         columna7.setCellValueFactory(new PropertyValueFactory<>("fechaIngreso"));
         columna8.setCellValueFactory(new PropertyValueFactory<>("fechaModificacion"));
         columna9.setCellValueFactory(new PropertyValueFactory<>("fechaSalida"));
-
         List<Equipos> listaEquipos = equipoDAO.selectAllEquipos();
         // Limpiar la lista observable y agregar los nuevos datos
         equipos.clear();
@@ -153,38 +172,39 @@ public class VerEquiposController {
         // Configurar el TableView con la lista observable
         tablaEquipos.setItems(equipos);
     }
+    public void buscarPorFechasalida(DatePicker datePicker) {
+        LocalDate fecha = datePicker.getValue();
+        if (fecha != null) {
+            //  mismo formato que espera la base de datos
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            String fechaFormateada = fecha.format(formatter);
 
-    @FXML
-    public void EliminarEquipo(ActionEvent actionEvent) {
-
-        // Verifica si hay un equipo seleccionado en la tabla
-        Equipos equipo = tablaEquipos.getSelectionModel().getSelectedItem();
-
-        if (equipo != null) {
-            int idEquipo = equipo.getId(); // Obtener el ID del equipo seleccionado
-            int nuevoEstado = (equipo.getActivo() == 1) ? 0 : 1; // Si está activo, lo desactiva, y viceversa
-
-            // Llamar al método del DAO para cambiar el estado en la base de datos
-            equipoDAO.cambiarEstadoActivo(idEquipo, nuevoEstado);
-
-            // Actualizar el estado del equipo en la tabla
-            cargarDatos();
-
-            // Mostrar alerta de confirmación
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Activación / Desactivación");
-            alert.setHeaderText(null);
-            alert.setContentText("Se ha cambiado el estado del equipo " + equipo.getDispositivo() + " del cliente " + equipo.getIdcliente());
-            alert.showAndWait();
-        } else {
-            // Mostrar alerta indicando que no hay un equipo seleccionado
-            Alert alert = new Alert(Alert.AlertType.WARNING);
-            alert.setTitle("Activación / Desactivación");
-            alert.setContentText("Debe seleccionar un equipo en la tabla");
-            alert.showAndWait();
+            EquipoDAO equiposDAO = new EquipoDAO();
+            List<Equipos> listaEquipos = equiposDAO.buscarFechaSalida(fechaFormateada);
+            actualizarTabla(null, listaEquipos);
         }
     }
 
+    public void buscarPorFechaEntrada(DatePicker datePicker) {
+        LocalDate fecha = datePicker.getValue();
+        if (fecha != null) {
+            //  mismo formato que espera la base de datos
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            String fechaFormateada = fecha.format(formatter);
+
+            EquipoDAO equiposDAO = new EquipoDAO();
+            List<Equipos> listaEquipos = equiposDAO.buscarPorFechaIngreso(fechaFormateada);
+            actualizarTabla(null, listaEquipos);
+        }
+    }
+    private void BuscarActivosInnactivos(int estado) {
+        EquipoDAO equipoDAO = new EquipoDAO();
+        List<Equipos> listaEquipos =equipoDAO.filtrarActivoInnactivo(estado);
+        equipos.clear();
+        equipos.addAll(listaEquipos);
+        // Configurar el TableView con la lista observable
+        tablaEquipos.setItems(equipos);
+    }
 
     @FXML
     public void mostrarFormAgregarEquipos(ActionEvent actionEvent) {
@@ -250,7 +270,7 @@ public class VerEquiposController {
 
             // Crear un nuevo Stage (ventana) para el pop-up
             Stage stage = new Stage();
-            stage.setTitle("Modificar Usuario");
+            stage.setTitle("Modificar Equipo");
             stage.setScene(scene);
             stage.initModality(Modality.APPLICATION_MODAL); // Bloquea la ventana principal hasta que el pop-up se cierre
 
@@ -283,19 +303,30 @@ public class VerEquiposController {
             mostrarAlerta("Error", "No se ha seleccionado ningún equipo.", Alert.AlertType.ERROR);
             return;
         }
+
+        // Consultar si el equipo tiene imágenes almacenadas en la base de datos
+        EquipoDAO equipoDAO = new EquipoDAO();
+        boolean tieneImagenes = equipoDAO.equipoTieneImagenes(equipoSeleccionado.getId());
+
+        if (!tieneImagenes) {
+            mostrarAlerta("Sin imágenes", "Este equipo no tiene imágenes almacenadas.", Alert.AlertType.INFORMATION);
+            return;
+        }
+
+        // Si tiene imágenes, continuar con la apertura de la ventana
         VerImagenesController.equipo = equipoSeleccionado;
-        //cambiar el contenido de la scene mostrar imagenes ""
+
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/vistas/verImagenes.fxml"));
             Parent root = loader.load();
 
             // Obtener el controlador del archivo FXML
-             VerImagenesController controller = loader.getController();
+            VerImagenesController controller = loader.getController();
+
             // Crear una nueva escena para el pop-up
             Scene scene = new Scene(root);
-            // Crear un nuevo Stage (ventana) para el pop-up
             Stage stage = new Stage();
-            stage.setTitle("Ver Imagenes");
+            stage.setTitle("Ver Imágenes");
             stage.setScene(scene);
             stage.initModality(Modality.APPLICATION_MODAL); // Bloquea la ventana principal hasta que el pop-up se cierre
 
@@ -309,60 +340,68 @@ public class VerEquiposController {
             mostrarAlerta("Error", "Error al cargar la ventana.", Alert.AlertType.ERROR);
         }
     }
-    private String obtenerEstadoString(int estado) {
-        switch (estado) {
-            case 1:
-                return "Ingresado";
-            case 2:
-                return "En espera de revisión";
-            case 3:
-                return "Revisión";
-            case 4:
-                return "En espera de autorización";
-            case 5:
-                return "Autorizado";
-            case 6:
-                return "Cancelado";
-            case 7:
-                return "Reparado";
-            case 8:
-                return "Pagado";
-            default:
-                return "Desconocido";
-        }
-    }
 
     public void sacarPresupuesto(ActionEvent actionEvent) {
         Equipos equipoSeleccionado = tablaEquipos.getSelectionModel().getSelectedItem();
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/vistas/crearPresupuestos.fxml"));
-            Parent root = loader.load();
-            // Obtener el controlador del archivo FXML
-            CrearPresupuestoController controller = loader.getController();
-            // Pasar el usuario seleccionado al controlador
-            controller.setEquipo(equipoSeleccionado);
+        PresupuestoDAO presupuestoDAO = new PresupuestoDAO();
+        if (presupuestoDAO.existePresupuestoParaEquipo(equipoSeleccionado.getId())) {
+            MostrarAlerta.mostrarAlerta("No se puede crear el presupuesto",": Ya existe un presupuesto registrado para este equipo.", Alert.AlertType.INFORMATION);
+        }else {
+            try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/vistas/crearPresupuestos.fxml"));
+                Parent root = loader.load();
+                // Obtener el controlador del archivo FXML
+                CrearPresupuestoController controller = loader.getController();
+                // Pasar el usuario seleccionado al controlador
+                controller.setEquipo(equipoSeleccionado);
 
-            // Crear una nueva escena para el pop-up
-            Scene scene = new Scene(root);
+                // Crear una nueva escena para el pop-up
+                Scene scene = new Scene(root);
 
-            // Crear un nuevo Stage (ventana) para el pop-up
-            Stage stage = new Stage();
-            stage.setTitle("Sacar Presupuesto");
-            stage.setScene(scene);
-            stage.initModality(Modality.APPLICATION_MODAL); // Bloquea la ventana principal hasta que el pop-up se cierre
+                // Crear un nuevo Stage (ventana) para el pop-up
+                Stage stage = new Stage();
+                stage.setTitle("Sacar Presupuesto");
+                stage.setScene(scene);
+                stage.initModality(Modality.APPLICATION_MODAL); // Bloquea la ventana principal hasta que el pop-up se cierre
 
-            // Establecer el Stage en el controlador
-            controller.setStage(stage);
+                // Establecer el Stage en el controlador
+                controller.setStage(stage);
 
-            // Mostrar el pop-up
-            stage.showAndWait();
-        } catch (IOException e) {
-            e.printStackTrace();
-            mostrarAlerta("Error", "Error al cargar la ventana de modificación.", Alert.AlertType.ERROR);
+                // Mostrar el pop-up
+                stage.showAndWait();
+            } catch (IOException e) {
+                e.printStackTrace();
+                mostrarAlerta("Error", "Error al cargar la ventana de modificación.", Alert.AlertType.ERROR);
+            }
         }
     }
+    public void BuscarporDispositivo(){
+        Timeline timeline = new Timeline(
+                new KeyFrame(Duration.millis(1000), event -> {
+                    buscarDispositivo(txtBuscardor.getText()); // Llama al método con el texto del buscador
+                })
+        );
+        timeline.setCycleCount(1);
 
-    public void Buscar() {
+        // Listener para detectar cambios en el texto
+        txtBuscardor.textProperty().addListener((observable, oldValue, newValue) -> {
+            timeline.stop(); // Detener la búsqueda si el usuario sigue escribiendo
+
+            if (!newValue.trim().isEmpty()) {
+                timeline.playFromStart(); // Reiniciar el temporizador de 1 segundo
+            } else {
+                actualizarTabla(null, new ArrayList<>()); // Vaciar la tabla si el campo está vacío
+            }
+        });
+    }
+
+    private void buscarDispositivo(String text) {
+        EquipoDAO equipoDAO = new EquipoDAO();
+        List<Equipos> listaequipos = equipoDAO.buscarDispositivo(text); // Obtener lista de listaequipos
+        actualizarTabla(null,listaequipos);
+    }
+
+    public void BuscarporCliente() {
         Timeline timeline = new Timeline(
                 new KeyFrame(Duration.millis(1000), event -> {
                     buscarClientes(txtBuscardor.getText()); // Llama al método con el texto del buscador
@@ -377,7 +416,7 @@ public class VerEquiposController {
             if (!newValue.trim().isEmpty()) {
                 timeline.playFromStart(); // Reiniciar el temporizador de 1 segundo
             } else {
-                actualizarTabla(new ArrayList<>()); // Vaciar la tabla si el campo está vacío
+                actualizarTabla(new ArrayList<>(),null); // Vaciar la tabla si el campo está vacío
             }
         });
     }
@@ -385,67 +424,65 @@ public class VerEquiposController {
     private void buscarClientes(String text) {
         ClienteDAO clienteDAO = new ClienteDAO();
         List<Cliente> clientes = clienteDAO.buscarClientes(text); // Obtener lista de clientes
-        actualizarTabla(clientes);
+        actualizarTabla(clientes,null);
     }
 
-    private void actualizarTabla(List<Cliente> clientes) {
+    private void actualizarTabla(List<Cliente> clientes, List<Equipos> equipos) {
         EquipoDAO dao = new EquipoDAO();
-        List<Equipos> equipos = dao.obtenerEquiposPorClientes(clientes);
-        // Aquí puedes actualizar la tabla con la lista de equipos obtenida
+
+        // Si no se proporciona la lista de equipos, obtenerlos desde los clientes
+        if (equipos == null) {
+            equipos = dao.obtenerEquiposPorClientes(clientes);
+        }
+
+        // Actualizar la tabla con la lista de equipos
         tablaEquipos.getItems().setAll(equipos);
     }
 
 
-
     public void DefinirEstados(ActionEvent actionEvent) {
+        Dialog<String> dialog = new Dialog<>();
+        dialog.setTitle("Seleccionar Estado");
+        dialog.setHeaderText("Por favor, elige un estado:");
 
-            Dialog<String> dialog = new Dialog<>();
-            dialog.setTitle("Seleccionar Estado");
-            dialog.setHeaderText("Por favor, elige un estado:");
+        // Crear el ComboBox con opciones de estado
+        ComboBox<String> comboBox = new ComboBox<>();
+        List<String> estados = List.of(
+                "Seleccionar todos los Equipos","Ingresado", "Revisión", "En espera de autorización",
+                "Autorizado para la reparación", "Reparación no autorizada", "Reparado",
+                 "Entregado"
+        );
 
-            // Crear el ComboBox con opciones de estado
-            ComboBox<String> comboBox = new ComboBox<>();
-            List<String> estados = List.of(
-                    "Ingresado", "Revisión", "Espera autorización",
-                    "Autorizado", "Cancelado", "Reparado",
-                    "Pagado", "Entregado"
-            );
+        comboBox.getItems().addAll(estados);
+        comboBox.setValue(estados.get(0)); // Preseleccionar el primer estado
 
-            comboBox.getItems().addAll(estados);
-            comboBox.setValue(estados.get(0)); // Preseleccionar el primer estado
+        // Agregar el ComboBox al contenido del diálogo
+        VBox content = new VBox(10, new Label("Selecciona:"), comboBox);
+        dialog.getDialogPane().setContent(content);
 
-            // Agregar el ComboBox al contenido del diálogo
-            VBox content = new VBox(10, new Label("Selecciona:"), comboBox);
-            dialog.getDialogPane().setContent(content);
+        // Agregar botones al diálogo
+        ButtonType btnAceptar = new ButtonType("Aceptar", ButtonBar.ButtonData.OK_DONE);
+        ButtonType btnCancelar = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
+        dialog.getDialogPane().getButtonTypes().addAll(btnAceptar, btnCancelar);
 
-            // Agregar botones al diálogo
-            ButtonType btnAceptar = new ButtonType("Aceptar", ButtonBar.ButtonData.OK_DONE);
-            ButtonType btnCancelar = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
-            dialog.getDialogPane().getButtonTypes().addAll(btnAceptar, btnCancelar);
+        // Configurar resultado cuando se presiona "Aceptar"
+        dialog.setResultConverter(dialogButton ->
+                dialogButton == btnAceptar ? comboBox.getValue() : null
+        );
 
-            // Configurar resultado cuando se presiona "Aceptar"
-            dialog.setResultConverter(dialogButton ->
-                    dialogButton == btnAceptar ? comboBox.getValue() : null
-            );
-
-            // Mostrar el diálogo y obtener el resultado
-            Optional<String> resultado = dialog.showAndWait();
-
-            resultado.ifPresent(estadoSeleccionado -> {
-                System.out.println("Estado seleccionado: " + estadoSeleccionado);
-                Alert alert = new Alert(Alert.AlertType.INFORMATION, "Seleccionaste el estado: " + estadoSeleccionado, ButtonType.OK);
-                alert.showAndWait();
+        // Mostrar el diálogo y obtener el resultado
+        Optional<String> resultado = dialog.showAndWait();
+        EquipoDAO equipoDAO= new EquipoDAO();
+        resultado.ifPresent(estadoSeleccionado -> {
+            if (estadoSeleccionado.equals("Seleccionar todos los Equipos")){
+                System.out.println(estadoSeleccionado);
+                List<Equipos> selectAllEquipos= equipoDAO.selectAllEquipos();
+                actualizarTabla(null,selectAllEquipos);
+            }else{
+                List<Equipos> equiposFiltrados = equipoDAO.filtrarPorEstadoEquipo(equipoDAO.obtenerEstadoEquipoIdDesdeBD(estadoSeleccionado));
+                actualizarTabla(null,equiposFiltrados);
+            }
             });
-    }
-
-    // Este es el método que limpia los recursos
-    public void limpiarRecursos() {
-        // Detener el Timeline
-//        if (timeline != null) {
-//            timeline.stop();
-//        }
-
-        // Aquí puedes limpiar otros recursos como listeners si es necesario
     }
 }
 

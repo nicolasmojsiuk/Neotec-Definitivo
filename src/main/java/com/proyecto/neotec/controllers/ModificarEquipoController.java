@@ -16,6 +16,8 @@ import java.util.Objects;
 
 public class ModificarEquipoController {
     @FXML
+    public ComboBox<String> Activo;
+    @FXML
     private TextArea txtAreaObservaciones;
     @FXML
     private TextField txfDuenno;
@@ -29,7 +31,8 @@ public class ModificarEquipoController {
 
     EquipoDAO equipoDAO = new EquipoDAO();
 
-    public void cancelar(ActionEvent actionEvent) {
+    public void cancelar() {
+        stage.close();
     }
     public void setEquipo(Equipos equipo) {
         this.equipoMod = equipo;
@@ -37,26 +40,54 @@ public class ModificarEquipoController {
     }
 
     private void cargarDatosActuales() {
+        Equipos datosEquipo = equipoDAO.obtenerEquipoPorId(equipoMod.getId());
 
-        txfDuenno.setText(equipoDAO.obtenerDNI(equipoMod.getIdcliente()));
-        //implementamos un metodo que determina el estado
-        tipoEstado.setValue(obtenerEstadoString(equipoMod.getEstado()));
-        txfDispositivo.setText(equipoMod.getDispositivo());
-        txtAreaObservaciones.setText(equipoMod.getObservaciones());
-        String activoString;
-        switch (equipoMod.getActivo()) {
-            case 1:
-                activoString = "Activo";
+        txfDuenno.setText(equipoDAO.obtenerDNI(datosEquipo.getIdcliente()));
+        txfDispositivo.setText(datosEquipo.getDispositivo());
+        txtAreaObservaciones.setText(datosEquipo.getObservaciones());
+        Activo.setValue(obtenerActivoInnactivo(datosEquipo.getActivo()));
+
+        int estadoActual = datosEquipo.getEstado(); // Obtener el estado actual
+        tipoEstado.getItems().clear(); // Limpiar ComboBox
+
+        String estadoActualDescripcion = equipoDAO.obtenerDescripcionEstadoEquipoDesdeBD(estadoActual);
+
+        switch (estadoActual) {
+            case 1: // Ingresado
+                tipoEstado.getItems().addAll("Ingresado", "Revisión");
                 break;
-            case 0:
-                activoString = "Inactivo";
+            case 4:
+                tipoEstado.getItems().addAll("Reparación no autorizada", "Entregado");
+                break;
+            case 5: // Autorizado para la reparación
+                tipoEstado.getItems().addAll("Autorizado para la reparación", "Reparado");
+                break;
+            case 6: // Reparado
+                tipoEstado.getItems().addAll("Reparado", "Entregado");
                 break;
             default:
-                activoString = "Desconocido"; // Por si acaso el valor es inesperado
+                // Estados que no pueden cambiarse manualmente, solo mostrar el actual
+                tipoEstado.getItems().add(estadoActualDescripcion);
                 break;
         }
 
+        // Seleccionar el estado actual por defecto
+        tipoEstado.getSelectionModel().select(estadoActualDescripcion);
+        // Desactivar el ComboBox si el estado no puede cambiarse
+        boolean editable = (estadoActual == 1 || estadoActual== 4|| estadoActual == 5 || estadoActual == 6);
+        tipoEstado.setDisable(!editable);
     }
+
+
+    private String obtenerActivoInnactivo(int activo) {
+        if (activo ==0){
+            return "Innactivo";
+        }else if (activo ==1){
+            return "Activo";
+        }
+        return "Estado Desconocido";
+    }
+
     private void mostrarAlerta(String titulo, String mensaje, Alert.AlertType tipodealerta) {
         Alert alert = new Alert(tipodealerta);
         alert.setTitle(titulo);
@@ -75,6 +106,7 @@ public class ModificarEquipoController {
         String dispositivo= txfDispositivo.getText();
         String estado= tipoEstado.getValue();
         String observaciones = txtAreaObservaciones.getText();
+        String activo = Activo.getValue();
 
         int id = equipoMod.getId();
         if (dispositivo.isEmpty() || estado.isEmpty() || observaciones.isEmpty()){
@@ -84,12 +116,22 @@ public class ModificarEquipoController {
             alertaConfirmacion();
         }else {
 
-            Equipos equipos = new Equipos(equipoDAO.obtenerIDCliente(dniDuenno),dispositivo,obtenerEstadoInt(estado),observaciones,id);
+            Equipos equipos = new Equipos(equipoDAO.obtenerIDCliente(dniDuenno),dispositivo,equipoDAO.obtenerEstadoEquipoIdDesdeBD(estado),observaciones,id, obtenerActivoInnactivoString(activo));
+
             if (equipoDAO.ModificarEquipo(equipos)){
                 mostrarAlerta("Modificación de equipo", "Equipo Modificado", Alert.AlertType.INFORMATION);
                 stage.close(); // Cerrar el Stage
             }
         }
+    }
+
+    private int obtenerActivoInnactivoString(String activo) {
+        if (Objects.equals(activo, "Innactivo")){
+            return 0;
+        }else if (Objects.equals(activo, "Activo")){
+            return 1;
+        }
+        return -1;
     }
 
     private void alertaConfirmacion() {
@@ -131,49 +173,7 @@ public class ModificarEquipoController {
             e.printStackTrace();
         }
     }
-    private String obtenerEstadoString(int estado) {
-        switch (estado) {
-            case 1:
-                return "Ingresado";
-            case 2:
-                return "En espera de revisión";
-            case 3:
-                return "Revisión";
-            case 4:
-                return "En espera de autorización";
-            case 5:
-                return "Autorizado";
-            case 6:
-                return "Cancelado";
-            case 7:
-                return "Reparado";
-            case 8:
-                return "Pagado";
-            default:
-                return "Desconocido";
-        }
-    }
-    public int obtenerEstadoInt(String estado) {
-        switch (estado) {
-            case "Ingresado":
-                return 1;
-            case "En espera de revisión":
-                return 2;
-            case "Revisión":
-                return 3;
-            case "En espera de autorización":
-                return 4;
-            case "Autorizado":
-                return 5;
-            case "Cancelado":
-                return 6;
-            case "Reparado":
-                return 7;
-            case "Pagado":
-                return 8;
-            default:
-                return -1; // Valor por defecto para estados desconocidos
-        }
-    }
+
+
 
 }

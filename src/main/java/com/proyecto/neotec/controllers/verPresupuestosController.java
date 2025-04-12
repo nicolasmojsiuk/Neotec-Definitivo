@@ -8,6 +8,7 @@ import com.proyecto.neotec.models.Productos;
 import com.proyecto.neotec.util.CajaEstablecida;
 import com.proyecto.neotec.util.MostrarAlerta;
 import com.proyecto.neotec.util.SesionUsuario;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -38,17 +39,17 @@ public class verPresupuestosController {
     private TableView<Presupuestos> tablaPresupuestos;
 
     @FXML
-    private TableColumn<Equipos, Integer> columna1;
+    private TableColumn<Presupuestos, Integer> columna1;
     @FXML
-    private TableColumn<Equipos, String> columna2;
+    private TableColumn<Presupuestos, String> columna2;
     @FXML
-    private TableColumn<Equipos, String> columna3;
+    private TableColumn<Presupuestos, String> columna3;
     @FXML
-    private TableColumn<Equipos, String> columna4;
+    private TableColumn<Presupuestos, String> columna4;
     @FXML
-    private TableColumn<Equipos, String> columna5;
+    private TableColumn<Presupuestos, String> columna5;
     @FXML
-    private TableColumn<Equipos, String> columna6;
+    private TableColumn<Presupuestos, String> columna6;
     @FXML
     private ObservableList<Presupuestos> presupuestos;
     @FXML
@@ -62,21 +63,28 @@ public class verPresupuestosController {
     private void cargarDatos() {
         PresupuestoDAO presupuestoDAO = new PresupuestoDAO();
         presupuestos = FXCollections.observableArrayList();
+
         columna1.setCellValueFactory(new PropertyValueFactory<>("idpresupuesto"));
         columna2.setCellValueFactory(new PropertyValueFactory<>("equipo"));
+        //columna3.setCellValueFactory(new PropertyValueFactory<>("propietario"));
         columna3.setCellValueFactory(new PropertyValueFactory<>("propietario"));
-        columna4.setCellValueFactory(new PropertyValueFactory<>("estado"));
+        columna4.setCellValueFactory(cellData -> {
+            int estadoPresupuesto = cellData.getValue().getEstado();
+            // Obtener la descripción del estado usando el DAO
+            String descripcionEstado = presupuestoDAO.obtenerDescripcionEstadoDesdeBD(estadoPresupuesto);
+            return new SimpleStringProperty(descripcionEstado); // Devolver la descripción del estado
+        });
         columna5.setCellValueFactory(new PropertyValueFactory<>("precioTotal"));
         columna6.setCellValueFactory(new PropertyValueFactory<>("fechaHora"));
-        List<Presupuestos> listaPresupuestos= presupuestoDAO.selectAllPresupuestos();
+
+        List<Presupuestos> listaPresupuestos = presupuestoDAO.selectAllPresupuestos();
         presupuestos.clear();
         presupuestos.addAll(listaPresupuestos);
         tablaPresupuestos.setItems(presupuestos);
     }
 
     public void verDetalles() {
-        Presupuestos prVer = new Presupuestos();
-        prVer = tablaPresupuestos.getSelectionModel().getSelectedItem();
+        Presupuestos prVer = tablaPresupuestos.getSelectionModel().getSelectedItem();
         if (prVer == null){
             MostrarAlerta.mostrarAlerta("Presupuestos", "Debe seleccionar un presupuesto para poder ver los detalles", Alert.AlertType.WARNING);
             return;
@@ -184,7 +192,6 @@ public class verPresupuestosController {
             e.printStackTrace();
         }
     }
-
     public void pagarPresupuesto() {
         try {
             Presupuestos pr = tablaPresupuestos.getSelectionModel().getSelectedItem();
@@ -192,33 +199,35 @@ public class verPresupuestosController {
                 MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "Debe seleccionar un presupuesto antes de continuar.", Alert.AlertType.WARNING);
                 return;
             }
+            PresupuestoDAO presupuestoDAO = new PresupuestoDAO();
+            // Verificar si el presupuesto ya fue pagado
+            if (presupuestoDAO.estaPagadoEnEstado(pr.getIdpresupuesto()))  {
+                MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "Este presupuesto ya fue pagado anteriormente.", Alert.AlertType.WARNING);
+                return;
+            }
+            // Realizar pago si el presupuesto está autorizado (ID: 2)
+            if (presupuestoDAO.verificarEstadoPresupuesto(pr, 2)) {
+                Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+                alert.setTitle("Confirmar pago");
+                alert.setHeaderText("¿El pago fue con efectivo?");
+                alert.setContentText("Seleccione una opción:");
+                ButtonType buttonSi = new ButtonType("Sí", ButtonBar.ButtonData.OTHER);
+                ButtonType buttonNo = new ButtonType("No", ButtonBar.ButtonData.OTHER);
+                ButtonType btnCerrar = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
 
-            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-            alert.setTitle("Confirmar pago");
-            alert.setHeaderText("¿El pago fue con efectivo?");
-            alert.setContentText("Seleccione una opción:");
+                alert.getButtonTypes().setAll(buttonSi, buttonNo,btnCerrar);
 
-            ButtonType buttonSi = new ButtonType("Sí", ButtonBar.ButtonData.YES);
-            ButtonType buttonNo = new ButtonType("No", ButtonBar.ButtonData.NO);
-            alert.getButtonTypes().setAll(buttonSi, buttonNo);
+                Optional<ButtonType> result = alert.showAndWait();
 
-            Optional<ButtonType> result = alert.showAndWait();
-
-            if (result.isPresent() && result.get() == buttonSi) {
-                // Verificar que hay una caja establecida
-                Caja cajaestablecida = CajaEstablecida.getCajaSeleccionada();
-                if (cajaestablecida != null) {
-                    System.out.println("ID de Caja: " + cajaestablecida.getIdcaja());
-                }
-                if (cajaestablecida == null) {
-                    MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "Debe establecer una caja en Caja -> Establecer Caja.", Alert.AlertType.WARNING);
-                }else {
-                    // Verificar apertura de caja
-
-                    CajaDAO cajadao = new CajaDAO();
-
+                if (result.get() == buttonSi) {
+                    // Verificar que hay una caja establecida
+                    Caja cajaestablecida = CajaEstablecida.getCajaSeleccionada();
+                    if (cajaestablecida == null) {
+                        MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "Debe establecer una caja en Caja -> Establecer Caja.", Alert.AlertType.WARNING);
+                    } else {
+                        // Verificar apertura de caja
+                        CajaDAO cajadao = new CajaDAO();
                         int idCaja = cajaestablecida.getIdcaja();
-                        System.out.println(idCaja);
                         if (cajadao.verificarApertura(idCaja)) {
                             String respuesta = cajadao.registrarMovimientoDeCaja(
                                     idCaja,
@@ -229,61 +238,70 @@ public class verPresupuestosController {
                             );
                             if ("Error: Ocurrió un problema al registrar el movimiento.".equals(respuesta)) {
                                 MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "Error: Ocurrió un problema al registrar el movimiento en la caja", Alert.AlertType.WARNING);
-                            }else {
-                                cambiarEstado(pr);
+                            } else {
+                                cambiarEstadoEquipo(pr);
                             }
-
+                            presupuestoDAO.cambiarEstadoPresupuesto(pr,4);
                             // Confirmación del pago en efectivo
                             MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "El pago en efectivo se ha realizado correctamente.", Alert.AlertType.INFORMATION);
                         } else {
                             MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "La caja establecida está cerrada", Alert.AlertType.WARNING);
                         }
+                    }
+                } else if (result.get() == buttonNo) {
+                    // Crear el cuadro de diálogo
+                    Dialog<String> dialog = new Dialog<>();
+                    dialog.setTitle("Indique el tipo de transacción digital");
 
+                    TextField textField = new TextField();
+                    textField.setPromptText("Escriba aquí...");
+
+                    // Agregar el campo de texto al contenido del diálogo
+                    VBox content = new VBox(10, new Label("Observación:"), textField);
+                    dialog.getDialogPane().setContent(content);
+
+                    // Agregar botones
+                    ButtonType btnAceptar = new ButtonType("Aceptar", ButtonBar.ButtonData.OK_DONE);
+                    ButtonType btnCancelar = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
+                    dialog.getDialogPane().getButtonTypes().addAll(btnAceptar, btnCancelar);
+
+                    // Establecer el resultado del diálogo
+                    dialog.setResultConverter(button -> (button == btnAceptar) ? textField.getText() : null);
+
+                    // Mostrar el diálogo y obtener el resultado
+                    Optional<String> resultado = dialog.showAndWait();
+
+                    // Solo ejecutar el bloque si se presionó Aceptar (es decir, si hay un valor)
+                    if (resultado.isPresent()) {
+                        AtomicReference<String> mensaje = new AtomicReference<>(resultado.get());
+
+                        try {
+                            TransaccionesDigitalesDAO tdd = new TransaccionesDigitalesDAO();
+                            tdd.registrarTransaccion(0, pr.getPrecioTotal(), 1, mensaje.get());
+                            cambiarEstadoEquipo(pr);
+                            presupuestoDAO.cambiarEstadoPresupuesto(pr,4);
+                            // Confirmación de la transacción digital
+                            MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "La transacción digital se ha registrado correctamente.", Alert.AlertType.INFORMATION);
+                        } catch (Exception e) {
+                            MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "Error al registrar la transacción digital.", Alert.AlertType.ERROR);
+                        }
+                    }
+
+                } else if (result.get() == btnCerrar) {
+                    alert.close();
                 }
-            } else if (result.isPresent() && result.get() == buttonNo) {
-                // Crear el cuadro de diálogo
-                Dialog<String> dialog = new Dialog<>();
-                dialog.setTitle("Indique el tipo de transacción digital");
 
-                // Crear el campo de texto
-                TextField textField = new TextField();
-                textField.setPromptText("Escriba aquí...");
-
-                // Agregar el campo de texto al contenido del diálogo
-                VBox content = new VBox(10, new Label("Observación:"), textField);
-                dialog.getDialogPane().setContent(content);
-
-                // Agregar botones
-                ButtonType btnAceptar = new ButtonType("Aceptar", ButtonBar.ButtonData.OK_DONE);
-                ButtonType btnCancelar = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
-                dialog.getDialogPane().getButtonTypes().addAll(btnAceptar, btnCancelar);
-
-                // Obtener el valor ingresado
-                dialog.setResultConverter(button -> (button == btnAceptar) ? textField.getText() : null);
-
-                AtomicReference<String> mensaje = new AtomicReference<>("-");
-
-                // Mostrar el cuadro de diálogo y procesar la respuesta
-                Optional<String> resultado = dialog.showAndWait();
-                resultado.ifPresent(mensaje::set);
-
-                // Registrar la transacción con la observación ingresada
-                try {
-                    TransaccionesDigitalesDAO tdd = new TransaccionesDigitalesDAO();
-                    tdd.registrarTransaccion(0, pr.getPrecioTotal(), 1, mensaje.get());
-                    cambiarEstado(pr);
-                    // Confirmación de la transacción digital
-                    MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "La transacción digital se ha registrado correctamente.", Alert.AlertType.INFORMATION);
-
-                } catch (Exception e) {
-                    MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "Error al registrar la transacción digital.", Alert.AlertType.ERROR);
-                }
+            } else {
+                MostrarAlerta.mostrarAlerta("Pago de presupuesto", "El presupuesto debe estar aprobado", Alert.AlertType.INFORMATION);
             }
+
         } catch (Exception e) {
             MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "Ocurrió un error inesperado: " + e.getMessage(), Alert.AlertType.ERROR);
         }
     }
-    public void cambiarEstado(Presupuestos pr){
+
+
+    public void cambiarEstadoEquipo(Presupuestos pr){
         ProductosDAO productosDAO = new ProductosDAO();
         List<Productos> productos = productosDAO.obtenerProductosPorPresupuesto(pr.getIdpresupuesto());
         boolean bandera= false;
@@ -302,13 +320,77 @@ public class verPresupuestosController {
         Equipos equipo = equipoDAO.obtenerEquipoPorId(equipoDAO.obtener_IDequipo_con_idpresupuesto(pr.getIdpresupuesto()));
         if(bandera){
             MostrarAlerta.mostrarAlerta("Error","El presupuesto utiliza productos no disponibles en stock",Alert.AlertType.INFORMATION);
-            // Cambiar el estado del equipo a Espera de Autorización debido a la falta de productos en el presupueto
+            // Cambiar el estado del equipo a "Espera de Autorización" debido a la falta de productos en stock
             equipoDAO.actualizarEstadoEquipo(equipo.getId(),3 );
         }else {
-            equipoDAO.actualizarEstadoEquipo(equipo.getId(),7);
+            //Si el presupuesto es pagado, cambiamos el estado del equipo a "Autorizado para la reparación"
+            equipoDAO.actualizarEstadoEquipo(equipo.getId(),5);
         }
     }
 
 
+    public void cambiarEstado(ActionEvent actionEvent) {
+        Presupuestos presupuesto = tablaPresupuestos.getSelectionModel().getSelectedItem(); // Esto deberías adaptarlo
+
+        if (presupuesto == null) {
+            Alert alert = new Alert(Alert.AlertType.WARNING, "Selecciona un presupuesto primero.", ButtonType.OK);
+            alert.showAndWait();
+            return;
+        }
+
+        int estadoActual = presupuesto.getEstado();
+
+        Dialog<String> dialog = new Dialog<>();
+        dialog.setTitle("Seleccionar Estado");
+        dialog.setHeaderText("Por favor, elige un estado:");
+
+        ComboBox<String> comboBox = new ComboBox<>();
+        comboBox.getItems().clear(); // Por si acaso
+        PresupuestoDAO presupuestoDAO = new PresupuestoDAO();
+        if (estadoActual == 1) { //id:1 = "En espera"
+            comboBox.getItems().addAll("Aprobado", "Cancelado");
+        } else {
+            Alert alerta = new Alert(Alert.AlertType.INFORMATION);
+            alerta.setTitle("Cambio no permitido");
+            alerta.setHeaderText(null);
+            alerta.setContentText("No se puede cambiar el estado. Este presupuesto ya fue " + presupuestoDAO.obtenerDescripcionEstadoDesdeBD(estadoActual).toLowerCase() + ".");
+            alerta.showAndWait();
+            return; // Se sale del método para no continuar con el diálogo
+        }
+
+        if (comboBox.getItems().isEmpty()) {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION, "Este presupuesto ya no puede cambiar de estado.", ButtonType.OK);
+            alert.showAndWait();
+            return;
+        }
+
+        comboBox.setValue(comboBox.getItems().get(0));
+
+        VBox content = new VBox(10, new Label("Selecciona:"), comboBox);
+        dialog.getDialogPane().setContent(content);
+
+        ButtonType btnAceptar = new ButtonType("Aceptar", ButtonBar.ButtonData.OK_DONE);
+        ButtonType btnCancelar = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
+        dialog.getDialogPane().getButtonTypes().addAll(btnAceptar, btnCancelar);
+
+        dialog.setResultConverter(dialogButton ->
+                dialogButton == btnAceptar ? comboBox.getValue() : null
+        );
+
+        Optional<String> resultado = dialog.showAndWait();
+
+        resultado.ifPresent(estadoSeleccionado -> {
+
+
+            int estado = presupuestoDAO.obtenerEstadoIntDesdeBD(estadoSeleccionado);;
+            if (estado == 3){
+                // si el presupuesto es cancelado, cambiamos el estado del equipo a no autorizado para la reparación
+                EquipoDAO equipoDAO = new EquipoDAO();
+                equipoDAO.actualizarEstadoEquipo(presupuesto.getIdEquipo(),estado);
+            }
+            presupuestoDAO.cambiarEstadoPresupuesto(presupuesto,estado);
+
+        });
+    }
 }
 
