@@ -219,7 +219,98 @@ public class ClienteDAO {
     }
 
     public List<Cliente> buscarClientes(String text) {
-        String sql = "SELECT * FROM clientes WHERE nombre LIKE ?";
+        String sql = "SELECT * FROM clientes WHERE nombre LIKE ? OR apellido LIKE ?";
+        List<Cliente> clientes = new ArrayList<>();
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            String searchPattern = "%" + text + "%";
+            stmt.setString(1, searchPattern);
+            stmt.setString(2, searchPattern);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Cliente cliente = new Cliente();
+                    cliente.setIdclientes(rs.getInt("idclientes"));
+                    cliente.setNombre(rs.getString("nombre"));
+                    cliente.setApellido(rs.getString("apellido"));
+                    cliente.setEmail(rs.getString("email"));
+                    cliente.setTelefono(rs.getString("telefono"));
+                    cliente.setDni(rs.getInt("dni"));
+                    cliente.setActivo(rs.getInt("activo") == 1 ? "Activo" : "Inactivo");
+
+                    clientes.add(cliente);
+                }
+            }
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+
+        return clientes;
+    }
+
+
+    public List<Cliente> filtrarActivoInnactivo(int estado) {
+        List<Cliente> clientes = new ArrayList<>();
+        String query = "SELECT * FROM clientes WHERE activo = ?"; // Filtrando por estado
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setInt(1, estado);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                Cliente cliente = new Cliente();
+
+                cliente.setIdclientes(rs.getInt("idclientes"));
+                cliente.setNombre(rs.getString("nombre"));
+                cliente.setApellido(rs.getString("apellido"));
+                cliente.setEmail(rs.getString("email"));
+                cliente.setTelefono(rs.getString("telefono"));
+                cliente.setDni(rs.getInt("dni"));
+                cliente.setActivo(rs.getInt("activo") == 1 ? "Activo" : "Inactivo");
+
+                clientes.add(cliente);
+            }
+
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+
+        return clientes;
+    }
+
+    public List<Cliente> buscarPorEmail(String text) {
+        String sql = "SELECT * FROM clientes WHERE email LIKE ?";
+        List<Cliente> clientes = new ArrayList<>();
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, "%" + text + "%");
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Cliente cliente = new Cliente();
+                    cliente.setIdclientes(rs.getInt("idclientes"));
+                    cliente.setNombre(rs.getString("nombre"));
+                    cliente.setApellido(rs.getString("apellido"));
+                    cliente.setEmail(rs.getString("email"));
+                    cliente.setTelefono(rs.getString("telefono"));
+                    cliente.setDni(rs.getInt("dni"));
+                    cliente.setActivo(rs.getInt("activo") == 1 ? "Activo" : "Inactivo");
+
+                    clientes.add(cliente);
+                }
+            }
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+
+        return clientes;
+    }
+
+    public List<Cliente> buscarPorDNI(String text) {
+        String sql = "SELECT * FROM clientes WHERE dni LIKE ?";
         List<Cliente> clientes = new ArrayList<>();
 
         try (Connection conn = Database.getConnection();
@@ -247,4 +338,31 @@ public class ClienteDAO {
         return clientes;
     }
 
+    public List<Cliente> buscarPorTelefono(String text) {
+        String sql = "SELECT * FROM clientes WHERE telefono LIKE ?";
+        List<Cliente> clientes = new ArrayList<>();
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, "%" + text + "%"); // Búsqueda parcial
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Cliente cliente = new Cliente();
+                    cliente.setIdclientes(rs.getInt("idclientes"));
+                    cliente.setNombre(rs.getString("nombre"));
+                    cliente.setApellido(rs.getString("apellido"));
+                    cliente.setEmail(rs.getString("email"));
+                    cliente.setTelefono(rs.getString("telefono"));
+                    cliente.setDni(rs.getInt("dni"));
+                    cliente.setActivo(rs.getInt("activo") == 1 ? "Activo" : "Inactivo");
+
+                    clientes.add(cliente);
+                }
+            }
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+        return clientes;
+    }
 }

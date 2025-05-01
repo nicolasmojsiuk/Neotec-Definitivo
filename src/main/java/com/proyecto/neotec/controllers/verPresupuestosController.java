@@ -1,13 +1,12 @@
 package com.proyecto.neotec.controllers;
 
 import com.proyecto.neotec.DAO.*;
-import com.proyecto.neotec.models.Caja;
-import com.proyecto.neotec.models.Equipos;
-import com.proyecto.neotec.models.Presupuestos;
-import com.proyecto.neotec.models.Productos;
+import com.proyecto.neotec.models.*;
 import com.proyecto.neotec.util.CajaEstablecida;
 import com.proyecto.neotec.util.MostrarAlerta;
 import com.proyecto.neotec.util.SesionUsuario;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -25,16 +24,28 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class verPresupuestosController {
+    @FXML
+    public ToggleButton toggleDispositivo;
+    @FXML
+    public TextField txtBuscardor;
+    @FXML
+    public ToggleButton toggleCliente;
+    @FXML
+    public DatePicker dateFechaCreacion;
     @FXML
     private TableView<Presupuestos> tablaPresupuestos;
 
@@ -52,21 +63,82 @@ public class verPresupuestosController {
     private TableColumn<Presupuestos, String> columna6;
     @FXML
     private ObservableList<Presupuestos> presupuestos;
-    @FXML
-    private Button btnVerProductosUtilizados;
-    @FXML
-    private void initialize() {
 
-        cargarDatos();
+
+    private PresupuestoDAO presupuestoDAO;
+    @FXML
+    public void initialize() {
+        presupuestoDAO = new PresupuestoDAO();
+        cargarDatos(presupuestoDAO.selectAllPresupuestos());
+
+        ToggleGroup toggleGroup = new ToggleGroup();
+        toggleCliente.setToggleGroup(toggleGroup);
+        toggleDispositivo.setToggleGroup(toggleGroup);
+        txtBuscardor.setDisable(true);
+
+        Timeline timeline = new Timeline(
+                new KeyFrame(Duration.millis(1000), event -> {
+                    String newValue = txtBuscardor.getText().trim();
+                    if (!newValue.isEmpty()) {
+                        List<Presupuestos> listaPresupuestos = new ArrayList<>();
+                        if (toggleDispositivo.isSelected()) {
+                            listaPresupuestos = presupuestoDAO.buscarPresupuestosPorNombreDeEquipo(newValue);
+                        }
+                        if (toggleCliente.isSelected()) {
+                            listaPresupuestos = presupuestoDAO.buscarPresupuestosPorNombreCliente(newValue);
+                        }
+                        tablaPresupuestos.getItems().setAll(listaPresupuestos);
+                    } else {
+                        cargarDatos(presupuestoDAO.selectAllPresupuestos());
+                    }
+                })
+        );
+        timeline.setCycleCount(1);
+
+        toggleGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue == null) {
+                txtBuscardor.setDisable(true);
+                txtBuscardor.setText("");
+                cargarDatos(presupuestoDAO.selectAllPresupuestos());
+            } else {
+                txtBuscardor.setDisable(false);
+                if (!txtBuscardor.getText().trim().isEmpty()) {
+                    timeline.playFromStart();
+                }
+            }
+        });
+
+        txtBuscardor.textProperty().addListener((observable, oldValue, newValue) -> {
+            timeline.stop();
+            if (!newValue.trim().isEmpty()) {
+                timeline.playFromStart();
+            } else {
+                cargarDatos(presupuestoDAO.selectAllPresupuestos());
+            }
+        });
+
+        dateFechaCreacion.getEditor().setDisable(true);
+        dateFechaCreacion.setEditable(false);
+        dateFechaCreacion.valueProperty().addListener((observable, oldvalue, newValue) -> {
+            buscarPorFechaCreacion(dateFechaCreacion);
+        });
     }
 
-    private void cargarDatos() {
-        PresupuestoDAO presupuestoDAO = new PresupuestoDAO();
+    private void buscarPorFechaCreacion(DatePicker dateFechaCreacion) {
+        LocalDate fecha = dateFechaCreacion.getValue();
+        if (fecha != null) {
+            // formatear al formato que espera la base de datos
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            String fechaFormateada = fecha.format(formatter);
+            presupuestoDAO = new PresupuestoDAO();
+            List<Presupuestos> listaPresupuestos = presupuestoDAO.buscarPorFechaCreacion(fechaFormateada);
+            cargarDatos(listaPresupuestos);
+        }
+    }
+    private void cargarDatos(List<Presupuestos> listaPresupuestos) {
         presupuestos = FXCollections.observableArrayList();
-
         columna1.setCellValueFactory(new PropertyValueFactory<>("idpresupuesto"));
         columna2.setCellValueFactory(new PropertyValueFactory<>("equipo"));
-        //columna3.setCellValueFactory(new PropertyValueFactory<>("propietario"));
         columna3.setCellValueFactory(new PropertyValueFactory<>("propietario"));
         columna4.setCellValueFactory(cellData -> {
             int estadoPresupuesto = cellData.getValue().getEstado();
@@ -76,8 +148,6 @@ public class verPresupuestosController {
         });
         columna5.setCellValueFactory(new PropertyValueFactory<>("precioTotal"));
         columna6.setCellValueFactory(new PropertyValueFactory<>("fechaHora"));
-
-        List<Presupuestos> listaPresupuestos = presupuestoDAO.selectAllPresupuestos();
         presupuestos.clear();
         presupuestos.addAll(listaPresupuestos);
         tablaPresupuestos.setItems(presupuestos);
@@ -140,6 +210,7 @@ public class verPresupuestosController {
     }
 
     private void abrirVentanaCrearPresupuesto(Equipos equipo) {
+        System.out.println("ESTADO EQUIPO AL ABRIR LA VENTANA CREAR PRESUPUESTO DESDE PRESUPUESTOS: "+equipo.getEstado() );
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/vistas/crearPresupuestos.fxml"));
             Parent root = loader.load();
@@ -201,7 +272,7 @@ public class verPresupuestosController {
             }
             PresupuestoDAO presupuestoDAO = new PresupuestoDAO();
             // Verificar si el presupuesto ya fue pagado
-            if (presupuestoDAO.estaPagadoEnEstado(pr.getIdpresupuesto()))  {
+            if (presupuestoDAO.verificarEstadoPagado(pr.getIdpresupuesto()))  {
                 MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "Este presupuesto ya fue pagado anteriormente.", Alert.AlertType.WARNING);
                 return;
             }
@@ -301,32 +372,47 @@ public class verPresupuestosController {
     }
 
 
-    public void cambiarEstadoEquipo(Presupuestos pr){
+    public void cambiarEstadoEquipo(Presupuestos pr) {
         ProductosDAO productosDAO = new ProductosDAO();
+        EquipoDAO equipoDAO = new EquipoDAO();
+
         List<Productos> productos = productosDAO.obtenerProductosPorPresupuesto(pr.getIdpresupuesto());
-        boolean bandera= false;
-        //verificar la exitencia y descontar del stock de los productos utilizados en el presupuesto
-        for (int i = 0; i < productos.size(); i++) {
-            if (productosDAO.productoExiste(productos.get(i).getIdProductos())){
-                if (productos.get(i).getCantidad() <= productosDAO.obtenerCantidad(productos.get(i).getIdProductos()) ){
-                    productosDAO.descontarStock(productos.get(i).getIdProductos(), productos.get(i).getCantidad());
-                }else {
-                    bandera = true;
+        boolean hayFaltante = false;
+
+        // Verificar existencia y descontar stock
+        for (Productos producto : productos) {
+            int idProducto = producto.getIdProductos();
+            int cantidadRequerida = producto.getCantidad();
+
+            if (productosDAO.productoExiste(idProducto)) {
+                int stockDisponible = productosDAO.obtenerCantidad(idProducto);
+                if (cantidadRequerida <= stockDisponible) {
+                    productosDAO.descontarStock(idProducto, cantidadRequerida);
+                } else {
+                    hayFaltante = true;
                 }
+            } else {
+                hayFaltante = true;
             }
         }
-        EquipoDAO equipoDAO= new EquipoDAO();
-        // obtener equipo para cambiar su estado
-        Equipos equipo = equipoDAO.obtenerEquipoPorId(equipoDAO.obtener_IDequipo_con_idpresupuesto(pr.getIdpresupuesto()));
-        if(bandera){
-            MostrarAlerta.mostrarAlerta("Error","El presupuesto utiliza productos no disponibles en stock",Alert.AlertType.INFORMATION);
-            // Cambiar el estado del equipo a "Espera de Autorización" debido a la falta de productos en stock
-            equipoDAO.actualizarEstadoEquipo(equipo.getId(),3 );
-        }else {
-            //Si el presupuesto es pagado, cambiamos el estado del equipo a "Autorizado para la reparación"
-            equipoDAO.actualizarEstadoEquipo(equipo.getId(),5);
+
+        // Obtener el equipo relacionado al presupuesto
+        int idEquipo = equipoDAO.obtener_IDequipo_con_idpresupuesto(pr.getIdpresupuesto());
+        Equipos equipo = equipoDAO.obtenerEquipoPorId(idEquipo);
+
+        // Cambiar estado del equipo según disponibilidad de productos
+        if (hayFaltante) {
+            MostrarAlerta.mostrarAlerta(
+                    "Error",
+                    "El presupuesto utiliza productos no disponibles en stock",
+                    Alert.AlertType.INFORMATION
+            );
+            equipoDAO.actualizarEstadoEquipo(equipo.getId(), 3); // Espera de Autorización
+        } else {
+            equipoDAO.actualizarEstadoEquipo(equipo.getId(), 5); // Autorizado para la reparación
         }
     }
+
 
 
     public void cambiarEstado(ActionEvent actionEvent) {
@@ -381,16 +467,25 @@ public class verPresupuestosController {
 
         resultado.ifPresent(estadoSeleccionado -> {
 
-
-            int estado = presupuestoDAO.obtenerEstadoIntDesdeBD(estadoSeleccionado);;
+            EquipoDAO equipoDAO = new EquipoDAO();
+            int estado = presupuestoDAO.obtenerEstadoIntDesdeBD(estadoSeleccionado);
+            System.out.println();
             if (estado == 3){
                 // si el presupuesto es cancelado, cambiamos el estado del equipo a no autorizado para la reparación
-                EquipoDAO equipoDAO = new EquipoDAO();
-                equipoDAO.actualizarEstadoEquipo(presupuesto.getIdEquipo(),estado);
+
+                equipoDAO.actualizarEstadoEquipo(presupuesto.getIdEquipo(),4);
+            } else if (estado==2) {
+                //presupuesto aprobado = equipo autorizado para la reparación
+                equipoDAO.actualizarEstadoEquipo(presupuesto.getIdEquipo(),5);
             }
             presupuestoDAO.cambiarEstadoPresupuesto(presupuesto,estado);
 
         });
+    }
+
+    public void QuitarFiltros(ActionEvent actionEvent) {
+        presupuestoDAO= new PresupuestoDAO();
+        cargarDatos(presupuestoDAO.selectAllPresupuestos());
     }
 }
 

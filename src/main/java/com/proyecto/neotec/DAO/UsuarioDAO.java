@@ -1,6 +1,7 @@
 package com.proyecto.neotec.DAO;
 
 import com.proyecto.neotec.bbdd.Database;
+import com.proyecto.neotec.models.Cliente;
 import com.proyecto.neotec.models.Usuario;
 import org.mindrot.jbcrypt.BCrypt;
 
@@ -349,6 +350,132 @@ public class UsuarioDAO {
         }
 
         return usuario;
+    }
+
+    public List<Usuario> buscarPorEmail(String email) {
+        String sql = "SELECT * FROM usuarios WHERE email LIKE ?";
+        List<Usuario> usuarios = new ArrayList<>();
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, "%" + email + "%");
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Usuario usuario = new Usuario();
+                    usuario.setIdusuarios(rs.getInt("idusuarios"));
+                    usuario.setNombre(rs.getString("nombre"));
+                    usuario.setApellido(rs.getString("apellido"));
+                    usuario.setEmail(rs.getString("email"));
+                    usuario.setDni(rs.getInt("dni"));
+                    usuario.setActivo(rs.getInt("activo") == 1 ? "Activo" : "Inactivo");
+                    usuario.setContrasenna(rs.getString("contrasenna"));
+                    usuario.setFechaCreacion(rs.getString("fecha_creacion"));
+                    usuario.setFechaModificacion(rs.getString("fecha_modificacion"));
+                    usuario.setRol(rs.getString("rol"));
+                    usuario.setUltimoAcceso(rs.getString("ultimo_acceso"));
+                    usuarios.add(usuario);
+                }
+            }
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+
+        return usuarios;
+    }
+
+    public List<Usuario> buscarPorDNI(String dni) {
+        String sql = "SELECT * FROM usuarios WHERE dni LIKE ?";
+        List<Usuario> usuarios = new ArrayList<>();
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, "%" + dni + "%");
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Usuario usuario = new Usuario();
+                    usuario.setIdusuarios(rs.getInt("idusuarios"));
+                    usuario.setNombre(rs.getString("nombre"));
+                    usuario.setApellido(rs.getString("apellido"));
+                    usuario.setEmail(rs.getString("email"));
+                    usuario.setDni(rs.getInt("dni"));
+                    usuario.setActivo(rs.getInt("activo") == 1 ? "Activo" : "Inactivo");
+                    usuario.setContrasenna(rs.getString("contrasenna"));
+                    usuario.setFechaCreacion(rs.getString("fecha_creacion"));
+                    usuario.setFechaModificacion(rs.getString("fecha_modificacion"));
+                    usuario.setRol(rs.getString("rol"));
+                    usuario.setUltimoAcceso(rs.getString("ultimo_acceso"));
+                    usuarios.add(usuario);
+                }
+            }
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+        return usuarios;
+    }
+
+    public List<Usuario> buscarNombreCompleto(String nombre) {
+        String sql = "SELECT * FROM usuarios WHERE nombre LIKE ? OR apellido LIKE ?";
+        List<Usuario> usuarios = new ArrayList<>();
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            String searchPattern = "%" + nombre + "%";
+            stmt.setString(1, searchPattern);
+            stmt.setString(2, searchPattern);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Usuario usuario = new Usuario();
+                    usuario.setIdusuarios(rs.getInt("idusuarios"));
+                    usuario.setNombre(rs.getString("nombre"));
+                    usuario.setApellido(rs.getString("apellido"));
+                    usuario.setEmail(rs.getString("email"));
+                    usuario.setDni(rs.getInt("dni"));
+                    usuario.setActivo(rs.getInt("activo") == 1 ? "Activo" : "Inactivo");
+                    usuario.setContrasenna(rs.getString("contrasenna"));
+                    usuario.setFechaCreacion(rs.getString("fecha_creacion"));
+                    usuario.setFechaModificacion(rs.getString("fecha_modificacion"));
+                    usuario.setRol(rs.getString("rol"));
+                    usuario.setUltimoAcceso(rs.getString("ultimo_acceso"));
+                    usuarios.add(usuario);
+                }
+            }
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+        return usuarios;
+    }
+
+    public List<Usuario> filtrarActivoInnactivo(int estado) {
+        List<Usuario> usuarios = new ArrayList<>();
+        String query = "SELECT * FROM usuarios WHERE activo = ?"; // Filtrando por estado
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setInt(1, estado);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Usuario usuario = new Usuario();
+                    usuario.setIdusuarios(rs.getInt("idusuarios"));
+                    usuario.setNombre(rs.getString("nombre"));
+                    usuario.setApellido(rs.getString("apellido"));
+                    usuario.setEmail(rs.getString("email"));
+                    usuario.setDni(rs.getInt("dni"));
+                    usuario.setActivo(rs.getInt("activo") == 1 ? "Activo" : "Inactivo");
+                    usuario.setContrasenna(rs.getString("contrasenna"));
+                    usuario.setFechaCreacion(rs.getString("fecha_creacion"));
+                    usuario.setFechaModificacion(rs.getString("fecha_modificacion"));
+                    usuario.setRol(rs.getString("rol"));
+                    usuario.setUltimoAcceso(rs.getString("ultimo_acceso"));
+                    usuarios.add(usuario);
+                }
+            }
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+        return usuarios;
     }
 }
 

@@ -24,7 +24,7 @@
         </Label>
         <VBox layoutX="20.0" layoutY="86.0" prefHeight="455.0" prefWidth="312.0" spacing="20.0">
             <children>
-                <Label text="Dueño">
+                <Label text="DNI del Cliente">
                     <font>
                         <Font name="System Italic" size="20.0" />
                     </font>

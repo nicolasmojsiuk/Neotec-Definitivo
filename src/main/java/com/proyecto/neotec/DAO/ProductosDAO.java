@@ -3,6 +3,7 @@ package com.proyecto.neotec.DAO;
 import com.proyecto.neotec.bbdd.Database;
 
 import com.proyecto.neotec.models.Productos;
+
 import javax.swing.JOptionPane;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -291,5 +292,163 @@ public class ProductosDAO {
         return false;
     }
 
+
+    public List<Productos> buscarPorCodigoProducto(String texto) {
+        String sql = "SELECT p.*, c.nombre FROM productos p " +
+                "INNER JOIN categoriaproductos c ON p.idcategoria = c.idcategoriaProductos " +
+                "WHERE p.codigoProducto LIKE ?";
+        List<Productos> productos = new ArrayList<>();
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, "%" + texto + "%");
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Productos producto = new Productos();
+                    producto.setIdProductos(rs.getInt("idproductos"));
+                    producto.setCodigoProducto(rs.getString("codigoProducto"));
+                    producto.setMarca(rs.getString("marca"));
+                    producto.setCantidad(rs.getInt("cantidad"));
+                    producto.setPrecioCosto(rs.getInt("precioCosto")); // usar getFloat() o getBigDecimal() si es necesario
+                    producto.setPrecioUnitario(rs.getInt("precioUnitario"));
+                    producto.setDescripcion(rs.getString("descripcion"));
+                    producto.setNombreProducto(rs.getString("nombreProducto"));
+                    producto.setCategoriaString(rs.getString("nombre")); // nombre de la categoría
+                    producto.setCategoriaInt(rs.getInt("idcategoria"));
+                    productos.add(producto);
+                }
+            }
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+        return productos;
+    }
+
+
+    public List<Productos> buscarPorNombreProducto(String texto) {
+        String sql = "SELECT p.*, c.nombre FROM productos p " +
+                "INNER JOIN categoriaproductos c ON p.idcategoria = c.idcategoriaProductos " +
+                "WHERE p.nombreProducto LIKE ?";
+        List<Productos> productos = new ArrayList<>();
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, "%" + texto + "%"); // Búsqueda parcial
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Productos producto = new Productos();
+                    producto.setIdProductos(rs.getInt("idproductos"));
+                    producto.setCodigoProducto(rs.getString("codigoProducto"));
+                    producto.setMarca(rs.getString("marca"));
+                    producto.setCantidad(rs.getInt("cantidad"));
+                    producto.setPrecioCosto(rs.getInt("precioCosto"));
+                    producto.setPrecioUnitario(rs.getInt("precioUnitario"));
+                    producto.setDescripcion(rs.getString("descripcion"));
+                    producto.setNombreProducto(rs.getString("nombreProducto"));
+                    producto.setCategoriaString(rs.getString("nombre"));
+                    producto.setCategoriaInt(rs.getInt("idcategoria"));
+                    productos.add(producto);
+                }
+            }
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+        return productos;
+    }
+
+    public List<Productos> buscarPorMarcaProducto(String texto) {
+        String sql = "SELECT p.*, c.nombre FROM productos p " +
+                "INNER JOIN categoriaproductos c ON p.idcategoria = c.idcategoriaProductos " +
+                "WHERE p.marca LIKE ?";
+        List<Productos> productos = new ArrayList<>();
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, "%" + texto + "%"); // Búsqueda parcial
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Productos producto = new Productos();
+                    producto.setIdProductos(rs.getInt("idproductos"));
+                    producto.setCodigoProducto(rs.getString("codigoProducto"));
+                    producto.setMarca(rs.getString("marca"));
+                    producto.setCantidad(rs.getInt("cantidad"));
+                    producto.setPrecioCosto(rs.getInt("precioCosto"));
+                    producto.setPrecioUnitario(rs.getInt("precioUnitario"));
+                    producto.setDescripcion(rs.getString("descripcion"));
+                    producto.setNombreProducto(rs.getString("nombreProducto"));
+                    producto.setCategoriaString(rs.getString("nombre"));
+                    producto.setCategoriaInt(rs.getInt("idcategoria"));
+                    productos.add(producto);
+                }
+            }
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+        return productos;
+    }
+
+    public List<Productos> filtrarPorCategoria(int idCategoria) {
+        List<Productos> productos = new ArrayList<>();
+        String query = "SELECT p.idproductos, p.codigoProducto, p.marca, p.idcategoria, p.cantidad, " +
+                "p.precioCosto, p.precioUnitario, p.descripcion, p.nombreProducto, " +
+                "c.nombre FROM productos p " +
+                "INNER JOIN categoriaproductos c ON p.idcategoria = c.idcategoriaProductos " +
+                "WHERE p.idcategoria = ?";
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setInt(1, idCategoria);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                Productos producto = new Productos();
+                producto.setIdProductos(rs.getInt("idproductos"));
+                producto.setCodigoProducto(rs.getString("codigoProducto"));
+                producto.setMarca(rs.getString("marca"));
+                producto.setCategoriaInt(rs.getInt("idcategoria"));
+                producto.setCantidad(rs.getInt("cantidad"));
+                producto.setPrecioCosto(rs.getInt("precioCosto")); // Si es DECIMAL, usar getBigDecimal()
+                producto.setPrecioUnitario(rs.getInt("precioUnitario"));
+                producto.setDescripcion(rs.getString("descripcion"));
+                producto.setNombreProducto(rs.getString("nombreProducto"));
+                producto.setCategoriaString(rs.getString("nombre")); // nombre de la categoría
+                productos.add(producto);
+            }
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+        return productos;
+    }
+
+
+    public List<String> obtenerCategorias(List<String> estados) {
+        String query = "SELECT * FROM categoriaproductos";
+        try (Connection conn = Database.getConnection();
+        PreparedStatement stmt = conn.prepareStatement(query)){
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()){
+                estados.add(rs.getString("nombre"));
+            }
+        }catch (SQLException e ){
+            Database.handleSQLException(e);
+        }
+        return  estados;
+    }
+    public int obtenerIDcategorias(String categoria) {
+        int estado= -1;
+        String query = "SELECT idcategoriaProductos FROM categoriaproductos WHERE nombre = ?";
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)){
+            stmt.setString(1,categoria);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()){
+                estado= rs.getInt("idcategoriaProductos");
+            }
+        }catch (SQLException e ){
+            Database.handleSQLException(e);
+        }
+        return  estado;
+    }
 
 }

@@ -4,17 +4,20 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ToggleButton?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Pane?>
 <?import javafx.scene.text.Font?>
 
 <Pane prefHeight="642.0" prefWidth="1300.0" style="-fx-background-color: #060717;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.proyecto.neotec.controllers.VerUsuariosController">
    <children>
-      <Label fx:id="lblUsuarios" layoutX="14.0" layoutY="8.0" text="Usuarios">
+      <Label fx:id="lblUsuarios" layoutX="14.0" text="Usuarios">
          <font>
             <Font size="29.0" />
          </font>
       </Label>
-      <TableView fx:id="tablaUsuarios" layoutX="6.0" layoutY="55.0" prefHeight="516.0" prefWidth="1287.0">
+      <TableView fx:id="tablaUsuarios" layoutX="14.0" layoutY="94.0" prefHeight="477.0" prefWidth="1279.0">
         <columns>
           <TableColumn fx:id="columna1" prefWidth="41.0" text="N°" />
           <TableColumn fx:id="columna2" prefWidth="170.0" text="Nombre" />
@@ -28,20 +31,31 @@
             <TableColumn fx:id="columna10" prefWidth="146.0" text="Fecha Modificación" />
         </columns>
       </TableView>
-      <Button fx:id="btnActivoInactivo" layoutX="1136.0" layoutY="583.0" mnemonicParsing="false" onAction="#cambiarActivoUsuario" prefHeight="35.0" prefWidth="140.0" text="Activo | Inactivo">
+      <Button fx:id="btnActivoInactivo" layoutX="1136.0" layoutY="588.0" mnemonicParsing="false" onAction="#cambiarActivoUsuario" prefHeight="35.0" prefWidth="140.0" text="Activo | Inactivo">
          <font>
             <Font size="16.0" />
          </font>
       </Button>
-      <Button fx:id="btnMod" layoutX="981.0" layoutY="583.0" mnemonicParsing="false" onAction="#mostrarFormModificarUsuario" prefHeight="27.0" prefWidth="140.0" text="Modificar">
+      <Button fx:id="btnMod" layoutX="981.0" layoutY="589.0" mnemonicParsing="false" onAction="#mostrarFormModificarUsuario" prefHeight="27.0" prefWidth="140.0" text="Modificar">
          <font>
             <Font size="16.0" />
          </font>
       </Button>
-      <Button fx:id="btnCrearUsuario" layoutX="826.0" layoutY="583.0" mnemonicParsing="false" onAction="#mostrarFormCrearUsuario" prefHeight="27.0" prefWidth="130.0" text="Crear">
+      <Button fx:id="btnCrearUsuario" layoutX="826.0" layoutY="589.0" mnemonicParsing="false" onAction="#mostrarFormCrearUsuario" prefHeight="27.0" prefWidth="130.0" text="Crear">
          <font>
             <Font size="16.0" />
          </font>
       </Button>
+       <TextField fx:id="txtBuscardor" layoutX="14.0" layoutY="49.0" prefHeight="25.0" prefWidth="266.0" promptText="Buscar..." />
+       <Label layoutX="325.0" layoutY="21.0" text="Filtros:" />
+      <HBox layoutX="313.0" layoutY="49.0" prefHeight="25.0" prefWidth="656.0" spacing="20.0">
+         <children>
+             <ToggleButton fx:id="toggleNombreCompleto" mnemonicParsing="false" text="Nombre/Apellido" />
+             <ToggleButton fx:id="toggleDNI" mnemonicParsing="false" text="DNI" />
+             <ToggleButton fx:id="toggleEmail" mnemonicParsing="false" text="Email" />
+             <ToggleButton fx:id="toggleActivos" mnemonicParsing="false" prefHeight="25.0" prefWidth="69.0" text="Activos" />
+             <ToggleButton fx:id="toggleInactivos" mnemonicParsing="false" text="Innactivos" />
+         </children>
+      </HBox>
    </children>
 </Pane>

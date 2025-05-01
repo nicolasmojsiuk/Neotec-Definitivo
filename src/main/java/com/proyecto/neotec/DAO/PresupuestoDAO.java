@@ -1,6 +1,7 @@
 package com.proyecto.neotec.DAO;
 
 import com.proyecto.neotec.bbdd.Database;
+import com.proyecto.neotec.models.Equipos;
 import com.proyecto.neotec.models.Presupuestos;
 
 import java.sql.*;
@@ -92,7 +93,7 @@ public class PresupuestoDAO {
         }
         EquipoDAO cambiarestadoEquipo = new EquipoDAO();
         //Se cambia de revisión a Espera autorización el equipo:
-        cambiarestadoEquipo.actualizarEstadoEquipo(idEquipo,1);
+        cambiarestadoEquipo.actualizarEstadoEquipo(idEquipo,3);
         return IDgenerado;
     }
 
@@ -275,7 +276,7 @@ public class PresupuestoDAO {
 
         return false; // Si no se encontró el presupuesto o hubo error
     }
-    public boolean estaPagadoEnEstado(int idPresupuesto) {
+    public boolean verificarEstadoPagado(int idPresupuesto) {
         String sql = "SELECT 1 FROM presupuestos WHERE idpresupuestos = ? AND estado = 4 LIMIT 1";
 
         try (Connection conn = Database.getConnection();
@@ -291,25 +292,23 @@ public class PresupuestoDAO {
         }
     }
 
+    public List<Presupuestos> buscarPorFechaCreacion(String fechaFormateada) {
+        List<Presupuestos> presupuestos = new ArrayList<>();
+        String query = "SELECT * FROM presupuestos WHERE fechaHora >= ? AND fechaHora < ?";
+        Presupuestos presupuesto;
 
-        // Método para obtener el presupuesto asociado a un equipo
-        public Presupuestos obtenerPresupuestoPorIdEquipo(int idEquipo) {
-            Presupuestos presupuesto = null;
-            // SQL para obtener el presupuesto con el idEquipo
-            String query = "SELECT * FROM presupuestos WHERE idEquipo = ?";
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            // Buscar presupuestos creados estableciendo un rango de fecha y hora
+            stmt.setString(1, fechaFormateada + " 00:00:00");
+            stmt.setString(2, fechaFormateada + " 23:59:59");
 
-            try (Connection conn = Database.getConnection(); // Usamos un método para obtener la conexión
-                 PreparedStatement stmt = conn.prepareStatement(query)) {
-
-                // Establecer el valor del idEquipo en la consulta
-                stmt.setInt(1, idEquipo);
-
-                // Ejecutar la consulta
-                ResultSet rs = stmt.executeQuery();
-
-                // Si se encuentra el presupuesto, creamos el objeto y lo devolvemos
-                if (rs.next()) {
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
                     presupuesto = new Presupuestos();
+                    ClienteDAO clienteDAO = new ClienteDAO();
+                    EquipoDAO equipoDAO = new EquipoDAO();
+                    presupuesto.setPropietario(clienteDAO.obtenerNombre(equipoDAO.obtenerPropietario(rs.getInt("idEquipo")).getIdcliente()));
                     presupuesto.setIdpresupuesto(rs.getInt("idpresupuestos"));
                     presupuesto.setIdEquipo(rs.getInt("idEquipo"));
                     presupuesto.setCostosVariables(rs.getInt("costosVariables"));
@@ -320,12 +319,103 @@ public class PresupuestoDAO {
                     presupuesto.setObservaciones(rs.getString("observaciones"));
                     presupuesto.setTotalProductos(rs.getFloat("totalProductos"));
                     presupuesto.setFechaHora(rs.getString("fechaHora"));
+                    presupuestos.add(presupuesto);
                 }
-            } catch (SQLException e) {
-                e.printStackTrace(); // Manejo de errores
             }
-
-            return presupuesto; // Devuelve el presupuesto encontrado o null si no existe
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
         }
+
+        return presupuestos;
+    }
+
+    public List<Presupuestos> buscarPresupuestosPorNombreDeEquipo(String nombreParcial) {
+        List<Presupuestos> lista = new ArrayList<>();
+        String query = "SELECT p.* FROM presupuestos p " +
+                "JOIN equipos e ON p.idEquipo = e.idequipos " +
+                "WHERE e.dispositivo LIKE ?";
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+
+            stmt.setString(1, "%" + nombreParcial + "%");
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Presupuestos presupuesto = new Presupuestos();
+
+                    EquipoDAO equipoDAO = new EquipoDAO();
+                    ClienteDAO clienteDAO = new ClienteDAO();
+
+                    presupuesto.setIdpresupuesto(rs.getInt("idpresupuestos"));
+                    presupuesto.setIdEquipo(rs.getInt("idEquipo"));
+                    presupuesto.setEquipo(equipoDAO.obtenerEquipoPorId(presupuesto.getIdEquipo()).getDispositivo());
+                    presupuesto.setCostosVariables(rs.getInt("costosVariables"));
+                    presupuesto.setEstado(rs.getInt("estado"));
+                    presupuesto.setPrecioTotal(rs.getInt("precioTotal"));
+                    presupuesto.setDiasEstimados(rs.getInt("diasEstimados"));
+                    presupuesto.setManoDeObra(rs.getInt("costoManoDeObra"));
+                    presupuesto.setObservaciones(rs.getString("observaciones"));
+                    presupuesto.setTotalProductos(rs.getFloat("totalProductos"));
+                    presupuesto.setFechaHora(rs.getString("fechaHora"));
+                    presupuesto.setPropietario(
+                            clienteDAO.obtenerNombre(
+                                    equipoDAO.obtenerPropietario(rs.getInt("idEquipo")).getIdcliente()
+                            )
+                    );
+                    lista.add(presupuesto);
+                }
+            }
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+
+        return lista;
+    }
+
+    public List<Presupuestos> buscarPresupuestosPorNombreCliente(String nombreParcial) {
+        List<Presupuestos> lista = new ArrayList<>();
+        String query = "SELECT p.*, e.dispositivo, c.nombre, c.apellido " +
+                "FROM presupuestos p " +
+                "JOIN equipos e ON p.idEquipo = e.idequipos " +
+                "JOIN clientes c ON e.idclientes = c.idclientes " +
+                "WHERE c.nombre LIKE ? OR c.apellido LIKE ?";
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+
+            String likePattern = "%" + nombreParcial + "%";
+            stmt.setString(1, likePattern);
+            stmt.setString(2, likePattern);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Presupuestos presupuesto = new Presupuestos();
+
+                    presupuesto.setIdpresupuesto(rs.getInt("idpresupuestos"));
+                    presupuesto.setIdEquipo(rs.getInt("idEquipo"));
+                    presupuesto.setEquipo(rs.getString("dispositivo"));
+                    presupuesto.setCostosVariables(rs.getInt("costosVariables"));
+                    presupuesto.setEstado(rs.getInt("estado"));
+                    presupuesto.setPrecioTotal(rs.getInt("precioTotal"));
+                    presupuesto.setDiasEstimados(rs.getInt("diasEstimados"));
+                    presupuesto.setManoDeObra(rs.getInt("costoManoDeObra"));
+                    presupuesto.setObservaciones(rs.getString("observaciones"));
+                    presupuesto.setTotalProductos(rs.getFloat("totalProductos"));
+                    presupuesto.setFechaHora(rs.getString("fechaHora"));
+
+                    // Concatenamos nombre + apellido del cliente
+                    String nombreCompleto = rs.getString("nombre") + " " + rs.getString("apellido");
+                    presupuesto.setPropietario(nombreCompleto);
+
+                    lista.add(presupuesto);
+                }
+            }
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+
+        return lista;
+    }
 
 }

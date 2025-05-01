@@ -15,6 +15,7 @@ public class Equipos {
     private String img3;
     private String img4;
 
+
     public String getImg1() {
         return img1;
     }

@@ -461,25 +461,6 @@ public class EquipoDAO {
         return equipos;
     }
 
-    public boolean verificarEstadoEquipo(int idEquipo, int estadoEsperado) {
-        String sql = "SELECT estado FROM equipos WHERE idequipos = ?";
-
-        try (Connection conn = Database.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setInt(1, idEquipo);
-            ResultSet rs = stmt.executeQuery();
-
-            if (rs.next()) {
-                int estadoBD = rs.getInt("estado");
-                return estadoBD == estadoEsperado;
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return false;
-    }
 
     public List<Equipos> buscarPorFechaIngreso(String texto) {
         List<Equipos> equipos = new ArrayList<>();

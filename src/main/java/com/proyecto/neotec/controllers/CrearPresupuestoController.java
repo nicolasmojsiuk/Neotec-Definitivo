@@ -77,9 +77,6 @@ public class CrearPresupuestoController {
     private ObservableList<Productos> productosUtilizados;
     private Stage stage;
     private Equipos equipo;
-
-
-
     @FXML
     public void initialize() {
         //TODO: Atajo de teclas
@@ -355,14 +352,17 @@ public class CrearPresupuestoController {
             File file = new File(destino); // "destino" es la ruta del PDF que generaste
             if (file.exists()) {
                 Desktop.getDesktop().open(file);
+                MostrarAlerta.mostrarAlerta("Crear Presupuesto", "El presupuesto ha sido creado", Alert.AlertType.INFORMATION);
+                stage.close();
             } else {
-                System.out.println("Error al abrir el archivo");
+                MostrarAlerta.mostrarAlerta("Error", "Error al abrir el archivo", Alert.AlertType.ERROR);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
     public int guardarPresupuesto() {
+        System.out.println("ESTADO EQUIPO AL GUARDAR EL PRESUPUESTO: "+equipo.getEstado());
         int idequipo = equipo.getId();
         PresupuestoDAO presupuestoDAO = new PresupuestoDAO();
         if (presupuestoDAO.existePresupuestoParaEquipo(idequipo)) {
@@ -379,7 +379,9 @@ public class CrearPresupuestoController {
         float totalGeneral = totalProductos + manoDeObra + costosVariables;
         String observaciones = txaObs.getText();
         PresupuestoDAO pd = new PresupuestoDAO();
+        // El estado del presupuesto es asignado manuealmente en insertPresupuesto()
         int respuesta = pd.insertPresupuesto(spTiempoReparacion.getValue(), costosVariables, manoDeObra, totalGeneral, idequipo, totalProductos, observaciones);
+
 
         if (respuesta == -1) {
             MostrarAlerta.mostrarAlerta("Crear Presupuesto", "Error: El equipo ya tiene asociado un presupuesto.", Alert.AlertType.WARNING);

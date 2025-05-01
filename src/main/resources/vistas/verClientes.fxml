@@ -4,6 +4,8 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ToggleButton?>
 <?import javafx.scene.layout.Pane?>
 <?import javafx.scene.text.Font?>
 
@@ -14,7 +16,7 @@
             <Font size="29.0" />
          </font>
       </Label>
-      <TableView fx:id="tablaClientes" layoutX="6.0" layoutY="55.0" prefHeight="516.0" prefWidth="1287.0">
+      <TableView fx:id="tablaClientes" layoutX="6.0" layoutY="120.0" prefHeight="455.0" prefWidth="1287.0">
          <columns>
             <TableColumn fx:id="columna1" prefWidth="98.0" text="N°" />
             <TableColumn fx:id="columna2" prefWidth="177.0" text="Nombre" />
@@ -40,5 +42,13 @@
             <Font size="16.0" />
          </font>
       </Button>
+      <TextField fx:id="txtBuscardor" layoutX="14.0" layoutY="49.0" prefHeight="25.0" prefWidth="266.0" promptText="Buscar..." />
+      <ToggleButton fx:id="toggleNombreCliente" layoutX="305.0" layoutY="49.0" mnemonicParsing="false" text="Nombre/Apellido" />
+      <ToggleButton fx:id="toggleActivos" layoutX="729.0" layoutY="49.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="69.0" text="Activos" />
+      <ToggleButton fx:id="toggleInactivos" layoutX="820.0" layoutY="49.0" mnemonicParsing="false" text="Innactivos" />
+      <Label layoutX="325.0" layoutY="21.0" text="Filtros:" />
+      <ToggleButton fx:id="toggleTelefono" layoutX="519.0" layoutY="49.0" mnemonicParsing="false" text="Telefono" />
+      <ToggleButton fx:id="toggleEmail" layoutX="618.0" layoutY="49.0" mnemonicParsing="false" text="Email" />
+      <ToggleButton fx:id="toggleDNI" layoutX="452.0" layoutY="49.0" mnemonicParsing="false" text="DNI" />
    </children>
 </Pane>

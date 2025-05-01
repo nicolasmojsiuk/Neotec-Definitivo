@@ -1,31 +1,45 @@
 package com.proyecto.neotec.controllers;
 
+import com.proyecto.neotec.DAO.ClienteDAO;
 import com.proyecto.neotec.DAO.UsuarioDAO;
+import com.proyecto.neotec.models.Cliente;
 import com.proyecto.neotec.models.Usuario;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Label;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 
 public class VerUsuariosController {
+    @FXML
+    public TextField txtBuscardor;
+    @FXML
+    public ToggleButton toggleNombreCompleto;
+    @FXML
+    public ToggleButton toggleActivos;
+    @FXML
+    public ToggleButton toggleInactivos;
+    @FXML
+    public ToggleButton toggleEmail;
+    @FXML
+    public ToggleButton toggleDNI;
 
     @FXML
     private TableView<Usuario> tablaUsuarios;
-    @FXML
-    private Label lblUsuarios;
+
 
     @FXML
     private TableColumn<Usuario, Integer> columna1;
@@ -56,6 +70,72 @@ public class VerUsuariosController {
         usuarioDAO = new UsuarioDAO();
         // Cargar datos
         cargarDatos();
+        txtBuscardor.setDisable(true);
+
+        ToggleGroup toggleGroup = new ToggleGroup();
+        toggleDNI.setToggleGroup(toggleGroup);
+        toggleEmail.setToggleGroup(toggleGroup);
+        toggleNombreCompleto.setToggleGroup(toggleGroup);
+        Timeline timeline = new Timeline(
+                new KeyFrame(Duration.millis(1000), event -> {
+                    String newValue = txtBuscardor.getText().trim();
+                    if (!newValue.isEmpty()) {
+                        List<Usuario> listaUsuarios = new ArrayList<>();
+                        if (toggleEmail.isSelected()) {
+                            listaUsuarios = usuarioDAO.buscarPorEmail(newValue);
+                        }
+                        if (toggleDNI.isSelected()) {
+                            listaUsuarios = usuarioDAO.buscarPorDNI(newValue);
+                        } if (toggleNombreCompleto.isSelected()) {
+                            listaUsuarios = usuarioDAO.buscarNombreCompleto(newValue);
+                        }
+                        tablaUsuarios.getItems().setAll(listaUsuarios);
+                    } else {
+                        tablaUsuarios.getItems().clear();
+                    }
+                })
+        );
+        timeline.setCycleCount(1);
+        toggleGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue == null) {
+                txtBuscardor.setDisable(true);
+                txtBuscardor.setText("");
+                cargarDatos();
+            } else {
+                txtBuscardor.setDisable(false);
+                if (!txtBuscardor.getText().trim().isEmpty()) {
+                    timeline.playFromStart();
+                }
+            }
+        });
+
+        txtBuscardor.textProperty().addListener((observable, oldValue, newValue) -> {
+            timeline.stop();
+            if (!newValue.trim().isEmpty()) {
+                timeline.playFromStart();
+            } else {
+                cargarDatos();
+            }
+        });
+
+        ToggleGroup toggleGroupEstados = new ToggleGroup();
+        toggleActivos.setToggleGroup(toggleGroupEstados);
+        toggleInactivos.setToggleGroup(toggleGroupEstados);
+
+        toggleGroupEstados.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue != null) {
+                ToggleButton selectedToggle = (ToggleButton) newValue;
+                if (selectedToggle.equals(toggleActivos)) {
+                    List<Usuario> listausuarios =usuarioDAO.filtrarActivoInnactivo(1);
+                    tablaUsuarios.getItems().setAll(listausuarios);
+                } else if (selectedToggle.equals(toggleInactivos)) {
+                    List<Usuario> listausuarios =usuarioDAO.filtrarActivoInnactivo(0);
+                    tablaUsuarios.getItems().setAll(listausuarios);
+                }
+            } else {
+                cargarDatos();
+            }
+        });
     }
 
     private void cargarDatos() {

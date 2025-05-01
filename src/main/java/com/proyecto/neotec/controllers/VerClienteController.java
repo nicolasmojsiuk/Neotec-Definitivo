@@ -1,35 +1,41 @@
 package com.proyecto.neotec.controllers;
 
 import com.proyecto.neotec.DAO.ClienteDAO;
-import com.proyecto.neotec.DAO.UsuarioDAO;
 import com.proyecto.neotec.models.Cliente;
-import com.proyecto.neotec.models.Usuario;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Label;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-
+import javafx.util.Duration;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class VerClienteController {
-
-
+    @FXML
+    public ToggleButton toggleNombreCliente;
+    @FXML
+    public TextField txtBuscardor;
+    @FXML
+    public ToggleButton toggleActivos;
+    @FXML
+    public ToggleButton toggleInactivos;
+    @FXML
+    public ToggleButton toggleEmail;
+    @FXML
+    public ToggleButton toggleTelefono;
+    @FXML
+    public ToggleButton toggleDNI;
     @FXML
     private TableView<Cliente> tablaClientes;
-    @FXML
-    private Label lblUsuarios;
-
     @FXML
     private TableColumn<Cliente, Integer> columna1;
     @FXML
@@ -50,12 +56,88 @@ public class VerClienteController {
 
     @FXML
     public void initialize() {
-        // Inicializar el DAO y la lista observable
         clienteDAO = new ClienteDAO();
-        // Cargar datos
         cargarDatos();
+
+        txtBuscardor.setDisable(true);
+
+        ToggleGroup toggleGroup = new ToggleGroup();
+        toggleDNI.setToggleGroup(toggleGroup);
+        toggleEmail.setToggleGroup(toggleGroup);
+        toggleNombreCliente.setToggleGroup(toggleGroup);
+        toggleTelefono.setToggleGroup(toggleGroup);
+        Timeline timeline = new Timeline(
+                new KeyFrame(Duration.millis(1000), event -> {
+                    String newValue = txtBuscardor.getText().trim();
+                    if (!newValue.isEmpty()) {
+                        ClienteDAO DAO = new ClienteDAO();
+                        List<Cliente> listaclientes = new ArrayList<>();
+                        if (toggleEmail.isSelected()) {
+                            listaclientes = DAO.buscarPorEmail(newValue);
+                        }
+                        if (toggleDNI.isSelected()) {
+                            listaclientes = DAO.buscarPorDNI(newValue);
+                        }
+                        if (toggleTelefono.isSelected()) {
+                            listaclientes = DAO.buscarPorTelefono(newValue);
+                        }
+                        if (toggleNombreCliente.isSelected()) {
+                            listaclientes = DAO.buscarClientes(newValue);
+                        }
+                        tablaClientes.getItems().setAll(listaclientes);
+                    } else {
+                        tablaClientes.getItems().clear();
+                    }
+                })
+        );
+        timeline.setCycleCount(1);
+        toggleGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue == null) {
+                txtBuscardor.setDisable(true);
+                txtBuscardor.setText("");
+                cargarDatos();
+            } else {
+                txtBuscardor.setDisable(false);
+                if (!txtBuscardor.getText().trim().isEmpty()) {
+                    timeline.playFromStart();
+                }
+            }
+        });
+
+        txtBuscardor.textProperty().addListener((observable, oldValue, newValue) -> {
+            timeline.stop();
+            if (!newValue.trim().isEmpty()) {
+                timeline.playFromStart();
+            } else {
+                cargarDatos();
+            }
+        });
+
+        ToggleGroup toggleGroupEstados = new ToggleGroup();
+        toggleActivos.setToggleGroup(toggleGroupEstados);
+        toggleInactivos.setToggleGroup(toggleGroupEstados);
+
+        toggleGroupEstados.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue != null) {
+                ToggleButton selectedToggle = (ToggleButton) newValue;
+                if (selectedToggle.equals(toggleActivos)) {
+                    BuscarActivosInnactivos(1);
+                } else if (selectedToggle.equals(toggleInactivos)) {
+                    BuscarActivosInnactivos(0);
+                }
+            } else {
+                cargarDatos();
+            }
+        });
     }
 
+    private void BuscarActivosInnactivos(int estado) {
+        List<Cliente> listaclientes =clienteDAO.filtrarActivoInnactivo(estado);
+        clientes.clear();
+        clientes.addAll(listaclientes);
+        // Configurar el TableView con la lista observable
+        tablaClientes.setItems(clientes);
+    }
     private void cargarDatos() {
         clientes = FXCollections.observableArrayList();
         // Configurar columnas
@@ -77,13 +159,10 @@ public class VerClienteController {
 
     public void mostrarFormModificarCliente() {
         Cliente clienteSeleccionado = tablaClientes.getSelectionModel().getSelectedItem();
-
         if (clienteSeleccionado == null) {
             mostrarAlerta("Error", "No se ha seleccionado ningún cliente.", Alert.AlertType.ERROR);
             return;
         }
-
-
         try {
             // Cargar el archivo FXML del formulario
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/vistas/modificarCliente.fxml"));

@@ -90,17 +90,45 @@ public class VerEquiposController {
         ToggleGroup toggleGroup = new ToggleGroup();
         toggleCliente.setToggleGroup(toggleGroup);
         toggleDispositivo.setToggleGroup(toggleGroup);
+        Timeline timeline = new Timeline(
+                new KeyFrame(Duration.millis(1000), event -> {
+                    String newValue = txtBuscardor.getText().trim();
+                    if (!newValue.isEmpty()) {
+                        EquipoDAO equipoDAO = new EquipoDAO();
+                        List<Equipos> listaequipos = new ArrayList<>();
+                        if (toggleDispositivo.isSelected()){
+                            listaequipos = equipoDAO.buscarDispositivo(newValue); // Obtener lista de listaequipos
+                        }
+                        if (toggleCliente.isSelected()){
+                            ClienteDAO clienteDAO = new ClienteDAO();
+                            List<Cliente> clientes = clienteDAO.buscarClientes(newValue); // Obtener lista de clientes
+                            listaequipos = equipoDAO.obtenerEquiposPorClientes(clientes);
+                        }
+                        tablaEquipos.getItems().setAll(listaequipos);
+                    } else {
+                        tablaEquipos.getItems().clear();
+                    }
+                })
+        );
+        timeline.setCycleCount(1);
         // Listener para detectar cambios en la selección
         toggleGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue == toggleCliente) {
-                txtBuscardor.setDisable(false);
-                BuscarporCliente();
-            } else if (newValue == toggleDispositivo) {
-                txtBuscardor.setDisable(false);
-                BuscarporDispositivo();
-            }else if (newValue == null){
+            if (newValue == null) {
                 txtBuscardor.setDisable(true);
                 txtBuscardor.setText("");
+                cargarDatos();
+            } else {
+                txtBuscardor.setDisable(false);
+                if (!txtBuscardor.getText().trim().isEmpty()) {
+                    timeline.playFromStart();
+                }
+            }
+        });
+        txtBuscardor.textProperty().addListener((observable, oldValue, newValue) -> {
+            timeline.stop();
+            if (!newValue.trim().isEmpty()) {
+                timeline.playFromStart();
+            } else {
                 cargarDatos();
             }
         });
@@ -134,6 +162,9 @@ public class VerEquiposController {
             buscarPorFechasalida(dateFechaSalida);
         });
     }
+
+
+
     private void cargarDatos() {
         EquipoDAO equipoDAO = new EquipoDAO();
         equipos = FXCollections.observableArrayList();
@@ -181,7 +212,8 @@ public class VerEquiposController {
 
             EquipoDAO equiposDAO = new EquipoDAO();
             List<Equipos> listaEquipos = equiposDAO.buscarFechaSalida(fechaFormateada);
-            actualizarTabla(null, listaEquipos);
+            tablaEquipos.getItems().setAll(listaEquipos);
+
         }
     }
 
@@ -194,7 +226,8 @@ public class VerEquiposController {
 
             EquipoDAO equiposDAO = new EquipoDAO();
             List<Equipos> listaEquipos = equiposDAO.buscarPorFechaIngreso(fechaFormateada);
-            actualizarTabla(null, listaEquipos);
+            tablaEquipos.getItems().setAll(listaEquipos);
+
         }
     }
     private void BuscarActivosInnactivos(int estado) {
@@ -343,101 +376,46 @@ public class VerEquiposController {
 
     public void sacarPresupuesto(ActionEvent actionEvent) {
         Equipos equipoSeleccionado = tablaEquipos.getSelectionModel().getSelectedItem();
+        System.out.println("ESTADO EQUIPO AL ABRIR VENTANA PRESUPUESTO DESDE VER EQUIPOS: "+equipoSeleccionado.getEstado());
         PresupuestoDAO presupuestoDAO = new PresupuestoDAO();
-        if (presupuestoDAO.existePresupuestoParaEquipo(equipoSeleccionado.getId())) {
-            MostrarAlerta.mostrarAlerta("No se puede crear el presupuesto",": Ya existe un presupuesto registrado para este equipo.", Alert.AlertType.INFORMATION);
+        if (equipoSeleccionado == null){
+            mostrarAlerta("Error","Debe seleccionar un equipo",Alert.AlertType.ERROR);
         }else {
-            try {
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/vistas/crearPresupuestos.fxml"));
-                Parent root = loader.load();
-                // Obtener el controlador del archivo FXML
-                CrearPresupuestoController controller = loader.getController();
-                // Pasar el usuario seleccionado al controlador
-                controller.setEquipo(equipoSeleccionado);
+            if (presupuestoDAO.existePresupuestoParaEquipo(equipoSeleccionado.getId())) {
+                MostrarAlerta.mostrarAlerta("No se puede crear el presupuesto",": Ya existe un presupuesto registrado para este equipo.", Alert.AlertType.INFORMATION);
+            }else {
+                try {
+                    FXMLLoader loader = new FXMLLoader(getClass().getResource("/vistas/crearPresupuestos.fxml"));
+                    Parent root = loader.load();
+                    // Obtener el controlador del archivo FXML
+                    CrearPresupuestoController controller = loader.getController();
+                    // Pasar el usuario seleccionado al controlador
+                    controller.setEquipo(equipoSeleccionado);
 
-                // Crear una nueva escena para el pop-up
-                Scene scene = new Scene(root);
+                    // Crear una nueva escena para el pop-up
+                    Scene scene = new Scene(root);
 
-                // Crear un nuevo Stage (ventana) para el pop-up
-                Stage stage = new Stage();
-                stage.setTitle("Sacar Presupuesto");
-                stage.setScene(scene);
-                stage.initModality(Modality.APPLICATION_MODAL); // Bloquea la ventana principal hasta que el pop-up se cierre
+                    // Crear un nuevo Stage (ventana) para el pop-up
+                    Stage stage = new Stage();
+                    stage.setTitle("Sacar Presupuesto");
+                    stage.setScene(scene);
+                    stage.initModality(Modality.APPLICATION_MODAL); // Bloquea la ventana principal hasta que el pop-up se cierre
 
-                // Establecer el Stage en el controlador
-                controller.setStage(stage);
+                    // Establecer el Stage en el controlador
+                    controller.setStage(stage);
 
-                // Mostrar el pop-up
-                stage.showAndWait();
-            } catch (IOException e) {
-                e.printStackTrace();
-                mostrarAlerta("Error", "Error al cargar la ventana de modificación.", Alert.AlertType.ERROR);
+                    // Mostrar el pop-up
+                    stage.showAndWait();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    mostrarAlerta("Error", "Error al cargar la ventana de modificación.", Alert.AlertType.ERROR);
+                }
             }
         }
     }
-    public void BuscarporDispositivo(){
-        Timeline timeline = new Timeline(
-                new KeyFrame(Duration.millis(1000), event -> {
-                    buscarDispositivo(txtBuscardor.getText()); // Llama al método con el texto del buscador
-                })
-        );
-        timeline.setCycleCount(1);
 
-        // Listener para detectar cambios en el texto
-        txtBuscardor.textProperty().addListener((observable, oldValue, newValue) -> {
-            timeline.stop(); // Detener la búsqueda si el usuario sigue escribiendo
 
-            if (!newValue.trim().isEmpty()) {
-                timeline.playFromStart(); // Reiniciar el temporizador de 1 segundo
-            } else {
-                actualizarTabla(null, new ArrayList<>()); // Vaciar la tabla si el campo está vacío
-            }
-        });
-    }
 
-    private void buscarDispositivo(String text) {
-        EquipoDAO equipoDAO = new EquipoDAO();
-        List<Equipos> listaequipos = equipoDAO.buscarDispositivo(text); // Obtener lista de listaequipos
-        actualizarTabla(null,listaequipos);
-    }
-
-    public void BuscarporCliente() {
-        Timeline timeline = new Timeline(
-                new KeyFrame(Duration.millis(1000), event -> {
-                    buscarClientes(txtBuscardor.getText()); // Llama al método con el texto del buscador
-                })
-        );
-        timeline.setCycleCount(1);
-
-        // Listener para detectar cambios en el texto
-        txtBuscardor.textProperty().addListener((observable, oldValue, newValue) -> {
-            timeline.stop(); // Detener la búsqueda si el usuario sigue escribiendo
-
-            if (!newValue.trim().isEmpty()) {
-                timeline.playFromStart(); // Reiniciar el temporizador de 1 segundo
-            } else {
-                actualizarTabla(new ArrayList<>(),null); // Vaciar la tabla si el campo está vacío
-            }
-        });
-    }
-
-    private void buscarClientes(String text) {
-        ClienteDAO clienteDAO = new ClienteDAO();
-        List<Cliente> clientes = clienteDAO.buscarClientes(text); // Obtener lista de clientes
-        actualizarTabla(clientes,null);
-    }
-
-    private void actualizarTabla(List<Cliente> clientes, List<Equipos> equipos) {
-        EquipoDAO dao = new EquipoDAO();
-
-        // Si no se proporciona la lista de equipos, obtenerlos desde los clientes
-        if (equipos == null) {
-            equipos = dao.obtenerEquiposPorClientes(clientes);
-        }
-
-        // Actualizar la tabla con la lista de equipos
-        tablaEquipos.getItems().setAll(equipos);
-    }
 
 
     public void DefinirEstados(ActionEvent actionEvent) {
@@ -477,10 +455,11 @@ public class VerEquiposController {
             if (estadoSeleccionado.equals("Seleccionar todos los Equipos")){
                 System.out.println(estadoSeleccionado);
                 List<Equipos> selectAllEquipos= equipoDAO.selectAllEquipos();
-                actualizarTabla(null,selectAllEquipos);
+                tablaEquipos.getItems().setAll(selectAllEquipos);
+
             }else{
                 List<Equipos> equiposFiltrados = equipoDAO.filtrarPorEstadoEquipo(equipoDAO.obtenerEstadoEquipoIdDesdeBD(estadoSeleccionado));
-                actualizarTabla(null,equiposFiltrados);
+                tablaEquipos.getItems().setAll(equiposFiltrados);
             }
             });
     }

@@ -27,7 +27,7 @@
         </Label>
         <VBox layoutX="20.0" layoutY="86.0" prefHeight="455.0" prefWidth="312.0" spacing="10.0">
             <children>
-                <Label text="Dueño">
+                <Label text="DNI del Cliente">
                     <font>
                         <Font name="System Italic" size="20.0" />
                     </font>
@@ -86,7 +86,7 @@
                 <Font size="19.0" />
             </font>
         </Button>
-        <Button fx:id="btnMod" layoutX="202.0" layoutY="609.0" mnemonicParsing="false" onAction="#modificar" prefHeight="30.0" prefWidth="99.0" text="Crear">
+        <Button fx:id="btnMod" layoutX="202.0" layoutY="609.0" mnemonicParsing="false" onAction="#modificar" prefHeight="40.0" prefWidth="111.0" text="Modificar">
             <font>
                 <Font size="19.0" />
             </font>

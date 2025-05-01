@@ -59,11 +59,11 @@ public class verProductosPresupuestosController {
         columna8.setCellValueFactory(new PropertyValueFactory<>("nombreProducto"));
 
         // Obtener los productos utilizados para el presupuesto
-        List<Productos> listaProductos = productosDAO.selectProductosUtilizados(idpresupuesto);
+      //  List<Productos> listaProductos = productosDAO.selectProductosUtilizados(idpresupuesto);
 
         // Limpiar la lista observable y agregar los nuevos datos
         producto.clear();
-        producto.addAll(listaProductos);
+      //  producto.addAll(listaProductos);
 
         // Configurar el TableView con la lista observable
         tablaProductos.setItems(producto);

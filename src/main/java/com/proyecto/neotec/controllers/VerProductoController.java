@@ -1,11 +1,16 @@
 package com.proyecto.neotec.controllers;
 
 import com.proyecto.neotec.DAO.ClienteDAO;
+import com.proyecto.neotec.DAO.EquipoDAO;
 import com.proyecto.neotec.DAO.ProductosDAO;
 import com.proyecto.neotec.models.Cliente;
+import com.proyecto.neotec.models.Equipos;
 import com.proyecto.neotec.models.Productos;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -13,16 +18,28 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 public class VerProductoController {
     @FXML
-    private Pane productos;
+    public Button btnCategoria;
+    @FXML
+    public ToggleButton toggleNombre;
+    @FXML
+    public ToggleButton toggleCodigo;
+    @FXML
+    public ToggleButton toggleMarca;
+    @FXML
+    public TextField txtBuscardor;
 
     @FXML
     private TableView<Productos> tablaProductos;
@@ -64,6 +81,57 @@ public class VerProductoController {
          // Enlaza el evento al método
         // Cargar datos
         cargarDatos();
+        ToggleGroup toggleGroup = new ToggleGroup();
+        toggleCodigo.setToggleGroup(toggleGroup);
+        toggleMarca.setToggleGroup(toggleGroup);
+        toggleNombre.setToggleGroup(toggleGroup);
+        txtBuscardor.setDisable(true);
+        Timeline timeline = new Timeline(
+                new KeyFrame(Duration.millis(1000), event -> {
+                    String newValue = txtBuscardor.getText().trim();
+                    if (!newValue.isEmpty()) {
+                        List<Productos> listaProductos = new ArrayList<>();
+                        if (toggleCodigo.isSelected()){
+                            listaProductos = productosDAO.buscarPorCodigoProducto(newValue);
+                        }
+                        if (toggleNombre.isSelected()){
+                            listaProductos = productosDAO.buscarPorNombreProducto(newValue);
+                        }
+                        if (toggleMarca.isSelected()) {
+                            listaProductos = productosDAO.buscarPorMarcaProducto(newValue);
+                        }
+                        tablaProductos.getItems().setAll(listaProductos);
+                    } else {
+                        tablaProductos.getItems().clear();
+                    }
+                })
+        );
+        timeline.setCycleCount(1);
+
+
+        toggleGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue == null) {
+                txtBuscardor.setDisable(true);
+                txtBuscardor.setText("");
+                cargarDatos();
+            } else {
+                txtBuscardor.setDisable(false);
+                if (!txtBuscardor.getText().trim().isEmpty()) {
+                    timeline.playFromStart();
+                }
+            }
+        });
+
+
+        txtBuscardor.textProperty().addListener((observable, oldValue, newValue) -> {
+            timeline.stop();
+            if (!newValue.trim().isEmpty()) {
+                timeline.playFromStart();
+            } else {
+                cargarDatos();
+            }
+        });
+
     }
     private void cargarDatos() {
         producto = FXCollections.observableArrayList();
@@ -180,24 +248,47 @@ public class VerProductoController {
         this.stage = stage;
     }
 
-    public List<Productos> SeleccionarProductoPresupuesto() {
-        Productos selectedProduct = tablaProductos.getSelectionModel().getSelectedItem();
+    public void filtrarPorCategoria(ActionEvent actionEvent) {
+        Dialog<String> dialog = new Dialog<>();
+        dialog.setTitle("Seleccionar Estado");
+        dialog.setHeaderText("Por favor, elige un estado:");
 
-        // Validamos si hay un producto seleccionado
-        if (selectedProduct != null) {
-            System.out.println("Seleccionado: " + selectedProduct.getNombreProducto());
-            System.out.println("id: " + selectedProduct.getIdProductos());
-            stage.close();
-            return productosDAO.obtenerProductoPresupuesto(selectedProduct.getIdProductos());
-        } else {
-            System.out.println("No se ha seleccionado ningún producto.");
-            return Collections.emptyList();
-        }
-    }
-    public void ocultarBotones() {
-        btnEliminar.setVisible(false);
-        btnMod.setVisible(false);
-        btnCrearProducto.setVisible(false);
-        btnSeleccionar.setVisible(true);
+        // Crear el ComboBox con opciones de estado
+        ComboBox<String> comboBox = new ComboBox<>();
+
+        List<String> estados = new ArrayList<>();
+        estados.add("Seleccionar todos los Productos");
+
+        comboBox.getItems().addAll(productosDAO.obtenerCategorias(estados));
+        comboBox.setValue(estados.get(0)); // Preseleccionar el primer estado
+
+        // Agregar el ComboBox al contenido del diálogo
+        VBox content = new VBox(10, new Label("Selecciona:"), comboBox);
+        dialog.getDialogPane().setContent(content);
+
+        // Agregar botones al diálogo
+        ButtonType btnAceptar = new ButtonType("Aceptar", ButtonBar.ButtonData.OK_DONE);
+        ButtonType btnCancelar = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
+        dialog.getDialogPane().getButtonTypes().addAll(btnAceptar, btnCancelar);
+
+        // Configurar resultado cuando se presiona "Aceptar"
+        dialog.setResultConverter(dialogButton ->
+                dialogButton == btnAceptar ? comboBox.getValue() : null
+        );
+
+        // Mostrar el diálogo y obtener el resultado
+        Optional<String> resultado = dialog.showAndWait();
+
+        resultado.ifPresent(estadoSeleccionado -> {
+            if (estadoSeleccionado.equals("Seleccionar todos los Productos")){
+
+                List<Productos> selectAllProductos= productosDAO.selectAllProductos();
+                tablaProductos.getItems().setAll(selectAllProductos);
+
+            }else{
+                List<Productos> equiposFiltrados = productosDAO.filtrarPorCategoria(productosDAO.obtenerIDcategorias(estadoSeleccionado));
+                tablaProductos.getItems().setAll(equiposFiltrados);
+            }
+        });
     }
 }
