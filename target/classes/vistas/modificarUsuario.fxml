@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane maxHeight="-Infinity" stylesheets="@../css/estilos.css" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="666.0" prefWidth="348.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.proyecto.neotec.controllers.ModUsuarioController">
+   <children>
+      <ImageView fitHeight="69.0" fitWidth="66.0" pickOnBounds="true" preserveRatio="true">
+         <image>
+            <Image url="@../img/logoN.png" />
+         </image>
+      </ImageView>
+      <Label layoutX="78.0" layoutY="13.0" text="MOD USUARIO">
+         <font>
+            <Font size="29.0" />
+         </font>
+      </Label>
+      <VBox layoutX="20.0" layoutY="86.0" prefHeight="455.0" prefWidth="312.0" spacing="10.0">
+         <children>
+            <Label text="Nombre">
+               <font>
+                  <Font name="System Italic" size="20.0" />
+               </font>
+            </Label>
+            <TextField fx:id="txfNombre" />
+            <Label layoutX="10.0" layoutY="10.0" text="Apellido">
+               <font>
+                  <Font name="System Italic" size="20.0" />
+               </font>
+            </Label>
+            <TextField fx:id="txfApellido" layoutX="10.0" layoutY="27.0" />
+            <Label layoutX="10.0" layoutY="52.0" text="DNI">
+               <font>
+                  <Font name="System Italic" size="20.0" />
+               </font>
+            </Label>
+            <TextField fx:id="txfDni" layoutX="10.0" layoutY="69.0" />
+            <Label layoutX="10.0" layoutY="94.0" text="Email">
+               <font>
+                  <Font name="System Italic" size="20.0" />
+               </font>
+            </Label>
+            <TextField fx:id="txfEmail" layoutX="10.0" layoutY="111.0" />
+            <Label layoutX="10.0" layoutY="136.0" text="Contraseña">
+               <font>
+                  <Font name="System Italic" size="20.0" />
+               </font>
+            </Label>
+            <PasswordField fx:id="pfContrasenna" />
+            <Label layoutX="10.0" layoutY="230.0" text="Rol">
+               <font>
+                  <Font name="System Italic" size="20.0" />
+               </font>
+            </Label>
+            <ComboBox fx:id="cbRol" prefHeight="25.0" prefWidth="311.0" />
+         </children>
+      </VBox>
+      <Button fx:id="btnCancelar" layoutX="26.0" layoutY="609.0" mnemonicParsing="false" onAction="#cancelar" prefHeight="40.0" prefWidth="126.0" text="Cancelar">
+         <font>
+            <Font size="19.0" />
+         </font>
+      </Button>
+      <Button fx:id="btnModificar" layoutX="200.0" layoutY="609.0" mnemonicParsing="false" onAction="#guardarUsuario" prefHeight="40.0" prefWidth="126.0" text="Modificar">
+         <font>
+            <Font size="19.0" />
+         </font>
+      </Button>
+   </children>
+</AnchorPane>

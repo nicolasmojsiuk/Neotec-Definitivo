@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.chart.PieChart?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.RadioButton?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.Spinner?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<Pane fx:id="workspace" prefHeight="642.0" prefWidth="1300.0" stylesheets="@../css/estilos.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.proyecto.neotec.controllers.VerProductosMasVendidosController">
+   <children>
+      <Label fx:id="lblEquipos" layoutX="24.0" layoutY="14.0" text="Productos mas vendidos">
+         <font>
+            <Font size="29.0" />
+         </font>
+      </Label>
+      <TableView fx:id="tablaRanking" layoutX="24.0" layoutY="132.0" prefHeight="435.0" prefWidth="327.0">
+        <columns>
+          <TableColumn fx:id="columnaProducto" prefWidth="222.0" text="Producto" />
+          <TableColumn fx:id="columnaCantidad" prefWidth="104.0" text="Cantidad" />
+        </columns>
+      </TableView>
+      <Label fx:id="lblEquipos1" layoutX="24.0" layoutY="57.0" text="Ranking producto mas vendidos">
+         <font>
+            <Font size="24.0" />
+         </font>
+      </Label>
+      <Separator layoutX="623.0" layoutY="104.0" orientation="VERTICAL" prefHeight="480.0" prefWidth="6.0" />
+      <Label fx:id="lblEquipos12" layoutX="662.0" layoutY="55.0" prefHeight="40.0" prefWidth="352.0" text="Ranking categorias mas vendidas">
+         <font>
+            <Font size="24.0" />
+         </font>
+      </Label>
+      <PieChart fx:id="graficoCategorias" layoutX="627.0" layoutY="127.0" prefHeight="435.0" prefWidth="422.0" />
+      <VBox layoutX="1068.0" layoutY="118.0" prefHeight="429.0" prefWidth="202.0" spacing="10.0">
+         <children>
+            <Label fx:id="lblEquipos111" text="Limite del ranking">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </Label>
+            <Spinner fx:id="spLimiteCategorias" />
+            <Separator orientation="VERTICAL" prefHeight="20.0" prefWidth="5.0" visible="false" />
+            <Label fx:id="lblEquipos1111" text="Periodo de tiempo:">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </Label>
+            <RadioButton fx:id="rbDia1" mnemonicParsing="false" selected="true" text="24 horas">
+               <font>
+                  <Font size="18.0" />
+               </font>
+               <toggleGroup>
+                  <ToggleGroup fx:id="tiempo1" />
+               </toggleGroup>
+            </RadioButton>
+            <RadioButton fx:id="rbSemana1" mnemonicParsing="false" text="7 dias" toggleGroup="$tiempo1">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </RadioButton>
+            <RadioButton fx:id="rbAnio1" mnemonicParsing="false" text="1 año" toggleGroup="$tiempo1">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </RadioButton>
+            <RadioButton fx:id="rbAnio11" layoutX="10.0" layoutY="220.0" mnemonicParsing="false" onMouseClicked="#seleccionarPeriodo2" text="Periodo especifico" toggleGroup="$tiempo1">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </RadioButton>
+            <Separator layoutX="10.0" layoutY="62.0" orientation="VERTICAL" prefHeight="24.0" prefWidth="5.0" visible="false" />
+            <Label fx:id="lblEquipos11111" layoutX="10.0" layoutY="147.0" text="Ordenar por:">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </Label>
+            <RadioButton fx:id="rbUnidades" layoutX="10.0" layoutY="214.0" mnemonicParsing="false" selected="true" text="N° unidades">
+               <font>
+                  <Font size="18.0" />
+               </font>
+               <toggleGroup>
+                  <ToggleGroup fx:id="orden1" />
+               </toggleGroup>
+            </RadioButton>
+            <RadioButton fx:id="rbIngresosBrutos" layoutX="10.0" layoutY="435.0" mnemonicParsing="false" text="Ingresos brutos" toggleGroup="$orden1">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </RadioButton>
+            <Separator layoutX="10.0" layoutY="260.0" orientation="VERTICAL" prefHeight="17.0" prefWidth="13.0" visible="false" />
+            <Button fx:id="btnAplicar1" mnemonicParsing="false" onAction="#cargarGrafico" prefHeight="40.0" prefWidth="172.0" text="Ver" />
+         </children>
+      </VBox>
+      <VBox layoutX="366.0" layoutY="115.0" prefHeight="429.0" prefWidth="208.0" spacing="10.0">
+         <children>
+            <Label fx:id="lblEquipos1111" text="Limite del ranking">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </Label>
+            <Spinner fx:id="spLimite" />
+            <Separator orientation="VERTICAL" prefHeight="1.0" prefWidth="2.0" visible="false" />
+            <Label fx:id="lblEquipos11111" text="Periodo de tiempo:">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </Label>
+            <RadioButton fx:id="rbDia" mnemonicParsing="false" selected="true" text="24 horas">
+               <font>
+                  <Font size="18.0" />
+               </font>
+               <toggleGroup>
+                  <ToggleGroup fx:id="tiempo" />
+               </toggleGroup>
+            </RadioButton>
+            <RadioButton fx:id="rbSemana" mnemonicParsing="false" text="7 dias" toggleGroup="$tiempo">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </RadioButton>
+            <RadioButton fx:id="rbAnio" mnemonicParsing="false" text="1 año" toggleGroup="$tiempo">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </RadioButton>
+            <RadioButton fx:id="rbAnio2" layoutX="10.0" layoutY="220.0" mnemonicParsing="false" onMouseClicked="#seleccionarPeriodo1" text="Periodo especifico" toggleGroup="$tiempo">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </RadioButton>
+            <Separator layoutX="10.0" layoutY="62.0" orientation="VERTICAL" prefHeight="1.0" prefWidth="2.0" visible="false" />
+            <Label fx:id="lblEquipos111111" layoutX="10.0" layoutY="147.0" text="Ordenar por:">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </Label>
+            <RadioButton fx:id="rbUnidades1" layoutX="10.0" layoutY="214.0" mnemonicParsing="false" onMouseClicked="#cambioCriterio" selected="true" text="N° unidades">
+               <font>
+                  <Font size="18.0" />
+               </font>
+               <toggleGroup>
+                  <ToggleGroup fx:id="orden" />
+               </toggleGroup>
+            </RadioButton>
+            <RadioButton fx:id="rbIngresosBrutos1" layoutX="10.0" layoutY="435.0" mnemonicParsing="false" onMouseClicked="#cambioCriterio" onMousePressed="#cambioCriterio" text="Ingresos brutos" toggleGroup="$orden">
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </RadioButton>
+            <Separator layoutX="10.0" layoutY="260.0" orientation="VERTICAL" prefHeight="1.0" prefWidth="2.0" visible="false" />
+            <Button fx:id="btnAplicar11" mnemonicParsing="false" onAction="#cargarTabla" prefHeight="40.0" prefWidth="172.0" text="Ver" />
+         </children>
+      </VBox>
+      <Label layoutX="48.0" layoutY="611.0" text="*Las ventas incluyen producto del stock utilizados en reparaciones que ya fueron pagadas." />
+      <Label fx:id="lblPeriodo" layoutX="24.0" layoutY="107.0" prefHeight="17.0" prefWidth="327.0" />
+      <Label fx:id="lblPeriodo2" layoutX="662.0" layoutY="99.0" prefHeight="17.0" prefWidth="327.0" />
+   </children>
+</Pane>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ToggleButton?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.text.Font?>
+
+<Pane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="657.0" prefWidth="1302.0" stylesheets="@../css/estilos.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.proyecto.neotec.controllers.VerProductoController">
+   <children>
+      <TableView fx:id="tablaProductos" layoutX="15.0" layoutY="109.0" prefHeight="457.0" prefWidth="1264.0">
+         <columns>
+            <TableColumn fx:id="columna1" prefWidth="72.0" text="N°" />
+            <TableColumn fx:id="columna2" prefWidth="150.0" text="Codigo del Producto" />
+            <TableColumn fx:id="columna3" prefWidth="150.0" text="Marca" />
+            <TableColumn fx:id="columna4" prefWidth="150.0" text="Nombre" />
+            <TableColumn fx:id="columna5" prefWidth="150.0" text="Descripcion" />
+            <TableColumn fx:id="columna6" prefWidth="150.0" text="Categoria" />
+            <TableColumn fx:id="columna7" prefWidth="150.0" text="Precio de costo" />
+            <TableColumn fx:id="columna8" prefWidth="150.0" text="Precio unitario" />
+            <TableColumn fx:id="columna9" prefWidth="150.0" text="Cantidad" />
+         </columns>
+      </TableView>
+      <Label layoutX="14.0" layoutY="9.0" text="Productos">
+         <font>
+            <Font size="29.0" />
+         </font>
+      </Label>
+      <Button fx:id="btnCrearProducto" layoutX="828.0" layoutY="576.0" mnemonicParsing="false" onAction="#mostrarCrearProducto" prefHeight="27.0" prefWidth="130.0" text="Crear">
+         <font>
+            <Font size="16.0" />
+         </font>
+      </Button>
+      <Button fx:id="btnMod" layoutX="977.0" layoutY="576.0" mnemonicParsing="false" onAction="#mostrarModificarProducto" prefHeight="35.0" prefWidth="140.0" text="Modificar">
+         <font>
+            <Font size="16.0" />
+         </font>
+      </Button>
+      <Button fx:id="btnEliminar" layoutX="1138.0" layoutY="575.0" mnemonicParsing="false" onAction="#eliminarProducto" prefHeight="35.0" prefWidth="140.0" text="Eliminar">
+         <font>
+            <Font size="16.0" />
+         </font>
+      </Button>
+      <Button fx:id="btnSeleccionar" layoutX="586.0" layoutY="569.0" mnemonicParsing="false" onAction="#mostrarCrearProducto" prefHeight="27.0" prefWidth="130.0" text="Seleccionar" visible="false">
+         <font>
+            <Font size="16.0" />
+         </font>
+      </Button>
+      <TextField fx:id="txtBuscardor" layoutX="17.0" layoutY="55.0" prefHeight="25.0" prefWidth="266.0" promptText="Buscar..." />
+      <Label layoutX="301.0" layoutY="22.0" text="Filtros:" />
+      <HBox layoutX="301.0" layoutY="55.0" prefHeight="25.0" prefWidth="978.0" spacing="20.0">
+         <children>
+            <Button fx:id="btnCategoria" mnemonicParsing="false" onAction="#filtrarPorCategoria" text="Categoria" />
+            <ToggleButton fx:id="toggleCodigo" mnemonicParsing="false" text="Codigo" />
+            <ToggleButton fx:id="toggleNombre" mnemonicParsing="false" text="Nombre" />
+            <ToggleButton fx:id="toggleMarca" mnemonicParsing="false" prefHeight="25.0" prefWidth="69.0" text="Marca" />
+         </children>
+      </HBox>
+
+   </children>
+
+</Pane>

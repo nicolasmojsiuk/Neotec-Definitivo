@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane maxHeight="-Infinity" stylesheets="@../css/estilos.css" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="794.0" prefWidth="561.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+   <children>
+      <HBox layoutX="11.0" layoutY="32.0" prefHeight="106.0" prefWidth="535.0">
+         <children>
+            <VBox alignment="CENTER" prefHeight="115.0" prefWidth="275.0" style="-fx-border-color: grey; -fx-border-width: 2;">
+               <children>
+                  <ImageView fitHeight="54.0" fitWidth="173.0" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../img/NeotecLogo.png" />
+                     </image>
+                  </ImageView>
+                  <Label text="Numero de ticket:">
+                     <font>
+                        <Font name="System Bold" size="12.0" />
+                     </font>
+                  </Label>
+                  <Label layoutX="119.0" layoutY="88.0" text="............." />
+               </children>
+            </VBox>
+            <VBox prefHeight="115.0" prefWidth="275.0" style="-fx-border-color: grey; -fx-border-width: 2;">
+               <children>
+                  <Label text="Cliente">
+                     <font>
+                        <Font name="System Bold" size="12.0" />
+                     </font>
+                  </Label>
+                  <Label fx:id="lblNombreCliente" layoutX="12.0" layoutY="12.0" text="nombre y apellido" />
+                  <Label fx:id="lblCliente" layoutX="12.0" layoutY="29.0" text="Dni:" />
+                  <Label layoutX="12.0" layoutY="46.0" />
+                  <Label layoutX="12.0" layoutY="46.0" text="Fecha y hora">
+                     <font>
+                        <Font name="System Bold" size="12.0" />
+                     </font>
+                  </Label>
+                  <Label fx:id="lblFechaHora" layoutX="12.0" layoutY="80.0" text="Fecha y hora" />
+               </children>
+            </VBox>
+         </children>
+      </HBox>
+      <Label layoutX="156.0" layoutY="5.0" text="Ticket de venta || No valido como factura">
+         <font>
+            <Font name="System Bold Italic" size="13.0" />
+         </font>
+      </Label>
+      <Label layoutX="263.0" layoutY="716.0" text="Total:">
+         <font>
+            <Font name="System Bold Italic" size="13.0" />
+         </font>
+      </Label>
+      <Label layoutX="306.0" layoutY="716.0" prefHeight="19.0" prefWidth="240.0">
+         <font>
+            <Font name="System Bold Italic" size="13.0" />
+         </font>
+      </Label>
+      <Label layoutX="161.0" layoutY="761.0" text="Gracias por su compra! vuelva pronto...">
+         <font>
+            <Font name="System Bold Italic" size="13.0" />
+         </font>
+      </Label>
+      <TableView layoutX="14.0" layoutY="146.0" prefHeight="559.0" prefWidth="535.0">
+        <columns>
+          <TableColumn prefWidth="170.0" text="Producto" />
+          <TableColumn prefWidth="116.0" text="Precio U" />
+            <TableColumn minWidth="1.0" prefWidth="68.0" text="Cantidad" />
+            <TableColumn prefWidth="177.0" text="Total Linea" />
+        </columns>
+      </TableView>
+   </children>
+</AnchorPane>

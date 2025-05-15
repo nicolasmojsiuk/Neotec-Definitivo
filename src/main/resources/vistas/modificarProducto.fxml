@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane maxHeight="-Infinity" stylesheets="@../css/estilos.css" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="690.0" prefWidth="345.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.proyecto.neotec.controllers.ModProductoController">
+   <children>
+      <ImageView fitHeight="69.0" fitWidth="66.0" pickOnBounds="true" preserveRatio="true">
+         <image>
+            <Image url="@../img/logoN.png" />
+         </image>
+      </ImageView>
+      <Label layoutX="78.0" layoutY="13.0" text="Modificar Producto">
+         <font>
+            <Font size="29.0" />
+         </font>
+      </Label>
+      <Button fx:id="btnCancelar" layoutX="29.0" layoutY="636.0" mnemonicParsing="false" onAction="#cancelar" prefHeight="40.0" prefWidth="99.0" text="Cancelar">
+         <font>
+            <Font size="19.0" />
+         </font>
+      </Button>
+      <Button fx:id="btnModificar" layoutX="208.0" layoutY="636.0" mnemonicParsing="false" onAction="#guardarProducto" prefHeight="30.0" prefWidth="99.0" text="Guardar">
+         <font>
+            <Font size="19.0" />
+         </font>
+      </Button>
+      <VBox layoutX="9.0" layoutY="69.0" prefHeight="531.0" prefWidth="328.0" spacing="6.0">
+         <children>
+            <VBox prefHeight="55.0" prefWidth="328.0">
+               <children>
+                  <Label text="Nombre del Producto">
+                     <font>
+                        <Font name="System Italic" size="20.0" />
+                     </font>
+                  </Label>
+                  <TextField fx:id="txtNomProducto" prefHeight="26.0" prefWidth="312.0" />
+               </children>
+            </VBox>
+            <VBox prefHeight="54.0" prefWidth="328.0">
+               <children>
+                  <Label text="Codigo del producto">
+                     <font>
+                        <Font name="System Italic" size="20.0" />
+                     </font>
+                  </Label>
+                  <TextField fx:id="txtCodigoProducto" prefHeight="26.0" prefWidth="312.0" />
+               </children>
+            </VBox>
+            <VBox prefHeight="54.0" prefWidth="328.0">
+               <children>
+                  <Label text="Marca">
+                     <font>
+                        <Font name="System Italic" size="20.0" />
+                     </font>
+                  </Label>
+                  <TextField fx:id="txtMarcaProducto" prefHeight="26.0" prefWidth="312.0" />
+               </children>
+            </VBox>
+            <HBox prefHeight="62.0" prefWidth="328.0" spacing="5.0">
+               <children>
+                  <VBox prefHeight="48.0" prefWidth="328.0">
+                     <children>
+                        <Label text="Precio Unitario">
+                           <font>
+                              <Font name="System Italic" size="20.0" />
+                           </font>
+                        </Label>
+                        <TextField fx:id="txtPUnitarioProducto" prefHeight="26.0" prefWidth="146.0" />
+                     </children>
+                  </VBox>
+                  <VBox prefHeight="45.0" prefWidth="328.0">
+                     <children>
+                        <Label text="Precio-Costo">
+                           <font>
+                              <Font name="System Italic" size="20.0" />
+                           </font>
+                        </Label>
+                        <TextField fx:id="txtPCostoProducto" prefHeight="26.0" prefWidth="146.0" />
+                     </children>
+                  </VBox>
+               </children>
+            </HBox>
+            <VBox prefHeight="64.0" prefWidth="328.0">
+               <children>
+                  <Label text="Cantidad">
+                     <font>
+                        <Font name="System Italic" size="20.0" />
+                     </font>
+                  </Label>
+                  <TextField fx:id="txtCantidadProducto" prefHeight="26.0" prefWidth="312.0" />
+               </children>
+            </VBox>
+            <VBox prefHeight="85.0" prefWidth="328.0">
+               <children>
+                  <Label text="Descripcion">
+                     <font>
+                        <Font name="System Italic" size="20.0" />
+                     </font>
+                  </Label>
+                  <TextArea fx:id="txtDescProducto" prefHeight="54.0" prefWidth="312.0" />
+               </children>
+            </VBox>
+            <VBox prefHeight="60.0" prefWidth="328.0">
+               <children>
+                  <Label text="Categoria">
+                     <font>
+                        <Font name="System Italic" size="20.0" />
+                     </font>
+                  </Label>
+                  <ComboBox fx:id="cbCategoria" prefHeight="25.0" prefWidth="335.0" />
+               </children>
+            </VBox>
+         </children>
+      </VBox>
+   </children>
+</AnchorPane>

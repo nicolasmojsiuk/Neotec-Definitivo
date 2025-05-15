@@ -1,0 +1,74 @@
+/* Estilo general del TableView */
+.table-view {
+    -fx-background-color: #282a36; /* fondo oscuro Dracula */
+    -fx-border-color: transparent;
+    -fx-table-cell-border-color: #44475a;
+    -fx-font-size: 16px;
+    -fx-text-fill: #f8f8f2; /* texto claro */
+}
+
+/* Encabezado de columnas mejorado */
+.table-view .column-header-background {
+    -fx-background-color: linear-gradient(to bottom, #44475a, #343746);
+    -fx-border-color: transparent transparent #6272a4 transparent;
+    -fx-border-width: 0 0 2px 0;
+}
+
+/* Títulos de columnas (alineados a la izquierda) */
+.table-view .column-header {
+    -fx-background-color: transparent;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #f8f8f2;
+    -fx-padding: 10px 12px;
+    -fx-alignment: CENTER_LEFT; /* Alineación a la izquierda */
+    -fx-border-color: transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 2, 0.0, 0, 1);
+}
+
+
+.table-view .column-header {
+    -fx-background-color: #44475a;
+    -fx-border-color: transparent;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #f8f8f2;
+    -fx-padding: 8px;
+}
+
+/* Alternancia de filas */
+.table-row-cell:even {
+    -fx-background-color: #282a36;
+}
+
+.table-row-cell:odd {
+    -fx-background-color: #343746; /* ligeramente más claro */
+}
+
+/* Fila seleccionada */
+.table-row-cell:selected {
+    -fx-background-color: #6272a4; /* color de selección Dracula */
+    -fx-text-fill: white;
+}
+
+/* Celdas individuales */
+.table-cell {
+    -fx-text-fill: #f8f8f2;
+    -fx-padding: 6px 8px;
+    -fx-border-color: transparent;
+}
+
+/* Scrollbars (opcional, para un look más limpio) */
+.scroll-bar .thumb {
+    -fx-background-color: #6272a4;
+    -fx-background-radius: 5;
+}
+
+.table-cell {
+    -fx-text-fill: #f8f8f2;
+    -fx-padding: 6px 8px;
+    -fx-border-color: #44475a; /* Color del borde */
+    -fx-border-width: 0 0 1px 1px; /* Bordes abajo y a la izquierda */
+}
+
