@@ -142,19 +142,21 @@ public class EquipoDAO {
         // Devolver la lista de rutas de las imágenes
         return rutasImagenes;
 
-    }
-    public void actualizarEstadoEquipo(int idEquipo, int nuevoEstado) {
+    }public void actualizarEstadoEquipo(int idEquipo, int nuevoEstado) {
         String sql = "UPDATE equipos SET estado = ?, fechaModificacion = CURRENT_TIMESTAMP WHERE idequipos = ?";
 
         try (Connection connection = Database.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)){
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, nuevoEstado);
             stmt.setInt(2, idEquipo);
+
             stmt.executeUpdate();
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
+
 
     public int obtenerIDCliente(String dni) {
         int idCliente = 0;
@@ -381,7 +383,7 @@ public class EquipoDAO {
                 equipo.setFechaSalida(rs.getString("fechaSalida"));
                 equipo.setObservaciones(rs.getString("observaciones"));
                 // Obtener el propietario
-                equipo.setIdcliente(equipoDAO.obtenerPropietario(equipo.getId()).getIdcliente());
+                equipo.setIdcliente(rs.getInt("idclientes"));
 
                 equipos.add(equipo);
             }

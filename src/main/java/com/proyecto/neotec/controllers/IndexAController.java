@@ -6,6 +6,7 @@ import com.proyecto.neotec.util.CajaEstablecida;
 import com.proyecto.neotec.util.CargarPantallas;
 import com.proyecto.neotec.util.MostrarAlerta;
 import com.proyecto.neotec.util.SesionUsuario;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.Pane;
@@ -101,4 +102,6 @@ public class IndexAController {
         });
     }
 
+    public void mostrarEntregarEquipos(ActionEvent actionEvent) {
+    }
 }

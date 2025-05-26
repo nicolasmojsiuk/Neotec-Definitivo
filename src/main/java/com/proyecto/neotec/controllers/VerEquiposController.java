@@ -1,11 +1,23 @@
 package com.proyecto.neotec.controllers;
 
-import com.proyecto.neotec.DAO.ClienteDAO;
-import com.proyecto.neotec.DAO.EquipoDAO;
-import com.proyecto.neotec.DAO.PresupuestoDAO;
-import com.proyecto.neotec.models.Cliente;
-import com.proyecto.neotec.models.Equipos;
+import com.itextpdf.io.image.ImageDataFactory;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.canvas.draw.SolidLine;
+import com.itextpdf.layout.Document;
+import com.itextpdf.layout.borders.Border;
+import com.itextpdf.layout.element.Cell;
+import com.itextpdf.layout.element.Image;
+import com.itextpdf.layout.element.LineSeparator;
+import com.itextpdf.layout.element.Paragraph;
+import com.itextpdf.layout.element.Table;
+import com.itextpdf.layout.property.TextAlignment;
+import com.itextpdf.layout.property.UnitValue;
+import com.proyecto.neotec.DAO.*;
+import com.proyecto.neotec.models.*;
+import com.proyecto.neotec.util.CajaEstablecida;
 import com.proyecto.neotec.util.MostrarAlerta;
+import com.proyecto.neotec.util.SesionUsuario;
 import com.proyecto.neotec.util.VolverPantallas;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -18,6 +30,10 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
@@ -25,12 +41,19 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+import java.awt.*;
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.text.DecimalFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class VerEquiposController {
     @FXML
@@ -330,60 +353,19 @@ public class VerEquiposController {
         alert.showAndWait();
     }
 
-    public void mostrarImagenes() {
-        Equipos equipoSeleccionado = tablaEquipos.getSelectionModel().getSelectedItem();
-        if (equipoSeleccionado == null) {
-            mostrarAlerta("Error", "No se ha seleccionado ningún equipo.", Alert.AlertType.ERROR);
-            return;
-        }
 
-        // Consultar si el equipo tiene imágenes almacenadas en la base de datos
-        EquipoDAO equipoDAO = new EquipoDAO();
-        boolean tieneImagenes = equipoDAO.equipoTieneImagenes(equipoSeleccionado.getId());
-
-        if (!tieneImagenes) {
-            mostrarAlerta("Sin imágenes", "Este equipo no tiene imágenes almacenadas.", Alert.AlertType.INFORMATION);
-            return;
-        }
-
-        // Si tiene imágenes, continuar con la apertura de la ventana
-        VerImagenesController.equipo = equipoSeleccionado;
-
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/vistas/verImagenes.fxml"));
-            Parent root = loader.load();
-
-            // Obtener el controlador del archivo FXML
-            VerImagenesController controller = loader.getController();
-
-            // Crear una nueva escena para el pop-up
-            Scene scene = new Scene(root);
-            Stage stage = new Stage();
-            stage.setTitle("Ver Imágenes");
-            stage.setScene(scene);
-            stage.initModality(Modality.APPLICATION_MODAL); // Bloquea la ventana principal hasta que el pop-up se cierre
-
-            // Establecer el Stage en el controlador
-            controller.setStage(stage);
-
-            // Mostrar el pop-up
-            stage.showAndWait();
-        } catch (IOException e) {
-            e.printStackTrace();
-            mostrarAlerta("Error", "Error al cargar la ventana.", Alert.AlertType.ERROR);
-        }
-    }
 
     public void sacarPresupuesto(ActionEvent actionEvent) {
         Equipos equipoSeleccionado = tablaEquipos.getSelectionModel().getSelectedItem();
-        System.out.println("ESTADO EQUIPO AL ABRIR VENTANA PRESUPUESTO DESDE VER EQUIPOS: "+equipoSeleccionado.getEstado());
-        PresupuestoDAO presupuestoDAO = new PresupuestoDAO();
         if (equipoSeleccionado == null){
             mostrarAlerta("Error","Debe seleccionar un equipo",Alert.AlertType.ERROR);
         }else {
-            if (presupuestoDAO.existePresupuestoParaEquipo(equipoSeleccionado.getId())) {
-                MostrarAlerta.mostrarAlerta("No se puede crear el presupuesto",": Ya existe un presupuesto registrado para este equipo.", Alert.AlertType.INFORMATION);
-            }else {
+            PresupuestoDAO pd = new PresupuestoDAO();
+            // Obtener todos los presupuestos del equipo
+            List<Presupuestos> listaPresupuestos = pd.obtenerPresupuestosPorIdEquipo(equipoSeleccionado.getId());
+
+            // Verificar si se puede crear un nuevo presupuesto
+            if (puedeCrearNuevoPresupuesto(listaPresupuestos)) {
                 try {
                     FXMLLoader loader = new FXMLLoader(getClass().getResource("/vistas/crearPresupuestos.fxml"));
                     Parent root = loader.load();
@@ -406,16 +388,37 @@ public class VerEquiposController {
 
                     // Mostrar el pop-up
                     stage.showAndWait();
+                    cargarDatos();
                 } catch (IOException e) {
                     e.printStackTrace();
                     mostrarAlerta("Error", "Error al cargar la ventana de modificación.", Alert.AlertType.ERROR);
                 }
+            } else {
+                // Mostrar mensaje de que no se puede crear
+                MostrarAlerta.mostrarAlerta("Sacar Presupuesto","No puede crear un nuevo presupuesto hasta que el actual esté cancelado o pagado", Alert.AlertType.ERROR);
             }
         }
     }
 
+    public boolean puedeCrearNuevoPresupuesto(List<Presupuestos> listaPresupuestos) {
+        // Si no hay presupuestos, se puede crear uno nuevo
+        if (listaPresupuestos == null || listaPresupuestos.isEmpty()) {
+            return true;
+        }
 
+        // Verificar el estado de todos los presupuestos
+        for (Presupuestos presupuesto : listaPresupuestos) {
+            int estado = presupuesto.getEstado(); // Asumiendo que hay un método getEstado()
 
+            // Si encontramos algún presupuesto que NO esté cancelado (3) ni pagado (4)
+            if (estado != 3 && estado != 4) {
+                return false;
+            }
+        }
+
+        // Todos los presupuestos están cancelados o pagados
+        return true;
+    }
 
 
     public void DefinirEstados(ActionEvent actionEvent) {
@@ -433,35 +436,153 @@ public class VerEquiposController {
 
         comboBox.getItems().addAll(estados);
         comboBox.setValue(estados.get(0)); // Preseleccionar el primer estado
-
         // Agregar el ComboBox al contenido del diálogo
         VBox content = new VBox(10, new Label("Selecciona:"), comboBox);
         dialog.getDialogPane().setContent(content);
-
         // Agregar botones al diálogo
         ButtonType btnAceptar = new ButtonType("Aceptar", ButtonBar.ButtonData.OK_DONE);
         ButtonType btnCancelar = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
         dialog.getDialogPane().getButtonTypes().addAll(btnAceptar, btnCancelar);
-
         // Configurar resultado cuando se presiona "Aceptar"
         dialog.setResultConverter(dialogButton ->
                 dialogButton == btnAceptar ? comboBox.getValue() : null
         );
-
         // Mostrar el diálogo y obtener el resultado
         Optional<String> resultado = dialog.showAndWait();
         EquipoDAO equipoDAO= new EquipoDAO();
         resultado.ifPresent(estadoSeleccionado -> {
             if (estadoSeleccionado.equals("Seleccionar todos los Equipos")){
-                System.out.println(estadoSeleccionado);
                 List<Equipos> selectAllEquipos= equipoDAO.selectAllEquipos();
                 tablaEquipos.getItems().setAll(selectAllEquipos);
-
             }else{
                 List<Equipos> equiposFiltrados = equipoDAO.filtrarPorEstadoEquipo(equipoDAO.obtenerEstadoEquipoIdDesdeBD(estadoSeleccionado));
                 tablaEquipos.getItems().setAll(equiposFiltrados);
             }
-            });
+        });
     }
-}
+
+    public void mostrarDetalles(ActionEvent actionEvent) {
+        Equipos equipoSeleccionado = tablaEquipos.getSelectionModel().getSelectedItem();
+        if (equipoSeleccionado == null) {
+            mostrarAlerta("Error", "No se ha seleccionado ningún equipo.", Alert.AlertType.ERROR);
+            return;
+        }
+        VerImagenesController.equipo = equipoSeleccionado;
+        //cambiar el contenido de la scene mostrar imagenes ""
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/vistas/verImagenes.fxml"));
+            Parent root = loader.load();
+
+            // Obtener el controlador del archivo FXML
+            VerImagenesController controller = loader.getController();
+            // Crear una nueva escena para el pop-up
+            Scene scene = new Scene(root);
+            // Crear un nuevo Stage (ventana) para el pop-up
+            Stage stage = new Stage();
+            stage.setTitle("Ver Imagenes");
+            stage.setScene(scene);
+            stage.initModality(Modality.APPLICATION_MODAL); // Bloquea la ventana principal hasta que el pop-up se cierre
+
+            // Establecer el Stage en el controlador
+            controller.setStage(stage);
+
+            // Mostrar el pop-up
+            stage.showAndWait();
+        } catch (IOException e) {
+            e.printStackTrace();
+            mostrarAlerta("Error", "Error al cargar la ventana.", Alert.AlertType.ERROR);
+        }
+    }
+
+    public void entregarEquipo(ActionEvent actionEvent) {
+        Equipos equipoSeleccionado = tablaEquipos.getSelectionModel().getSelectedItem();
+        PresupuestoDAO pd = new PresupuestoDAO();
+        EquipoDAO equipoDAO = new EquipoDAO();
+
+        if (equipoSeleccionado == null){
+            mostrarAlerta("Error", "Por favor seleccione un equipo",Alert.AlertType.ERROR);
+        }else if (equipoSeleccionado.getEstado() == 7){
+                mostrarAlerta("Entregar Equipo", "Este equipo ya fue entregado",Alert.AlertType.INFORMATION);
+        }else if (!pd.existePresupuestoParaEquipo(equipoSeleccionado.getId())) {
+            mostrarAlerta("Entregar Equipo", "El equipo no tiene presupuestos asociados",Alert.AlertType.INFORMATION);
+        }else {
+                List<Presupuestos> listaPresupuestos = pd.obtenerPresupuestosPorIdEquipo(equipoSeleccionado.getId());
+                // Listas para clasificar los presupuestos
+                List<Integer> pendientesDePago = new ArrayList<>();
+                List<Integer> porResolver = new ArrayList<>();
+                List<Integer> correctos = new ArrayList<>();
+
+                boolean puedeEntregarse = true;
+
+                for (Presupuestos pr : listaPresupuestos) {
+                    int estado = pr.getEstado();
+                    int id = pr.getIdpresupuesto();
+
+                    switch (estado) {
+                        case 2: // Aprobado
+                            if (!pd.verificarEstadoPagado(id)) {
+                                pendientesDePago.add(id);
+                                puedeEntregarse = false;
+                            } else {
+                                correctos.add(id);
+                            }
+                            break;
+
+                        case 4: // Pagado
+                            correctos.add(id);
+                            break;
+
+                        case 3: // Cancelado
+                            correctos.add(id);
+                            break;
+
+                        default: // En espera o estado no válido
+                            porResolver.add(id);
+                            puedeEntregarse = false;
+                            break;
+                    }
+                }
+
+                // Lógica de entrega y alertas
+                if (puedeEntregarse && !listaPresupuestos.isEmpty()) {
+                    // Todos los presupuestos están en estado correcto
+                    equipoDAO.actualizarEstadoEquipo(equipoSeleccionado.getId(), 7);
+                    mostrarAlerta("Entregar Equipo", "El equipo ha sido entregado", Alert.AlertType.INFORMATION);
+                    cargarDatos();
+
+                } else {
+                    // Hay presupuestos pendientes o por resolver
+                    StringBuilder mensaje = new StringBuilder();
+                    String titulo = "No se puede entregar el equipo";
+                    Alert.AlertType tipo = Alert.AlertType.WARNING;
+
+                    if (!pendientesDePago.isEmpty() && !porResolver.isEmpty()) {
+                        mensaje.append("Existen presupuestos que impiden la entrega:\n\n");
+                        mensaje.append("- Pendientes de pago (IDs: ").append(pendientesDePago).append(")\n");
+                        mensaje.append("- Por resolver (IDs: ").append(porResolver).append(")\n\n");
+                        mensaje.append("Los presupuestos pendientes deben pagarse o cancelarse.\n");
+                        mensaje.append("Los presupuestos por resolver deben aprobarse o cancelarse.");
+                    } else if (!pendientesDePago.isEmpty()) {
+                        mensaje.append("No se puede entregar el equipo:\n\n");
+                        mensaje.append("Existen presupuestos aprobados pendientes de pago (N°: ").append(pendientesDePago).append(")\n\n");
+                        mensaje.append("Deben pagarse o cancelarse para proceder con la entrega.");
+                    } else if (!porResolver.isEmpty()) {
+                        mensaje.append("No se puede entregar el equipo:\n\n");
+                        mensaje.append("Existen presupuestos sin estado definido (IDs: ").append(porResolver).append(")\n\n");
+                        mensaje.append("Deben aprobarse o cancelarse para proceder con la entrega.");
+                    }
+
+                    // Mostrar alerta solo si hay problemas
+                    if (mensaje.length() > 0) {
+                        mostrarAlerta(titulo, mensaje.toString(), tipo);
+                    }
+                }
+            }
+        }
+    }
+
+
+
+
+
 

@@ -56,14 +56,8 @@ public class ModificarEquipoController {
             case 1: // Ingresado
                 tipoEstado.getItems().addAll("Ingresado", "Revisión");
                 break;
-            case 4:
-                tipoEstado.getItems().addAll("Reparación no autorizada", "Entregado");
-                break;
             case 5: // Autorizado para la reparación
                 tipoEstado.getItems().addAll("Autorizado para la reparación", "Reparado");
-                break;
-            case 6: // Reparado
-                tipoEstado.getItems().addAll("Reparado", "Entregado");
                 break;
             default:
                 // Estados que no pueden cambiarse manualmente, solo mostrar el actual

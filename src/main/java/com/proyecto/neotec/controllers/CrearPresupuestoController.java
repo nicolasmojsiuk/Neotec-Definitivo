@@ -362,13 +362,8 @@ public class CrearPresupuestoController {
         }
     }
     public int guardarPresupuesto() {
-        System.out.println("ESTADO EQUIPO AL GUARDAR EL PRESUPUESTO: "+equipo.getEstado());
         int idequipo = equipo.getId();
         PresupuestoDAO presupuestoDAO = new PresupuestoDAO();
-        if (presupuestoDAO.existePresupuestoParaEquipo(idequipo)) {
-            MostrarAlerta.mostrarAlerta("Crear Presupuesto", "Ya existe un presupuesto para este equipo.", Alert.AlertType.WARNING);
-            return -1;
-        }
 
         float costosVariables = txfCostosVariables.getText().isEmpty() ? 0 : Float.parseFloat(txfCostosVariables.getText());
         float manoDeObra = txfManoDeObra.getText().isEmpty() ? 0 : Float.parseFloat(txfManoDeObra.getText());
@@ -379,14 +374,7 @@ public class CrearPresupuestoController {
         float totalGeneral = totalProductos + manoDeObra + costosVariables;
         String observaciones = txaObs.getText();
         PresupuestoDAO pd = new PresupuestoDAO();
-        // El estado del presupuesto es asignado manuealmente en insertPresupuesto()
         int respuesta = pd.insertPresupuesto(spTiempoReparacion.getValue(), costosVariables, manoDeObra, totalGeneral, idequipo, totalProductos, observaciones);
-
-
-        if (respuesta == -1) {
-            MostrarAlerta.mostrarAlerta("Crear Presupuesto", "Error: El equipo ya tiene asociado un presupuesto.", Alert.AlertType.WARNING);
-            return -1;
-        }
 
         guardarProductosPresupuestos(respuesta);
         return respuesta;
@@ -395,7 +383,6 @@ public class CrearPresupuestoController {
     private void guardarProductosPresupuestos(int idpresupuesto) {
         PresupuestoDAO pd = new PresupuestoDAO();
         for (Productos p1 : productosUtilizados){
-            System.out.println("intento de insercion");
             pd.insertProductoPresupuesto(idpresupuesto,p1.getIdProductos(), p1.getCantidad());
         }
     }
