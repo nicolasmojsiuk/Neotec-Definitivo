@@ -44,23 +44,24 @@
                 <Font size="16.0" />
             </font>
         </Button>
-      <Button fx:id="btnPagarPresupuesto" layoutX="20.0" layoutY="582.0" mnemonicParsing="false" onAction="#pagarPresupuesto" prefHeight="35.0" prefWidth="199.0" text="Pagar Presupuesto">
-         <font>
-            <Font size="16.0" />
-         </font>
-      </Button>
-      <Button fx:id="btnCambiarEstado" layoutX="235.0" layoutY="582.0" mnemonicParsing="false" onAction="#cambiarEstado" prefHeight="35.0" prefWidth="199.0" text="Cambiar Estado">
-         <font>
-            <Font size="16.0" />
-         </font>
-      </Button>
+        <Button fx:id="btnPagarPresupuesto" layoutX="20.0" layoutY="582.0" mnemonicParsing="false" onAction="#pagarPresupuesto" prefHeight="35.0" prefWidth="199.0" text="Pagar Presupuesto">
+            <font>
+                <Font size="16.0" />
+            </font>
+        </Button>
+        <Button fx:id="btnCambiarEstado" layoutX="235.0" layoutY="582.0" mnemonicParsing="false" onAction="#cambiarEstado" prefHeight="35.0" prefWidth="199.0" text="Cambiar Estado">
+            <font>
+                <Font size="16.0" />
+            </font>
+        </Button>
+
         <TextField fx:id="txtBuscardor" layoutX="20.0" layoutY="41.0" prefHeight="25.0" prefWidth="266.0" promptText="Buscar..." />
         <ToggleButton fx:id="toggleDispositivo" layoutX="397.0" layoutY="41.0" mnemonicParsing="false" text="Dispositivo" />
         <ToggleButton fx:id="toggleCliente" layoutX="507.0" layoutY="41.0" mnemonicParsing="false" text="Cliente" />
         <DatePicker fx:id="dateFechaCreacion" layoutX="804.0" layoutY="41.0" promptText="dd/MM/yyyy" />
-      <Label layoutX="321.0" layoutY="14.0" text="Filtrar por:" />
-      <Label layoutX="807.0" layoutY="23.0" text="Filtrar por fecha de ingreso" />
-      <Button fx:id="btnQuitarFiltros" layoutX="599.0" layoutY="41.0" mnemonicParsing="false" onAction="#QuitarFiltros" text="Quitar Filtros" />
+        <Label layoutX="321.0" layoutY="14.0" text="Filtrar por:" />
+        <Label layoutX="807.0" layoutY="23.0" text="Filtrar por fecha de ingreso" />
+        <Button fx:id="btnQuitarFiltros" layoutX="599.0" layoutY="41.0" mnemonicParsing="false" onAction="#QuitarFiltros" text="Quitar Filtros" />
         <Button fx:id="btnEstados" layoutX="315.0" layoutY="41.0" mnemonicParsing="false" onAction="#DefinirEstados" text="Estado" />
 
     </children>
