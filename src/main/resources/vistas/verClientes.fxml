@@ -9,7 +9,7 @@
 <?import javafx.scene.layout.Pane?>
 <?import javafx.scene.text.Font?>
 
-<Pane prefHeight="642.0" prefWidth="1300.0" style="-fx-background-color: #060717;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.proyecto.neotec.controllers.VerClienteController">
+<Pane prefHeight="642.0" stylesheets="@../css/estilos.css" prefWidth="1300.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.proyecto.neotec.controllers.VerClienteController">
    <children>
       <Label fx:id="lblUsuarios" layoutX="14.0" layoutY="8.0" text="Clientes">
          <font>

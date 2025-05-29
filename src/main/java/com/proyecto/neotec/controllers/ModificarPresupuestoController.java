@@ -16,7 +16,7 @@ import com.proyecto.neotec.DAO.PresupuestoDAO;
 import com.proyecto.neotec.DAO.ProductosDAO;
 import com.proyecto.neotec.models.Equipos;
 import com.proyecto.neotec.models.Presupuestos;
-import com.proyecto.neotec.models.Productos;
+import com.proyecto.neotec.models.Producto;
 import com.proyecto.neotec.util.MostrarAlerta;
 import com.proyecto.neotec.util.TextFieldSoloNumeros;
 import javafx.application.Platform;
@@ -33,8 +33,6 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.stage.Stage;
 
-import java.awt.*;
-import java.io.File;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -53,15 +51,15 @@ public class ModificarPresupuestoController {
     @FXML
     private TextArea txaObs;
     @FXML
-    private TableView<Productos> tablaProductos;
+    private TableView<Producto> tablaProductos;
     @FXML
-    private TableColumn<Productos, String> columnaProducto;
+    private TableColumn<Producto, String> columnaProducto;
     @FXML
-    private TableColumn<Productos, Integer> columnaPrecioUnitario;
+    private TableColumn<Producto, Integer> columnaPrecioUnitario;
     @FXML
-    private TableColumn<Productos, Integer> columnaCantidad;
+    private TableColumn<Producto, Integer> columnaCantidad;
     @FXML
-    private TableColumn<Productos, Integer> columnaTotalLinea;
+    private TableColumn<Producto, Integer> columnaTotalLinea;
     @FXML
     private TextField txfCostosVariables;
     @FXML
@@ -74,9 +72,9 @@ public class ModificarPresupuestoController {
     private Button btnAgregarLinea;
 
     // Declarar la variable como atributo de clase
-    private ObservableList<Productos> productosPresupuestos = FXCollections.observableArrayList();
+    private ObservableList<Producto> productoPresupuestos = FXCollections.observableArrayList();
 
-    private ObservableList<Productos> productosUtilizados;
+    private ObservableList<Producto> productoUtilizados;
     private Stage stage;
     private Equipos equipo;
     private Presupuestos presupuesto;
@@ -96,8 +94,8 @@ public class ModificarPresupuestoController {
             });
         });
 
-        productosUtilizados = FXCollections.observableArrayList();
-        tablaProductos.setItems(productosUtilizados);
+        productoUtilizados = FXCollections.observableArrayList();
+        tablaProductos.setItems(productoUtilizados);
 
         vincularTabla(); // Configura las columnas correctamente
 
@@ -134,20 +132,17 @@ public class ModificarPresupuestoController {
     }
     private void cargarProductosDesdePresupuesto(int idPresupuesto) {
         ProductosDAO productosDAO = new ProductosDAO();
-        productosPresupuestos.clear();
-        productosPresupuestos.addAll(productosDAO.obtenerProductosPorPresupuesto(idPresupuesto));
+        productoPresupuestos.clear();
+        productoPresupuestos.addAll(productosDAO.obtenerProductosPorPresupuesto(idPresupuesto));
 
-        for (Productos p : productosPresupuestos) {
+        for (Producto p : productoPresupuestos) {
             // Calculamos el total de la línea: cantidad * precio unitario
             p.setTotalLinea(p.getCantidad() * p.getPrecioUnitario());
 
         }
-        productosUtilizados.setAll(productosPresupuestos);
-        tablaProductos.setItems(productosUtilizados);
+        productoUtilizados.setAll(productoPresupuestos);
+        tablaProductos.setItems(productoUtilizados);
     }
-
-
-
 
     private void vincularTabla() {
         // Configuración de columnas
@@ -179,7 +174,7 @@ public class ModificarPresupuestoController {
         }
 
         ProductosDAO pd = new ProductosDAO();
-        Productos productoLinea = pd.obtenerProductoLinea(codigo);
+        Producto productoLinea = pd.obtenerProductoLinea(codigo);
 
         if (productoLinea == null || productoLinea.getNombreProducto() == null) {
             MostrarAlerta.mostrarAlerta("Ventas", "Producto no encontrado.", Alert.AlertType.WARNING);
@@ -201,13 +196,7 @@ public class ModificarPresupuestoController {
         productoLinea.setCantidad(cantidad);
         productoLinea.setTotalLinea(cantidad * productoLinea.getPrecioUnitario());
 
-        // 🛑 Depuración: Imprimir datos antes de agregar
-        System.out.println("Producto agregado:");
-        System.out.println("   - ID Producto: " + productoLinea.getIdProductos());
-        System.out.println("   - Nombre: " + productoLinea.getNombreProducto());
-        System.out.println("   - Cantidad: " + productoLinea.getCantidad());
-
-        productosUtilizados.add(productoLinea);
+        productoUtilizados.add(productoLinea);
         calculatTotal();
         txfCodigo.clear();
         txfCodigo.requestFocus();
@@ -229,16 +218,14 @@ public class ModificarPresupuestoController {
 
         // El total de los productos debe calcularse de acuerdo con la lista de productos utilizados
         float totalProductos = 0;
-        for (Productos p1 : productosUtilizados) {
+        for (Producto p1 : productoUtilizados) {
             totalProductos += p1.getTotalLinea();
         }
 
         // Calcular el total general
         float totalGeneral = totalProductos + manoDeObra + costosVariables;
 
-        // Actualizar la interfaz de usuario (si es necesario)
-        // Por ejemplo, actualizar el campo de total
-        txfTotalPresupuestado.setText(String.valueOf(totalGeneral));
+        txfTotalPresupuestado.setText(String.valueOf((int)totalGeneral));
     }
 
     public void generarPDF() {
@@ -318,8 +305,8 @@ public class ModificarPresupuestoController {
             productosTable.addHeaderCell(new com.itextpdf.layout.element.Cell().add(new Paragraph("Cantidad").setBold()));
             productosTable.addHeaderCell(new com.itextpdf.layout.element.Cell().add(new Paragraph("Total Línea").setBold()));
 
-            if (!productosUtilizados.isEmpty()) {
-                for (Productos p1 : productosUtilizados) {
+            if (!productoUtilizados.isEmpty()) {
+                for (Producto p1 : productoUtilizados) {
                     productosTable.addCell(p1.getNombreProducto());
                     productosTable.addCell("$" + formatoPrecio.format(p1.getPrecioUnitario()));
                     productosTable.addCell(String.valueOf(p1.getCantidad()));
@@ -350,7 +337,7 @@ public class ModificarPresupuestoController {
             float costosVariables = Float.parseFloat(txfCostosVariables.getText());
             float manoDeObra = Float.parseFloat(txfManoDeObra.getText());
             float totalProductos = 0;
-            for (Productos p1 : productosUtilizados){
+            for (Producto p1 : productoUtilizados){
                 totalProductos = totalProductos+p1.getTotalLinea();
             }
             float totalGeneral = totalProductos+manoDeObra+costosVariables;
@@ -406,7 +393,7 @@ public class ModificarPresupuestoController {
 
         // Calcular el total de productos utilizados
         float totalProductos = 0;
-        for (Productos p1 : productosUtilizados) {
+        for (Producto p1 : productoUtilizados) {
             totalProductos += p1.getTotalLinea();
         }
 
@@ -438,7 +425,7 @@ public class ModificarPresupuestoController {
     private void guardarProductosPresupuestos(int idpresupuesto) {
         PresupuestoDAO pd = new PresupuestoDAO();
         ProductosDAO productosDao = new ProductosDAO();
-        for (Productos p1 : productosUtilizados) {
+        for (Producto p1 : productoUtilizados) {
             System.out.println("Intentando insertar producto en presupuesto:");
             System.out.println("   - ID Producto: " + p1.getIdProductos());
             System.out.println("   - Cantidad: " + p1.getCantidad());

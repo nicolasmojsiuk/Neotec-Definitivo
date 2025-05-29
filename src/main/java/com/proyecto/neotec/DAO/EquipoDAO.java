@@ -142,21 +142,19 @@ public class EquipoDAO {
         // Devolver la lista de rutas de las imágenes
         return rutasImagenes;
 
-    }public void actualizarEstadoEquipo(int idEquipo, int nuevoEstado) {
+    }
+    public void actualizarEstadoEquipo(int idEquipo, int nuevoEstado) {
         String sql = "UPDATE equipos SET estado = ?, fechaModificacion = CURRENT_TIMESTAMP WHERE idequipos = ?";
 
         try (Connection connection = Database.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
+             PreparedStatement stmt = connection.prepareStatement(sql)){
             stmt.setInt(1, nuevoEstado);
             stmt.setInt(2, idEquipo);
-
             stmt.executeUpdate();
-
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
-
 
     public int obtenerIDCliente(String dni) {
         int idCliente = 0;
@@ -360,8 +358,6 @@ public class EquipoDAO {
         return equipos;
     }
 
-
-
     public List<Equipos> filtrarPorEstadoEquipo(int estado) {
         List<Equipos> equipos = new ArrayList<>();
         String query = "SELECT * FROM equipos WHERE estado = ?"; // Filtrando por estado
@@ -370,10 +366,8 @@ public class EquipoDAO {
              PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setInt(1, estado);
             ResultSet rs = stmt.executeQuery();
-            EquipoDAO equipoDAO = new EquipoDAO(); // Crear solo una instancia
             while (rs.next()) {
                 Equipos equipo = new Equipos();
-
                 equipo.setId(rs.getInt("idequipos"));
                 equipo.setDispositivo(rs.getString("dispositivo"));
                 equipo.setActivo(rs.getInt("activo"));
@@ -382,12 +376,9 @@ public class EquipoDAO {
                 equipo.setFechaModificacion(rs.getString("fechaModificacion"));
                 equipo.setFechaSalida(rs.getString("fechaSalida"));
                 equipo.setObservaciones(rs.getString("observaciones"));
-                // Obtener el propietario
                 equipo.setIdcliente(rs.getInt("idclientes"));
-
                 equipos.add(equipo);
             }
-
         } catch (SQLException e) {
             e.printStackTrace();
         }

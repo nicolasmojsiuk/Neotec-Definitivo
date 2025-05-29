@@ -439,7 +439,6 @@ public class verPresupuestosController {
         }
     }
 
-
     public void cambiarEstado(ActionEvent actionEvent) {
         Presupuestos pr = tablaPresupuestos.getSelectionModel().getSelectedItem(); // Esto deberías adaptarlo
         if (pr == null) {

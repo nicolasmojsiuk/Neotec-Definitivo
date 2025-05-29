@@ -158,7 +158,7 @@ public class VerEquiposController {
         ToggleGroup toggleGroupEstados = new ToggleGroup();
         toggleActivos.setToggleGroup(toggleGroupEstados);
         toggleInactivos.setToggleGroup(toggleGroupEstados);
-        
+
         toggleGroupEstados.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
                 ToggleButton selectedToggle = (ToggleButton) newValue;
@@ -431,7 +431,7 @@ public class VerEquiposController {
         List<String> estados = List.of(
                 "Seleccionar todos los Equipos","Ingresado", "Revisión", "En espera de autorización",
                 "Autorizado para la reparación", "Reparación no autorizada", "Reparado",
-                 "Entregado"
+                "Entregado"
         );
 
         comboBox.getItems().addAll(estados);
@@ -493,7 +493,6 @@ public class VerEquiposController {
             mostrarAlerta("Error", "Error al cargar la ventana.", Alert.AlertType.ERROR);
         }
     }
-
     public void entregarEquipo(ActionEvent actionEvent) {
         Equipos equipoSeleccionado = tablaEquipos.getSelectionModel().getSelectedItem();
         PresupuestoDAO pd = new PresupuestoDAO();
@@ -502,84 +501,84 @@ public class VerEquiposController {
         if (equipoSeleccionado == null){
             mostrarAlerta("Error", "Por favor seleccione un equipo",Alert.AlertType.ERROR);
         }else if (equipoSeleccionado.getEstado() == 7){
-                mostrarAlerta("Entregar Equipo", "Este equipo ya fue entregado",Alert.AlertType.INFORMATION);
+            mostrarAlerta("Entregar Equipo", "Este equipo ya fue entregado",Alert.AlertType.INFORMATION);
         }else if (!pd.existePresupuestoParaEquipo(equipoSeleccionado.getId())) {
             mostrarAlerta("Entregar Equipo", "El equipo no tiene presupuestos asociados",Alert.AlertType.INFORMATION);
         }else {
-                List<Presupuestos> listaPresupuestos = pd.obtenerPresupuestosPorIdEquipo(equipoSeleccionado.getId());
-                // Listas para clasificar los presupuestos
-                List<Integer> pendientesDePago = new ArrayList<>();
-                List<Integer> porResolver = new ArrayList<>();
-                List<Integer> correctos = new ArrayList<>();
+            List<Presupuestos> listaPresupuestos = pd.obtenerPresupuestosPorIdEquipo(equipoSeleccionado.getId());
+            // Listas para clasificar los presupuestos
+            List<Integer> pendientesDePago = new ArrayList<>();
+            List<Integer> porResolver = new ArrayList<>();
+            List<Integer> correctos = new ArrayList<>();
 
-                boolean puedeEntregarse = true;
+            boolean puedeEntregarse = true;
 
-                for (Presupuestos pr : listaPresupuestos) {
-                    int estado = pr.getEstado();
-                    int id = pr.getIdpresupuesto();
+            for (Presupuestos pr : listaPresupuestos) {
+                int estado = pr.getEstado();
+                int id = pr.getIdpresupuesto();
 
-                    switch (estado) {
-                        case 2: // Aprobado
-                            if (!pd.verificarEstadoPagado(id)) {
-                                pendientesDePago.add(id);
-                                puedeEntregarse = false;
-                            } else {
-                                correctos.add(id);
-                            }
-                            break;
-
-                        case 4: // Pagado
-                            correctos.add(id);
-                            break;
-
-                        case 3: // Cancelado
-                            correctos.add(id);
-                            break;
-
-                        default: // En espera o estado no válido
-                            porResolver.add(id);
+                switch (estado) {
+                    case 2: // Aprobado
+                        if (!pd.verificarEstadoPagado(id)) {
+                            pendientesDePago.add(id);
                             puedeEntregarse = false;
-                            break;
-                    }
+                        } else {
+                            correctos.add(id);
+                        }
+                        break;
+
+                    case 4: // Pagado
+                        correctos.add(id);
+                        break;
+
+                    case 3: // Cancelado
+                        correctos.add(id);
+                        break;
+
+                    default: // En espera o estado no válido
+                        porResolver.add(id);
+                        puedeEntregarse = false;
+                        break;
+                }
+            }
+
+            // Lógica de entrega y alertas
+            if (puedeEntregarse && !listaPresupuestos.isEmpty()) {
+                // Todos los presupuestos están en estado correcto
+                equipoDAO.actualizarEstadoEquipo(equipoSeleccionado.getId(), 7);
+                mostrarAlerta("Entregar Equipo", "El equipo ha sido entregado", Alert.AlertType.INFORMATION);
+                cargarDatos();
+
+            } else {
+                // Hay presupuestos pendientes o por resolver
+                StringBuilder mensaje = new StringBuilder();
+                String titulo = "No se puede entregar el equipo";
+                Alert.AlertType tipo = Alert.AlertType.WARNING;
+
+                if (!pendientesDePago.isEmpty() && !porResolver.isEmpty()) {
+                    mensaje.append("Existen presupuestos que impiden la entrega:\n\n");
+                    mensaje.append("- Pendientes de pago (IDs: ").append(pendientesDePago).append(")\n");
+                    mensaje.append("- Por resolver (IDs: ").append(porResolver).append(")\n\n");
+                    mensaje.append("Los presupuestos pendientes deben pagarse o cancelarse.\n");
+                    mensaje.append("Los presupuestos por resolver deben aprobarse o cancelarse.");
+                } else if (!pendientesDePago.isEmpty()) {
+                    mensaje.append("No se puede entregar el equipo:\n\n");
+                    mensaje.append("Existen presupuestos aprobados pendientes de pago (N°: ").append(pendientesDePago).append(")\n\n");
+                    mensaje.append("Deben pagarse o cancelarse para proceder con la entrega.");
+                } else if (!porResolver.isEmpty()) {
+                    mensaje.append("No se puede entregar el equipo:\n\n");
+                    mensaje.append("Existen presupuestos sin estado definido (IDs: ").append(porResolver).append(")\n\n");
+                    mensaje.append("Deben aprobarse o cancelarse para proceder con la entrega.");
                 }
 
-                // Lógica de entrega y alertas
-                if (puedeEntregarse && !listaPresupuestos.isEmpty()) {
-                    // Todos los presupuestos están en estado correcto
-                    equipoDAO.actualizarEstadoEquipo(equipoSeleccionado.getId(), 7);
-                    mostrarAlerta("Entregar Equipo", "El equipo ha sido entregado", Alert.AlertType.INFORMATION);
-                    cargarDatos();
-
-                } else {
-                    // Hay presupuestos pendientes o por resolver
-                    StringBuilder mensaje = new StringBuilder();
-                    String titulo = "No se puede entregar el equipo";
-                    Alert.AlertType tipo = Alert.AlertType.WARNING;
-
-                    if (!pendientesDePago.isEmpty() && !porResolver.isEmpty()) {
-                        mensaje.append("Existen presupuestos que impiden la entrega:\n\n");
-                        mensaje.append("- Pendientes de pago (IDs: ").append(pendientesDePago).append(")\n");
-                        mensaje.append("- Por resolver (IDs: ").append(porResolver).append(")\n\n");
-                        mensaje.append("Los presupuestos pendientes deben pagarse o cancelarse.\n");
-                        mensaje.append("Los presupuestos por resolver deben aprobarse o cancelarse.");
-                    } else if (!pendientesDePago.isEmpty()) {
-                        mensaje.append("No se puede entregar el equipo:\n\n");
-                        mensaje.append("Existen presupuestos aprobados pendientes de pago (N°: ").append(pendientesDePago).append(")\n\n");
-                        mensaje.append("Deben pagarse o cancelarse para proceder con la entrega.");
-                    } else if (!porResolver.isEmpty()) {
-                        mensaje.append("No se puede entregar el equipo:\n\n");
-                        mensaje.append("Existen presupuestos sin estado definido (IDs: ").append(porResolver).append(")\n\n");
-                        mensaje.append("Deben aprobarse o cancelarse para proceder con la entrega.");
-                    }
-
-                    // Mostrar alerta solo si hay problemas
-                    if (mensaje.length() > 0) {
-                        mostrarAlerta(titulo, mensaje.toString(), tipo);
-                    }
+                // Mostrar alerta solo si hay problemas
+                if (mensaje.length() > 0) {
+                    mostrarAlerta(titulo, mensaje.toString(), tipo);
                 }
             }
         }
     }
+}
 
 
 
