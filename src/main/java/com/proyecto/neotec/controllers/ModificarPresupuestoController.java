@@ -144,9 +144,6 @@ public class ModificarPresupuestoController {
         tablaProductos.setItems(productoUtilizados);
     }
 
-
-
-
     private void vincularTabla() {
         // Configuración de columnas
         columnaProducto.setCellValueFactory(new PropertyValueFactory<>("nombreProducto"));
@@ -199,12 +196,6 @@ public class ModificarPresupuestoController {
         productoLinea.setCantidad(cantidad);
         productoLinea.setTotalLinea(cantidad * productoLinea.getPrecioUnitario());
 
-        // 🛑 Depuración: Imprimir datos antes de agregar
-        System.out.println("Producto agregado:");
-        System.out.println("   - ID Producto: " + productoLinea.getIdProductos());
-        System.out.println("   - Nombre: " + productoLinea.getNombreProducto());
-        System.out.println("   - Cantidad: " + productoLinea.getCantidad());
-
         productoUtilizados.add(productoLinea);
         calculatTotal();
         txfCodigo.clear();
@@ -234,9 +225,7 @@ public class ModificarPresupuestoController {
         // Calcular el total general
         float totalGeneral = totalProductos + manoDeObra + costosVariables;
 
-        // Actualizar la interfaz de usuario (si es necesario)
-        // Por ejemplo, actualizar el campo de total
-        txfTotalPresupuestado.setText(String.valueOf(totalGeneral));
+        txfTotalPresupuestado.setText(String.valueOf((int)totalGeneral));
     }
 
     public void generarPDF() {

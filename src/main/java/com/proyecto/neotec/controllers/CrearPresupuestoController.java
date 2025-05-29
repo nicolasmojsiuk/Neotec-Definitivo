@@ -12,6 +12,7 @@ import com.itextpdf.layout.element.Table;
 import com.itextpdf.layout.property.TextAlignment;
 import com.itextpdf.layout.property.UnitValue;
 import com.proyecto.neotec.DAO.ClienteDAO;
+import com.proyecto.neotec.DAO.EquipoDAO;
 import com.proyecto.neotec.DAO.PresupuestoDAO;
 import com.proyecto.neotec.DAO.ProductosDAO;
 import com.proyecto.neotec.models.Equipos;
@@ -35,8 +36,10 @@ import javafx.stage.Stage;
 import java.awt.*;
 import java.io.File;
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 public class CrearPresupuestoController {
 
@@ -73,7 +76,7 @@ public class CrearPresupuestoController {
     @FXML
     private Button btnAgregarLinea;
 
-    private ObservableList<Producto> productoUtilizados;
+    private ObservableList<Producto> productosUtilizados;
     private Stage stage;
     private Equipos equipo;
     @FXML
@@ -89,8 +92,8 @@ public class CrearPresupuestoController {
             });
         });
 
-        productoUtilizados = FXCollections.observableArrayList();
-        tablaProductos.setItems(productoUtilizados);
+        productosUtilizados = FXCollections.observableArrayList();
+        tablaProductos.setItems(productosUtilizados);
         vincularTabla(); // Configura las columnas correctamente
 
         // Inicializar el Spinner de cantidad con valores predeterminados
@@ -167,26 +170,23 @@ public class CrearPresupuestoController {
         productoLinea.setTotalLinea(cantidad * productoLinea.getPrecioUnitario());
 
         // Agregar el producto a la lista y actualizar la tabla
-        productoUtilizados.add(productoLinea);
+        productosUtilizados.add(productoLinea);
         calculatTotal();
         txfCodigo.clear();
         txfCodigo.requestFocus();
     }
-
     public void calculatTotal() {
-        // verifica si el TextField está vacío y asigna un valor por defecto
         float costosVariables = txfCostosVariables.getText().isEmpty() ? 0 : Float.parseFloat(txfCostosVariables.getText());
         float manoDeObra = txfManoDeObra.getText().isEmpty() ? 0 : Float.parseFloat(txfManoDeObra.getText());
         float totalProductos = 0;
 
-        for (Producto p1 : productoUtilizados) {
+        for (Producto p1 : productosUtilizados) {
             totalProductos += p1.getTotalLinea();
         }
 
         float totalGeneral = totalProductos + manoDeObra + costosVariables;
-        txfTotalPresupuestado.setText(String.valueOf(totalGeneral));
+        txfTotalPresupuestado.setText(String.valueOf(((int) totalGeneral)));
     }
-
 
     public void generarPDF() {
         int respuesta = guardarPresupuesto();
@@ -262,8 +262,8 @@ public class CrearPresupuestoController {
             productosTable.addHeaderCell(new com.itextpdf.layout.element.Cell().add(new Paragraph("Cantidad").setBold()));
             productosTable.addHeaderCell(new com.itextpdf.layout.element.Cell().add(new Paragraph("Total Línea").setBold()));
 
-            if (!productoUtilizados.isEmpty()) {
-                for (Producto p1 : productoUtilizados) {
+            if (!productosUtilizados.isEmpty()) {
+                for (Producto p1 : productosUtilizados) {
                     productosTable.addCell(p1.getNombreProducto());
                     productosTable.addCell("$" + formatoPrecio.format(p1.getPrecioUnitario()));
                     productosTable.addCell(String.valueOf(p1.getCantidad()));
@@ -299,7 +299,7 @@ public class CrearPresupuestoController {
             float costosVariables = txfCostosVariables.getText().isEmpty() ? 0 : Float.parseFloat(txfCostosVariables.getText());
             float manoDeObra = txfManoDeObra.getText().isEmpty() ? 0 : Float.parseFloat(txfManoDeObra.getText());
             float totalProductos = 0;
-            for (Producto p1 : productoUtilizados){
+            for (Producto p1 : productosUtilizados){
                 totalProductos = totalProductos+p1.getTotalLinea();
             }
             float totalGeneral = totalProductos+manoDeObra+costosVariables;
@@ -361,40 +361,26 @@ public class CrearPresupuestoController {
         }
     }
     public int guardarPresupuesto() {
-        System.out.println("ESTADO EQUIPO AL GUARDAR EL PRESUPUESTO: "+equipo.getEstado());
         int idequipo = equipo.getId();
-        PresupuestoDAO presupuestoDAO = new PresupuestoDAO();
-        if (presupuestoDAO.existePresupuestoParaEquipo(idequipo)) {
-            MostrarAlerta.mostrarAlerta("Crear Presupuesto", "Ya existe un presupuesto para este equipo.", Alert.AlertType.WARNING);
-            return -1;
-        }
-
         float costosVariables = txfCostosVariables.getText().isEmpty() ? 0 : Float.parseFloat(txfCostosVariables.getText());
         float manoDeObra = txfManoDeObra.getText().isEmpty() ? 0 : Float.parseFloat(txfManoDeObra.getText());
         float totalProductos = 0;
-        for (Producto p1 : productoUtilizados) {
+        for (Producto p1 : productosUtilizados) {
             totalProductos += p1.getTotalLinea();
         }
         float totalGeneral = totalProductos + manoDeObra + costosVariables;
         String observaciones = txaObs.getText();
         PresupuestoDAO pd = new PresupuestoDAO();
-        // El estado del presupuesto es asignado manuealmente en insertPresupuesto()
         int respuesta = pd.insertPresupuesto(spTiempoReparacion.getValue(), costosVariables, manoDeObra, totalGeneral, idequipo, totalProductos, observaciones);
-
-
-        if (respuesta == -1) {
-            MostrarAlerta.mostrarAlerta("Crear Presupuesto", "Error: El equipo ya tiene asociado un presupuesto.", Alert.AlertType.WARNING);
-            return -1;
+        if (respuesta != -1){
+            guardarProductosPresupuestos(respuesta);
         }
-
-        guardarProductosPresupuestos(respuesta);
         return respuesta;
     }
 
     private void guardarProductosPresupuestos(int idpresupuesto) {
         PresupuestoDAO pd = new PresupuestoDAO();
-        for (Producto p1 : productoUtilizados){
-            System.out.println("intento de insercion");
+        for (Producto p1 : productosUtilizados){
             pd.insertProductoPresupuesto(idpresupuesto,p1.getIdProductos(), p1.getCantidad());
         }
     }

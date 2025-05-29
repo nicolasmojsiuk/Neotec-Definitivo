@@ -101,7 +101,7 @@ public class PresupuestoDAO {
     public void insertProductoPresupuesto (int idPresupuesto, int idProductos, int cantidadUtilizada) {
         String query = "INSERT INTO productopresupuesto (IDpresupuestos, IDproductos, cantidadUtilizada) VALUES(?, ?, ?)";
         try (Connection conn = Database.getConnection();
-        PreparedStatement stmt = conn.prepareStatement(query);
+             PreparedStatement stmt = conn.prepareStatement(query);
         ){
             stmt.setInt(1,idPresupuesto);
             stmt.setInt(2,idProductos);

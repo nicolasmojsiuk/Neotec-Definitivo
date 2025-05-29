@@ -1,5 +1,15 @@
 package com.proyecto.neotec.controllers;
 
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.canvas.draw.SolidLine;
+import com.itextpdf.layout.Document;
+import com.itextpdf.layout.element.Cell;
+import com.itextpdf.layout.element.LineSeparator;
+import com.itextpdf.layout.element.Paragraph;
+import com.itextpdf.layout.element.Table;
+import com.itextpdf.layout.property.TextAlignment;
+import com.itextpdf.layout.property.UnitValue;
 import com.proyecto.neotec.DAO.*;
 import com.proyecto.neotec.models.*;
 import com.proyecto.neotec.util.CajaEstablecida;
@@ -28,7 +38,9 @@ import javafx.util.Duration;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -307,12 +319,17 @@ public class verPresupuestosController {
                             );
                             if ("Error: Ocurrió un problema al registrar el movimiento.".equals(respuesta)) {
                                 MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "Error: Ocurrió un problema al registrar el movimiento en la caja", Alert.AlertType.WARNING);
-                            } else {
-                                cambiarEstadoEquipo(pr);
+                            } else if (cambiarEstadoEquipo(pr)){
+                                presupuestoDAO.cambiarEstadoPresupuesto(pr,4);// Confirmación del pago en efectivo
+                                MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "El pago en efectivo se ha realizado correctamente.", Alert.AlertType.INFORMATION);
+                                GenerarComprobante(pr);
+                            }else if (!cambiarEstadoEquipo(pr)){
+                                MostrarAlerta.mostrarAlerta(
+                                        "Error",
+                                        "El presupuesto utiliza productos no disponibles en stock",
+                                        Alert.AlertType.INFORMATION
+                                );
                             }
-                            presupuestoDAO.cambiarEstadoPresupuesto(pr,4);
-                            // Confirmación del pago en efectivo
-                            MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "El pago en efectivo se ha realizado correctamente.", Alert.AlertType.INFORMATION);
                         } else {
                             MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "La caja establecida está cerrada", Alert.AlertType.WARNING);
                         }
@@ -347,11 +364,20 @@ public class verPresupuestosController {
                         try {
                             TransaccionesDigitalesDAO tdd = new TransaccionesDigitalesDAO();
                             tdd.registrarTransaccion(0, pr.getPrecioTotal(), 1, mensaje.get());
-                            cambiarEstadoEquipo(pr);
-                            presupuestoDAO.cambiarEstadoPresupuesto(pr,4);
-                            // Confirmación de la transacción digital
-                            MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "La transacción digital se ha registrado correctamente.", Alert.AlertType.INFORMATION);
+                            if (cambiarEstadoEquipo(pr)){
+                                presupuestoDAO.cambiarEstadoPresupuesto(pr,4);
+                                // Confirmación del pago en efectivo
+                                MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "El pago en efectivo se ha realizado correctamente.", Alert.AlertType.INFORMATION);
+                                GenerarComprobante(pr);
+                            }else if (!cambiarEstadoEquipo(pr)){
+                                MostrarAlerta.mostrarAlerta(
+                                        "Error",
+                                        "El presupuesto utiliza productos no disponibles en stock",
+                                        Alert.AlertType.INFORMATION
+                                );
+                            }
                         } catch (Exception e) {
+                            e.printStackTrace();
                             MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "Error al registrar la transacción digital.", Alert.AlertType.ERROR);
                         }
                     }
@@ -370,7 +396,7 @@ public class verPresupuestosController {
     }
 
 
-    public void cambiarEstadoEquipo(Presupuestos pr) {
+    public boolean cambiarEstadoEquipo(Presupuestos pr) {
         ProductosDAO productosDAO = new ProductosDAO();
         EquipoDAO equipoDAO = new EquipoDAO();
 
@@ -382,15 +408,15 @@ public class verPresupuestosController {
             int idProducto = producto.getIdProductos();
             int cantidadRequerida = producto.getCantidad();
 
-            if (productosDAO.productoExiste(idProducto)) {
-                int stockDisponible = productosDAO.obtenerCantidad(idProducto);
-                if (cantidadRequerida <= stockDisponible) {
-                    productosDAO.descontarStock(idProducto, cantidadRequerida);
-                } else {
-                    hayFaltante = true;
-                }
-            } else {
+            if (!productosDAO.productoExiste(idProducto)) {
                 hayFaltante = true;
+                break;
+            }
+
+            int stockDisponible = productosDAO.obtenerCantidad(idProducto);
+            if (cantidadRequerida > stockDisponible) {
+                hayFaltante = true;
+                break;
             }
         }
 
@@ -398,31 +424,29 @@ public class verPresupuestosController {
         int idEquipo = equipoDAO.obtener_IDequipo_con_idpresupuesto(pr.getIdpresupuesto());
         Equipos equipo = equipoDAO.obtenerEquipoPorId(idEquipo);
 
-        // Cambiar estado del equipo según disponibilidad de productos
         if (hayFaltante) {
-            MostrarAlerta.mostrarAlerta(
-                    "Error",
-                    "El presupuesto utiliza productos no disponibles en stock",
-                    Alert.AlertType.INFORMATION
-            );
             equipoDAO.actualizarEstadoEquipo(equipo.getId(), 3); // Espera de Autorización
+            List<Presupuestos> lista = presupuestoDAO.selectAllPresupuestos();
+            cargarDatos(lista);
+            return false;
         } else {
-            equipoDAO.actualizarEstadoEquipo(equipo.getId(), 5); // Autorizado para la reparación
+            for (Producto producto : productos) {
+                int idProducto = producto.getIdProductos();
+                int cantidadRequerida = producto.getCantidad();
+                productosDAO.descontarStock(idProducto, cantidadRequerida);
+            }
+            return true;
         }
     }
 
-
-
     public void cambiarEstado(ActionEvent actionEvent) {
-        Presupuestos presupuesto = tablaPresupuestos.getSelectionModel().getSelectedItem(); // Esto deberías adaptarlo
-
-        if (presupuesto == null) {
-            Alert alert = new Alert(Alert.AlertType.WARNING, "Selecciona un presupuesto primero.", ButtonType.OK);
+        Presupuestos pr = tablaPresupuestos.getSelectionModel().getSelectedItem(); // Esto deberías adaptarlo
+        if (pr == null) {
+            Alert alert = new Alert(Alert.AlertType.WARNING, "Selecciona un pr primero.", ButtonType.OK);
             alert.showAndWait();
             return;
         }
-
-        int estadoActual = presupuesto.getEstado();
+        int estadoActual = pr.getEstado();
 
         Dialog<String> dialog = new Dialog<>();
         dialog.setTitle("Seleccionar Estado");
@@ -443,7 +467,7 @@ public class verPresupuestosController {
         }
 
         if (comboBox.getItems().isEmpty()) {
-            Alert alert = new Alert(Alert.AlertType.INFORMATION, "Este presupuesto ya no puede cambiar de estado.", ButtonType.OK);
+            Alert alert = new Alert(Alert.AlertType.INFORMATION, "Este pr ya no puede cambiar de estado.", ButtonType.OK);
             alert.showAndWait();
             return;
         }
@@ -467,23 +491,273 @@ public class verPresupuestosController {
 
             EquipoDAO equipoDAO = new EquipoDAO();
             int estado = presupuestoDAO.obtenerEstadoIntDesdeBD(estadoSeleccionado);
-            System.out.println();
+            int idEquipoPresupuesto = equipoDAO.obtener_IDequipo_con_idpresupuesto(pr.getIdpresupuesto());
             if (estado == 3){
-                // si el presupuesto es cancelado, cambiamos el estado del equipo a no autorizado para la reparación
+                // si el pr es cancelado, cambiamos el estado del equipo a no autorizado para la reparación
+                equipoDAO.actualizarEstadoEquipo(idEquipoPresupuesto,4);
 
-                equipoDAO.actualizarEstadoEquipo(presupuesto.getIdEquipo(),4);
-            } else if (estado==2) {
-                //presupuesto aprobado = equipo autorizado para la reparación
-                equipoDAO.actualizarEstadoEquipo(presupuesto.getIdEquipo(),5);
             }
-            presupuestoDAO.cambiarEstadoPresupuesto(presupuesto,estado);
-
+            if (estado==2) {
+                //pr aprobado = equipo autorizado para la reparación
+                equipoDAO.actualizarEstadoEquipo(idEquipoPresupuesto,5);
+            }
+            presupuestoDAO.cambiarEstadoPresupuesto(pr,estado);
+            cargarDatos(presupuestoDAO.selectAllPresupuestos());
         });
     }
 
     public void QuitarFiltros(ActionEvent actionEvent) {
         presupuestoDAO= new PresupuestoDAO();
         cargarDatos(presupuestoDAO.selectAllPresupuestos());
+    }
+    public void GenerarComprobante(Presupuestos prSeleccionado){
+
+        PresupuestoDAO pd = new PresupuestoDAO();
+        Presupuestos pr = pd.obtenerPresupuestoPorId(prSeleccionado.getIdpresupuesto());
+        EquipoDAO equipoDAO = new EquipoDAO();
+        Equipos equipo = equipoDAO.obtenerEquipoPorId(equipoDAO.obtener_IDequipo_con_idpresupuesto(pr.getIdpresupuesto()));
+
+        LocalDateTime fechaYhora = pd.obtenerFechaHora(pr.getIdpresupuesto());
+
+        DecimalFormat formatoPrecio = new DecimalFormat("#0.00");
+        String destino = "";
+        try {
+            String fechaHora = fechaYhora.format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            String fechaFormateada = fechaYhora.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+            String horaFormateada = fechaYhora.format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+            destino = "C:/COMPROBANTES_NEOTEC/Comprobante_"  + ".pdf";
+
+            PdfWriter writer = new PdfWriter(destino);
+            PdfDocument pdf = new PdfDocument(writer);
+            Document document = new Document(pdf);
+            document.setMargins(30, 30, 30, 30);
+
+            // Estilo similar a Mercado Pago
+            Paragraph header = new Paragraph("NEOTEC REPARACIONES")
+                    .setTextAlignment(TextAlignment.CENTER)
+                    .setFontSize(16)
+                    .setBold()
+                    .setMarginBottom(10);
+            document.add(header);
+
+            Paragraph tipoComprobante = new Paragraph("COMPROBANTE DE SERVICIO")
+                    .setTextAlignment(TextAlignment.CENTER)
+                    .setFontSize(14)
+                    .setBold()
+                    .setMarginBottom(20);
+            document.add(tipoComprobante);
+
+            // Sección de detalles principales
+            Paragraph detalleServicio = new Paragraph("Reparación de equipo")
+                    .setTextAlignment(TextAlignment.CENTER)
+                    .setFontSize(12)
+                    .setMarginBottom(5);
+            document.add(detalleServicio);
+
+            Paragraph totalPagado = new Paragraph("Total abonado")
+                    .setTextAlignment(TextAlignment.CENTER)
+                    .setFontSize(10)
+                    .setMarginBottom(5);
+            document.add(totalPagado);
+
+            // Monto grande como en el ejemplo
+            //TODO traer total general
+            float totalGeneral = pr.getPrecioTotal();
+            Paragraph monto = new Paragraph("$ " + formatoPrecio.format(totalGeneral))
+                    .setTextAlignment(TextAlignment.CENTER)
+                    .setFontSize(24)
+                    .setBold()
+                    .setMarginBottom(20);
+            document.add(monto);
+
+            // Línea divisoria
+            LineSeparator ls = new LineSeparator(new SolidLine());
+            document.add(ls);
+
+            // Sección de Detalles
+            Paragraph detallesHeader = new Paragraph("Detalles")
+                    .setTextAlignment(TextAlignment.LEFT)
+                    .setFontSize(12)
+                    .setBold()
+                    .setMarginTop(10)
+                    .setMarginBottom(10);
+            document.add(detallesHeader);
+
+            // Tabla de detalles
+            float[] columnWidths = {3, 1};
+            Table detallesTable = new Table(columnWidths);
+            detallesTable.setWidth(UnitValue.createPercentValue(100));
+
+            // TODO traer Productos utilizados
+            ProductosDAO productosDAO = new ProductosDAO();
+
+            List<Producto> productosUtilizados = productosDAO.obtenerProductosPorPresupuesto(pr.getIdpresupuesto());
+
+            Paragraph subtitulo2 = new Paragraph("Productos utilizados")
+                    .setTextAlignment(TextAlignment.CENTER)
+                    .setFontSize(11)
+                    .setBold();
+            document.add(subtitulo2);
+
+            // Tabla de productos
+            float[] columnW = {200F, 100F, 80F, 100F};
+            Table productosTable = new Table(columnW);
+            productosTable.setWidth(UnitValue.createPercentValue(100));
+
+            productosTable.addHeaderCell(new com.itextpdf.layout.element.Cell().add(new Paragraph("Producto").setBold()));
+            productosTable.addHeaderCell(new com.itextpdf.layout.element.Cell().add(new Paragraph("Precio U").setBold()));
+            productosTable.addHeaderCell(new com.itextpdf.layout.element.Cell().add(new Paragraph("Cantidad").setBold()));
+            productosTable.addHeaderCell(new com.itextpdf.layout.element.Cell().add(new Paragraph("Total Línea").setBold()));
+            float totalproductos;
+
+            if (!productosUtilizados.isEmpty()) {
+                for (Producto p1 : productosUtilizados) {
+                    totalproductos = p1.getPrecioUnitario() * p1.getCantidad();
+                    productosTable.addCell(p1.getNombreProducto());
+                    productosTable.addCell("$" + formatoPrecio.format(p1.getPrecioUnitario()));
+                    productosTable.addCell(String.valueOf(p1.getCantidad()));
+                    productosTable.addCell("$" + formatoPrecio.format(totalproductos));
+                }
+            } else {
+                productosTable.addCell(new Cell(1, 4)
+                        .add(new Paragraph("Tabla sin contenido"))
+                        .setTextAlignment(TextAlignment.CENTER));
+            }
+            document.add(productosTable);
+            float manoDeObra = pr.getManoDeObra();
+            if (manoDeObra > 0) {
+                detallesTable.addCell(new Cell().add(new Paragraph("Mano de obra")));
+                detallesTable.addCell(new Cell().add(new Paragraph("$" + formatoPrecio.format(manoDeObra)))
+                        .setTextAlignment(TextAlignment.RIGHT));
+            }
+
+            //agregado
+            float costosVariables = pr.getCostosVariables();
+            if (costosVariables > 0) {
+                detallesTable.addCell(new Cell().add(new Paragraph("Costos variables:")));
+                detallesTable.addCell(new Cell().add(new Paragraph("$" + formatoPrecio.format(costosVariables)))
+                        .setTextAlignment(TextAlignment.RIGHT));
+            }
+            document.add(detallesTable);
+            // Línea divisoria
+            document.add(ls);
+
+            // Sección Total
+            Paragraph totalHeader = new Paragraph("Total")
+                    .setTextAlignment(TextAlignment.LEFT)
+                    .setFontSize(12)
+                    .setBold()
+                    .setMarginTop(10)
+                    .setMarginBottom(5);
+            document.add(totalHeader);
+
+            Paragraph totalFinal = new Paragraph("$ " + formatoPrecio.format(totalGeneral))
+                    .setTextAlignment(TextAlignment.LEFT)
+                    .setFontSize(12)
+                    .setBold()
+                    .setMarginBottom(20);
+            document.add(totalFinal);
+
+            // Línea divisoria
+            document.add(ls);
+
+            // Sección de información adicional
+            Paragraph infoHeader = new Paragraph("Información adicional")
+                    .setTextAlignment(TextAlignment.LEFT)
+                    .setFontSize(14)
+                    .setMarginTop(14)
+                    .setBold()
+                    .setMarginBottom(5);
+            document.add(infoHeader);
+
+            ClienteDAO cd = new ClienteDAO();
+            int respuesta = equipo.getId();
+            Paragraph clienteInfo = new Paragraph()
+                    .add("Cliente: " + cd.obtenerNombreCompletoPorId(equipo.getIdcliente()) + "\n")
+                    .add("DNI: " + cd.obtenerDniPorId(equipo.getIdcliente()) + "\n")
+                    .add("Comprobante N°: " + respuesta + "\n")
+                    .add("Fecha: " + fechaFormateada + "\n")
+                    .add("Hora: " + horaFormateada + "\n")
+                    .setFontSize(12)
+                    .setMarginBottom(12);
+            document.add(clienteInfo);
+
+            // TODO traer Observaciones si las hay
+            Paragraph observaciones = new Paragraph("Observaciones:\n" +pr.getObservaciones())
+                    .setFontSize(12)
+                    .setMarginBottom(12);
+            document.add(observaciones);
+
+
+            // Footer
+            Paragraph footer = new Paragraph("Gracias por confiar en NEOTEC")
+                    .setTextAlignment(TextAlignment.CENTER)
+                    .setFontSize(14)
+                    .setItalic()
+                    .setBold()
+                    .setMarginTop(20);
+            document.add(footer);
+
+            document.close();
+
+            System.out.println("✅ Comprobante generado en: " + destino);
+            AbrirComprobante(destino);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    public void AbrirComprobante(String destino){
+        // Abrir el pdf
+        try {
+            File file = new File(destino);
+            if (file.exists()) {
+                Desktop.getDesktop().open(file);
+                MostrarAlerta.mostrarAlerta("Crear Comprobante", "El comprobante ha sido creado", Alert.AlertType.INFORMATION);
+            } else {
+                MostrarAlerta.mostrarAlerta("Error", "Error al abrir el archivo", Alert.AlertType.ERROR);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    public void DefinirEstados(ActionEvent actionEvent) {
+        Dialog<String> dialog = new Dialog<>();
+        dialog.setTitle("Seleccionar Estado");
+        dialog.setHeaderText("Por favor, elige un estado:");
+
+        // Crear el ComboBox con opciones de estado
+        ComboBox<String> comboBox = new ComboBox<>();
+        List<String> estados = List.of(
+                "Seleccionar todos los Presupuestos","En espera de Autorización", "Aprobado", "Cancelado",
+                "Pagado"
+        );
+
+        comboBox.getItems().addAll(estados);
+        comboBox.setValue(estados.get(0)); // Preseleccionar el primer estado
+        // Agregar el ComboBox al contenido del diálogo
+        VBox content = new VBox(10, new Label("Selecciona:"), comboBox);
+        dialog.getDialogPane().setContent(content);
+        // Agregar botones al diálogo
+        ButtonType btnAceptar = new ButtonType("Aceptar", ButtonBar.ButtonData.OK_DONE);
+        ButtonType btnCancelar = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
+        dialog.getDialogPane().getButtonTypes().addAll(btnAceptar, btnCancelar);
+        // Configurar resultado cuando se presiona "Aceptar"
+        dialog.setResultConverter(dialogButton ->
+                dialogButton == btnAceptar ? comboBox.getValue() : null
+        );
+        // Mostrar el diálogo y obtener el resultado
+        Optional<String> resultado = dialog.showAndWait();
+        PresupuestoDAO presupuestosDAO = new PresupuestoDAO();
+        resultado.ifPresent(estadoSeleccionado -> {
+            if (estadoSeleccionado.equals("Seleccionar todos los Equipos")){
+                List<Presupuestos> todos= presupuestosDAO.selectAllPresupuestos();
+                tablaPresupuestos.getItems().setAll(todos);
+            }else{
+                List<Presupuestos> equiposFiltrados = presupuestosDAO.filtrarPorEstadoPresupuesto(presupuestosDAO.obtenerEstadoIntDesdeBD(estadoSeleccionado));
+                tablaPresupuestos.getItems().setAll(equiposFiltrados);
+            }
+        });
     }
 }
 
