@@ -92,7 +92,7 @@ public class PresupuestoDAO {
             Database.handleSQLException(e);
         }
         EquipoDAO cambiarestadoEquipo = new EquipoDAO();
-        //Se cambia de revisión a Espera autorización el equipo:
+        //Se cambia al equipo al estado Espera autorización:
         cambiarestadoEquipo.actualizarEstadoEquipo(idEquipo,3);
         return IDgenerado;
     }
@@ -277,7 +277,7 @@ public class PresupuestoDAO {
         return false; // Si no se encontró el presupuesto o hubo error
     }
     public boolean verificarEstadoPagado(int idPresupuesto) {
-        String sql = "SELECT estado FROM presupuestos WHERE idpresupuestos = ? AND estado = 4 LIMIT 1";
+        String sql = "SELECT 1 FROM presupuestos WHERE idpresupuestos = ? AND estado = 4 LIMIT 1";
 
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -449,8 +449,38 @@ public class PresupuestoDAO {
 
         return listaPresupuestos;
     }
+    public Presupuestos obtenerPresupuestoPorId(int idPresupuesto) {
+        String query = "SELECT * FROM presupuestos WHERE idpresupuestos = ?";
+        Presupuestos pr = null;
 
-    public List<Presupuestos> filtrarPorEstadoEquipo(int estado) {
+        try (Connection con = Database.getConnection();
+             PreparedStatement stmt = con.prepareStatement(query)) {
+
+            stmt.setInt(1, idPresupuesto);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                pr = new Presupuestos();
+                pr.setIdpresupuesto(rs.getInt("idpresupuestos"));
+                pr.setIdEquipo(rs.getInt("idEquipo"));
+                pr.setCostosVariables(rs.getInt("costosVariables"));
+                pr.setEstado(rs.getInt("estado"));
+                pr.setPrecioTotal(rs.getInt("precioTotal"));
+                pr.setDiasEstimados(rs.getInt("diasEstimados"));
+                pr.setManoDeObra(rs.getInt("costoManoDeObra"));
+                pr.setObservaciones(rs.getString("observaciones"));
+                pr.setTotalProductos(rs.getFloat("totalProductos"));
+                pr.setFechaHora(rs.getString("fechaHora"));
+            }
+
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+
+        return pr;
+    }
+
+    public List<Presupuestos> filtrarPorEstadoPresupuesto(int estado) {
         List<Presupuestos> listaPresupuestos = new ArrayList<>();
         String query = "SELECT " +
                 "p.idpresupuestos, p.estado, p.costosVariables, p.precioTotal, " +

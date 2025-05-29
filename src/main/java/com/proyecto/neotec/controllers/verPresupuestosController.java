@@ -330,7 +330,7 @@ public class verPresupuestosController {
                                         Alert.AlertType.INFORMATION
                                 );
                             }
-                            } else {
+                        } else {
                             MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "La caja establecida está cerrada", Alert.AlertType.WARNING);
                         }
                     }
@@ -375,7 +375,7 @@ public class verPresupuestosController {
                                         "El presupuesto utiliza productos no disponibles en stock",
                                         Alert.AlertType.INFORMATION
                                 );
-                                }
+                            }
                         } catch (Exception e) {
                             e.printStackTrace();
                             MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "Error al registrar la transacción digital.", Alert.AlertType.ERROR);
@@ -400,11 +400,11 @@ public class verPresupuestosController {
         ProductosDAO productosDAO = new ProductosDAO();
         EquipoDAO equipoDAO = new EquipoDAO();
 
-        List<Productos> productos = productosDAO.obtenerProductosPorPresupuesto(pr.getIdpresupuesto());
+        List<Producto> productos = productosDAO.obtenerProductosPorPresupuesto(pr.getIdpresupuesto());
         boolean hayFaltante = false;
 
         // Verificar existencia y descontar stock
-        for (Productos producto : productos) {
+        for (Producto producto : productos) {
             int idProducto = producto.getIdProductos();
             int cantidadRequerida = producto.getCantidad();
 
@@ -430,7 +430,7 @@ public class verPresupuestosController {
             cargarDatos(lista);
             return false;
         } else {
-            for (Productos producto : productos) {
+            for (Producto producto : productos) {
                 int idProducto = producto.getIdProductos();
                 int cantidadRequerida = producto.getCantidad();
                 productosDAO.descontarStock(idProducto, cantidadRequerida);
@@ -441,15 +441,12 @@ public class verPresupuestosController {
 
 
     public void cambiarEstado(ActionEvent actionEvent) {
-
         Presupuestos pr = tablaPresupuestos.getSelectionModel().getSelectedItem(); // Esto deberías adaptarlo
-
         if (pr == null) {
             Alert alert = new Alert(Alert.AlertType.WARNING, "Selecciona un pr primero.", ButtonType.OK);
             alert.showAndWait();
             return;
         }
-
         int estadoActual = pr.getEstado();
 
         Dialog<String> dialog = new Dialog<>();
@@ -499,6 +496,7 @@ public class verPresupuestosController {
             if (estado == 3){
                 // si el pr es cancelado, cambiamos el estado del equipo a no autorizado para la reparación
                 equipoDAO.actualizarEstadoEquipo(idEquipoPresupuesto,4);
+
             }
             if (estado==2) {
                 //pr aprobado = equipo autorizado para la reparación
@@ -513,10 +511,10 @@ public class verPresupuestosController {
         presupuestoDAO= new PresupuestoDAO();
         cargarDatos(presupuestoDAO.selectAllPresupuestos());
     }
-    public void GenerarComprobante(Presupuestos pr){
+    public void GenerarComprobante(Presupuestos prSeleccionado){
 
         PresupuestoDAO pd = new PresupuestoDAO();
-
+        Presupuestos pr = pd.obtenerPresupuestoPorId(prSeleccionado.getIdpresupuesto());
         EquipoDAO equipoDAO = new EquipoDAO();
         Equipos equipo = equipoDAO.obtenerEquipoPorId(equipoDAO.obtener_IDequipo_con_idpresupuesto(pr.getIdpresupuesto()));
 
@@ -594,7 +592,7 @@ public class verPresupuestosController {
             // TODO traer Productos utilizados
             ProductosDAO productosDAO = new ProductosDAO();
 
-            List<Productos> productosUtilizados = productosDAO.obtenerProductosPorPresupuesto(pr.getIdpresupuesto());
+            List<Producto> productosUtilizados = productosDAO.obtenerProductosPorPresupuesto(pr.getIdpresupuesto());
 
             Paragraph subtitulo2 = new Paragraph("Productos utilizados")
                     .setTextAlignment(TextAlignment.CENTER)
@@ -611,14 +609,15 @@ public class verPresupuestosController {
             productosTable.addHeaderCell(new com.itextpdf.layout.element.Cell().add(new Paragraph("Precio U").setBold()));
             productosTable.addHeaderCell(new com.itextpdf.layout.element.Cell().add(new Paragraph("Cantidad").setBold()));
             productosTable.addHeaderCell(new com.itextpdf.layout.element.Cell().add(new Paragraph("Total Línea").setBold()));
-            float totalproductos= 0;
+            float totalproductos;
+
             if (!productosUtilizados.isEmpty()) {
-                for (Productos p1 : productosUtilizados) {
-                    totalproductos = p1.getPrecioCosto() + totalproductos;
+                for (Producto p1 : productosUtilizados) {
+                    totalproductos = p1.getPrecioUnitario() * p1.getCantidad();
                     productosTable.addCell(p1.getNombreProducto());
                     productosTable.addCell("$" + formatoPrecio.format(p1.getPrecioUnitario()));
                     productosTable.addCell(String.valueOf(p1.getCantidad()));
-                    productosTable.addCell("$" + formatoPrecio.format(p1.getTotalLinea()));
+                    productosTable.addCell("$" + formatoPrecio.format(totalproductos));
                 }
             } else {
                 productosTable.addCell(new Cell(1, 4)
@@ -626,16 +625,6 @@ public class verPresupuestosController {
                         .setTextAlignment(TextAlignment.CENTER));
             }
             document.add(productosTable);
-            // Tabla de productos
-            Paragraph totalp = new Paragraph("Total productos utilizados: $" + totalproductos)
-                    .setTextAlignment(TextAlignment.RIGHT)
-                    .setBold();
-            document.add(totalp);
-            // TODO traer Mano de obra
-            Paragraph totalmo = new Paragraph("Total mano de obra: $" + pr.getManoDeObra())
-                    .setTextAlignment(TextAlignment.RIGHT)
-                    .setBold();
-            document.add(totalmo);
             float manoDeObra = pr.getManoDeObra();
             if (manoDeObra > 0) {
                 detallesTable.addCell(new Cell().add(new Paragraph("Mano de obra")));
@@ -650,9 +639,7 @@ public class verPresupuestosController {
                 detallesTable.addCell(new Cell().add(new Paragraph("$" + formatoPrecio.format(costosVariables)))
                         .setTextAlignment(TextAlignment.RIGHT));
             }
-
             document.add(detallesTable);
-
             // Línea divisoria
             document.add(ls);
 
@@ -667,7 +654,7 @@ public class verPresupuestosController {
 
             Paragraph totalFinal = new Paragraph("$ " + formatoPrecio.format(totalGeneral))
                     .setTextAlignment(TextAlignment.LEFT)
-                    .setFontSize(14)
+                    .setFontSize(12)
                     .setBold()
                     .setMarginBottom(20);
             document.add(totalFinal);
@@ -678,13 +665,11 @@ public class verPresupuestosController {
             // Sección de información adicional
             Paragraph infoHeader = new Paragraph("Información adicional")
                     .setTextAlignment(TextAlignment.LEFT)
-                    .setFontSize(10)
-                    .setMarginTop(10)
+                    .setFontSize(14)
+                    .setMarginTop(14)
+                    .setBold()
                     .setMarginBottom(5);
             document.add(infoHeader);
-            //TODO traer datos clientes
-            //Cambiar esta linea:
-
 
             ClienteDAO cd = new ClienteDAO();
             int respuesta = equipo.getId();
@@ -694,22 +679,23 @@ public class verPresupuestosController {
                     .add("Comprobante N°: " + respuesta + "\n")
                     .add("Fecha: " + fechaFormateada + "\n")
                     .add("Hora: " + horaFormateada + "\n")
-                    .setFontSize(10)
-                    .setMarginBottom(10);
+                    .setFontSize(12)
+                    .setMarginBottom(12);
             document.add(clienteInfo);
 
             // TODO traer Observaciones si las hay
             Paragraph observaciones = new Paragraph("Observaciones:\n" +pr.getObservaciones())
-                    .setFontSize(10)
-                    .setMarginBottom(10);
+                    .setFontSize(12)
+                    .setMarginBottom(12);
             document.add(observaciones);
 
 
             // Footer
             Paragraph footer = new Paragraph("Gracias por confiar en NEOTEC")
                     .setTextAlignment(TextAlignment.CENTER)
-                    .setFontSize(10)
+                    .setFontSize(14)
                     .setItalic()
+                    .setBold()
                     .setMarginTop(20);
             document.add(footer);
 
@@ -769,11 +755,10 @@ public class verPresupuestosController {
                 List<Presupuestos> todos= presupuestosDAO.selectAllPresupuestos();
                 tablaPresupuestos.getItems().setAll(todos);
             }else{
-                List<Presupuestos> equiposFiltrados = presupuestosDAO.filtrarPorEstadoEquipo(presupuestosDAO.obtenerEstadoIntDesdeBD(estadoSeleccionado));
+                List<Presupuestos> equiposFiltrados = presupuestosDAO.filtrarPorEstadoPresupuesto(presupuestosDAO.obtenerEstadoIntDesdeBD(estadoSeleccionado));
                 tablaPresupuestos.getItems().setAll(equiposFiltrados);
             }
         });
     }
-
 }
 

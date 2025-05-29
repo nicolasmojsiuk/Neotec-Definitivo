@@ -2,19 +2,21 @@ package com.proyecto.neotec.DAO;
 
 import com.proyecto.neotec.bbdd.Database;
 
-import com.proyecto.neotec.models.Productos;
+import com.proyecto.neotec.models.Categoria;
+import com.proyecto.neotec.models.Producto;
 
 import javax.swing.JOptionPane;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ProductosDAO {
-    public List<Productos> selectAllProductos() {
-        List<Productos> listaProductos = new ArrayList<>();
+    public List<Producto> selectAllProductos() {
+        List<Producto> listaProductos = new ArrayList<>();
         String sql = "SELECT p.idproductos, p.codigoProducto, p.marca, p.idcategoria, p.cantidad, p.precioCosto, p.precioUnitario, p.descripcion, p.nombreProducto, c.nombre FROM productos p INNER JOIN categoriaproductos c ON p.idcategoria = c.idcategoriaProductos";
 
         try (Connection conn = Database.getConnection();
@@ -22,7 +24,7 @@ public class ProductosDAO {
              ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
-                Productos producto = new Productos();
+                Producto producto = new Producto();
                 producto.setIdProductos(rs.getInt("idproductos"));
                 producto.setCodigoProducto(rs.getString("codigoProducto"));
                 producto.setMarca(rs.getString("marca"));
@@ -45,7 +47,7 @@ public class ProductosDAO {
     }
 
 
-    public static String agregarProducto(Productos producto) {
+    public static String agregarProducto(Producto producto) {
         String sql = "INSERT INTO productos (codigoProducto, marca, cantidad, precioCosto, precioUnitario, descripcion,nombreProducto,idcategoria) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         if (producto.getCodigoProducto() == null || producto.getCodigoProducto().isEmpty()) {
             throw new IllegalArgumentException("El código del producto no puede ser nulo o vacío");
@@ -71,7 +73,7 @@ public class ProductosDAO {
         }
     }
 
-    public static String modificarProducto(Productos producto) {
+    public static String modificarProducto(Producto producto) {
         String mensaje = "";
         String sql = "UPDATE productos SET codigoProducto = ?, marca = ?, cantidad = ?, precioCosto = ?, precioUnitario = ?,descripcion =?,nombreProducto= ?,idcategoria=? WHERE idproductos = ?";
 
@@ -103,7 +105,7 @@ public class ProductosDAO {
         return mensaje;
     }
 
-    public static void eliminarProductoSeleccionado(Productos producto) {
+    public static void eliminarProductoSeleccionado(Producto producto) {
         String mensaje = "";
         String sql = "DELETE FROM productos WHERE codigoProducto = ?";
 
@@ -221,9 +223,9 @@ public class ProductosDAO {
         return nombresCategorias;
     }
 
-    public Productos obtenerProductoLinea(String codigo) {
+    public Producto obtenerProductoLinea(String codigo) {
         String query = "SELECT idproductos, nombreProducto, precioUnitario FROM productos WHERE codigoProducto = ?";
-        Productos producto = null;
+        Producto producto = null;
 
         try (Connection con = Database.getConnection();
              PreparedStatement ps = con.prepareStatement(query)) {
@@ -232,7 +234,7 @@ public class ProductosDAO {
             ResultSet rs = ps.executeQuery();
 
             if (rs.next()) {
-                producto = new Productos();
+                producto = new Producto();
                 producto.setIdProductos(rs.getInt("idproductos")); // 🚨 Asegurar que el ID se está asignando
                 producto.setNombreProducto(rs.getString("nombreProducto"));
                 producto.setPrecioUnitario(rs.getFloat("precioUnitario"));
@@ -245,8 +247,8 @@ public class ProductosDAO {
         return producto;
     }
 
-    public List<Productos> obtenerProductosPorPresupuesto(int idPresupuesto) {
-        List<Productos> productos = new ArrayList<>();
+    public List<Producto> obtenerProductosPorPresupuesto(int idPresupuesto) {
+        List<Producto> productos = new ArrayList<>();
         String query = "SELECT p.idproductos, p.nombreProducto, p.precioUnitario, pp.cantidadUtilizada " +
                 "FROM productopresupuesto pp " +
                 "JOIN productos p ON pp.IDproductos = p.idproductos " +
@@ -261,7 +263,7 @@ public class ProductosDAO {
             System.out.println("🔍 Buscando productos para el presupuesto ID: " + idPresupuesto);
 
             while (rs.next()) {
-                Productos producto = new Productos();
+                Producto producto = new Producto();
                 producto.setIdProductos(rs.getInt("idproductos"));
                 producto.setNombreProducto(rs.getString("nombreProducto"));
                 producto.setPrecioUnitario(rs.getFloat("precioUnitario"));
@@ -293,11 +295,11 @@ public class ProductosDAO {
     }
 
 
-    public List<Productos> buscarPorCodigoProducto(String texto) {
+    public List<Producto> buscarPorCodigoProducto(String texto) {
         String sql = "SELECT p.*, c.nombre FROM productos p " +
                 "INNER JOIN categoriaproductos c ON p.idcategoria = c.idcategoriaProductos " +
                 "WHERE p.codigoProducto LIKE ?";
-        List<Productos> productos = new ArrayList<>();
+        List<Producto> productos = new ArrayList<>();
 
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -305,7 +307,7 @@ public class ProductosDAO {
             stmt.setString(1, "%" + texto + "%");
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    Productos producto = new Productos();
+                    Producto producto = new Producto();
                     producto.setIdProductos(rs.getInt("idproductos"));
                     producto.setCodigoProducto(rs.getString("codigoProducto"));
                     producto.setMarca(rs.getString("marca"));
@@ -326,11 +328,11 @@ public class ProductosDAO {
     }
 
 
-    public List<Productos> buscarPorNombreProducto(String texto) {
+    public List<Producto> buscarPorNombreProducto(String texto) {
         String sql = "SELECT p.*, c.nombre FROM productos p " +
                 "INNER JOIN categoriaproductos c ON p.idcategoria = c.idcategoriaProductos " +
                 "WHERE p.nombreProducto LIKE ?";
-        List<Productos> productos = new ArrayList<>();
+        List<Producto> productos = new ArrayList<>();
 
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -338,7 +340,7 @@ public class ProductosDAO {
             stmt.setString(1, "%" + texto + "%"); // Búsqueda parcial
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    Productos producto = new Productos();
+                    Producto producto = new Producto();
                     producto.setIdProductos(rs.getInt("idproductos"));
                     producto.setCodigoProducto(rs.getString("codigoProducto"));
                     producto.setMarca(rs.getString("marca"));
@@ -358,11 +360,11 @@ public class ProductosDAO {
         return productos;
     }
 
-    public List<Productos> buscarPorMarcaProducto(String texto) {
+    public List<Producto> buscarPorMarcaProducto(String texto) {
         String sql = "SELECT p.*, c.nombre FROM productos p " +
                 "INNER JOIN categoriaproductos c ON p.idcategoria = c.idcategoriaProductos " +
                 "WHERE p.marca LIKE ?";
-        List<Productos> productos = new ArrayList<>();
+        List<Producto> productos = new ArrayList<>();
 
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -370,7 +372,7 @@ public class ProductosDAO {
             stmt.setString(1, "%" + texto + "%"); // Búsqueda parcial
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    Productos producto = new Productos();
+                    Producto producto = new Producto();
                     producto.setIdProductos(rs.getInt("idproductos"));
                     producto.setCodigoProducto(rs.getString("codigoProducto"));
                     producto.setMarca(rs.getString("marca"));
@@ -390,8 +392,8 @@ public class ProductosDAO {
         return productos;
     }
 
-    public List<Productos> filtrarPorCategoria(int idCategoria) {
-        List<Productos> productos = new ArrayList<>();
+    public List<Producto> filtrarPorCategoria(int idCategoria) {
+        List<Producto> productos = new ArrayList<>();
         String query = "SELECT p.idproductos, p.codigoProducto, p.marca, p.idcategoria, p.cantidad, " +
                 "p.precioCosto, p.precioUnitario, p.descripcion, p.nombreProducto, " +
                 "c.nombre FROM productos p " +
@@ -402,7 +404,7 @@ public class ProductosDAO {
             stmt.setInt(1, idCategoria);
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
-                Productos producto = new Productos();
+                Producto producto = new Producto();
                 producto.setIdProductos(rs.getInt("idproductos"));
                 producto.setCodigoProducto(rs.getString("codigoProducto"));
                 producto.setMarca(rs.getString("marca"));
@@ -450,5 +452,164 @@ public class ProductosDAO {
         }
         return  estado;
     }
+
+
+    public List<Producto> obtenerRankingDeVentas(int limite, int periodo, int criterio, LocalDate desde1, LocalDate hasta1) {
+        List<Producto> productos = new ArrayList<>();
+        LocalDate fechaInicio;
+        LocalDate fechaFin = LocalDate.now();
+
+        // Determinar el rango de fechas
+        if (desde1 != null && hasta1 != null) {
+            fechaInicio = desde1;
+            fechaFin = hasta1;
+        } else {
+            switch (periodo) {
+                case 1:
+                    fechaInicio = fechaFin.minusDays(1);
+                    break;
+                case 7:
+                    fechaInicio = fechaFin.minusDays(7);
+                    break;
+                case 365:
+                    fechaInicio = fechaFin.minusDays(365);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Período no válido.");
+            }
+        }
+
+        // Definir el campo de orden según el criterio (1: por dinero, 2: por cantidad de unidades)
+        String campoOrden = (criterio == 1) ? "SUM(ptv.cantidad * p.precioUnitario)" : "SUM(ptv.cantidad)";
+        String aliasCampo = (criterio == 1) ? "total_dinero" : "total_unidades";
+
+        // Consultar productos vendidos y productos utilizados en presupuestos pagados dentro del rango de fechas
+        String sql = "SELECT p.idproductos, p.nombreProducto, " + campoOrden + " AS " + aliasCampo + " " +
+                "FROM productos p " +
+                // Relación con ventas
+                "LEFT JOIN productosticketsventas ptv ON p.idproductos = ptv.idproducto " +
+                "LEFT JOIN ticketsventa t ON ptv.idventa = t.idticketsventa " +
+                // Relación con presupuestos pagados
+                "LEFT JOIN productopresupuesto pp ON p.idproductos = pp.IDproductos " +
+                "LEFT JOIN presupuestos ps ON pp.IDpresupuestos = ps.idpresupuestos " +
+                "WHERE (t.fechaHora BETWEEN ? AND ? OR ps.estado = 4) " +  // Filtrar ventas y presupuestos pagados
+                "GROUP BY p.idproductos " +
+                "HAVING " + aliasCampo + " > 0 " +
+                "ORDER BY " + aliasCampo + " DESC " +
+                "LIMIT ?";
+
+        try (Connection con = Database.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            // Establecer los parámetros de la consulta
+            ps.setDate(1, java.sql.Date.valueOf(fechaInicio));
+            ps.setDate(2, java.sql.Date.valueOf(fechaFin));
+            ps.setInt(3, limite);
+
+            // Ejecutar la consulta y procesar los resultados
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Producto producto = new Producto();
+                    producto.setIdproductos(rs.getInt("idproductos"));
+                    producto.setNombreProducto(rs.getString("nombreProducto"));
+                    producto.setVentas((float) (criterio == 1 ? rs.getDouble("total_dinero") : rs.getInt("total_unidades")));
+                    productos.add(producto);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return productos;
+    }
+
+    public List<Categoria> obtenerRankingDeCategorias(int limite, int periodo, int criterio, LocalDate desde2, LocalDate hasta2) {
+        List<Categoria> categorias = new ArrayList<>();
+        LocalDate fechaInicio;
+        LocalDate fechaFin = LocalDate.now();
+
+        if (desde2 != null && hasta2 != null) {
+            fechaInicio = desde2;
+            fechaFin = hasta2;
+        } else {
+            switch (periodo) {
+                case 1:
+                    fechaInicio = fechaFin.minusDays(1);
+                    break;
+                case 7:
+                    fechaInicio = fechaFin.minusDays(7);
+                    break;
+                case 365:
+                    fechaInicio = fechaFin.minusDays(365);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Período no válido.");
+            }
+        }
+
+        String campoOrden = (criterio == 1) ? "SUM(total_dinero)" : "SUM(total_unidades)";
+        String aliasCampo = (criterio == 1) ? "total_dinero" : "total_unidades";
+
+        String sql = "SELECT cp.idcategoriaProductos AS idcategoria, cp.nombre, " +
+                "SUM(COALESCE(v.total_dinero, 0) + COALESCE(pz.total_dinero, 0)) AS total_dinero, " +
+                "SUM(COALESCE(v.total_unidades, 0) + COALESCE(pz.total_unidades, 0)) AS total_unidades " +
+                "FROM categoriaproductos cp " +
+                "LEFT JOIN productos pr ON cp.idcategoriaProductos = pr.idcategoria " +
+
+                // Subconsulta de ventas
+                "LEFT JOIN ( " +
+                "  SELECT ptv.idproducto, " +
+                "         SUM(ptv.cantidad * pr.precioUnitario) AS total_dinero, " +
+                "         SUM(ptv.cantidad) AS total_unidades " +
+                "  FROM productosticketsventas ptv " +
+                "  INNER JOIN ticketsventa tv ON ptv.idventa = tv.idticketsventa " +
+                "  INNER JOIN productos pr ON ptv.idproducto = pr.idproductos " +
+                "  WHERE tv.fechaHora BETWEEN ? AND ? " +
+                "  GROUP BY ptv.idproducto " +
+                ") v ON pr.idproductos = v.idproducto " +
+
+                // Subconsulta de presupuestos pagados
+                "LEFT JOIN ( " +
+                "  SELECT pp.IDproductos AS idproducto, " +
+                "         SUM(pp.cantidadUtilizada * pr.precioUnitario) AS total_dinero, " +
+                "         SUM(pp.cantidadUtilizada) AS total_unidades " +
+                "  FROM productopresupuesto pp " +
+                "  INNER JOIN presupuestos pz ON pp.IDpresupuestos = pz.idpresupuestos " +
+                "  INNER JOIN productos pr ON pp.IDproductos = pr.idproductos " +
+                "  WHERE pz.estado = 4 AND pz.fechaHora BETWEEN ? AND ? " +
+                "  GROUP BY pp.IDproductos " +
+                ") pz ON pr.idproductos = pz.idproducto " +
+
+                "GROUP BY cp.idcategoriaProductos " +
+                "HAVING " + aliasCampo + " > 0 " +
+                "ORDER BY " + aliasCampo + " DESC " +
+                "LIMIT ?";
+
+        try (Connection con = Database.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            // Establecer parámetros
+            ps.setDate(1, java.sql.Date.valueOf(fechaInicio)); // para ventas
+            ps.setDate(2, java.sql.Date.valueOf(fechaFin));
+            ps.setDate(3, java.sql.Date.valueOf(fechaInicio)); // para presupuestos
+            ps.setDate(4, java.sql.Date.valueOf(fechaFin));
+            ps.setInt(5, limite);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Categoria categoria = new Categoria();
+                    categoria.setIdCategoria(rs.getInt("idcategoria"));
+                    categoria.setNombreCategoria(rs.getString("nombre"));
+                    categoria.setTotal((float) (criterio == 1 ? rs.getDouble("total_dinero") : rs.getInt("total_unidades")));
+                    categorias.add(categoria);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return categorias;
+    }
+
 
 }
