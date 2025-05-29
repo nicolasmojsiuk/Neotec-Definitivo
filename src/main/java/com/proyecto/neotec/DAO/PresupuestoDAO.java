@@ -92,7 +92,7 @@ public class PresupuestoDAO {
             Database.handleSQLException(e);
         }
         EquipoDAO cambiarestadoEquipo = new EquipoDAO();
-        //Se cambia de revisión a Espera autorización el equipo:
+        //Se cambia al equipo al estado Espera autorización:
         cambiarestadoEquipo.actualizarEstadoEquipo(idEquipo,3);
         return IDgenerado;
     }
@@ -416,6 +416,115 @@ public class PresupuestoDAO {
         }
 
         return lista;
+    }
+
+    public List<Presupuestos> obtenerPresupuestosPorIdEquipo(int idEquipo) {
+        List<Presupuestos> listaPresupuestos = new ArrayList<>();
+        String query = "SELECT * FROM presupuestos WHERE idEquipo = ?";
+
+        try (Connection con = Database.getConnection();
+             PreparedStatement stmt = con.prepareStatement(query)) {
+
+            stmt.setInt(1, idEquipo);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                Presupuestos pr = new Presupuestos();
+                pr.setIdpresupuesto(rs.getInt("idpresupuestos"));
+                pr.setIdEquipo(rs.getInt("idEquipo"));
+                pr.setCostosVariables(rs.getInt("costosVariables"));
+                pr.setEstado(rs.getInt("estado"));
+                pr.setPrecioTotal(rs.getInt("precioTotal"));
+                pr.setDiasEstimados(rs.getInt("diasEstimados"));
+                pr.setManoDeObra(rs.getInt("costoManoDeObra"));
+                pr.setObservaciones(rs.getString("observaciones"));
+                pr.setTotalProductos(rs.getFloat("totalProductos"));
+                pr.setFechaHora(rs.getString("fechaHora"));
+                listaPresupuestos.add(pr);
+            }
+
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+
+        return listaPresupuestos;
+    }
+
+    public Presupuestos obtenerPresupuestoPorId(int idPresupuesto) {
+        String query = "SELECT * FROM presupuestos WHERE idpresupuestos = ?";
+        Presupuestos pr = null;
+
+        try (Connection con = Database.getConnection();
+             PreparedStatement stmt = con.prepareStatement(query)) {
+
+            stmt.setInt(1, idPresupuesto);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                pr = new Presupuestos();
+                pr.setIdpresupuesto(rs.getInt("idpresupuestos"));
+                pr.setIdEquipo(rs.getInt("idEquipo"));
+                pr.setCostosVariables(rs.getInt("costosVariables"));
+                pr.setEstado(rs.getInt("estado"));
+                pr.setPrecioTotal(rs.getInt("precioTotal"));
+                pr.setDiasEstimados(rs.getInt("diasEstimados"));
+                pr.setManoDeObra(rs.getInt("costoManoDeObra"));
+                pr.setObservaciones(rs.getString("observaciones"));
+                pr.setTotalProductos(rs.getFloat("totalProductos"));
+                pr.setFechaHora(rs.getString("fechaHora"));
+            }
+
+        } catch (SQLException e) {
+            Database.handleSQLException(e);
+        }
+
+        return pr;
+    }
+
+    public List<Presupuestos> filtrarPorEstadoPresupuesto(int estado) {
+        List<Presupuestos> listaPresupuestos = new ArrayList<>();
+        String query = "SELECT " +
+                "p.idpresupuestos, p.estado, p.costosVariables, p.precioTotal, " +
+                "p.costoManoDeObra, p.diasEstimados, p.observaciones, " +
+                "p.totalProductos, p.fechaHora, " +
+                "e.dispositivo, c.nombre, c.apellido " +
+                "FROM presupuestos p " +
+                "INNER JOIN equipos e ON p.idEquipo = e.idequipos " +
+                "INNER JOIN clientes c ON e.idclientes = c.idclientes " +
+                "WHERE p.estado = ?";
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+
+            stmt.setInt(1, estado);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                Presupuestos presupuestos = new Presupuestos();
+                presupuestos.setIdpresupuesto(rs.getInt("idpresupuestos"));
+                presupuestos.setEstado(rs.getInt("estado"));
+                presupuestos.setCostosVariables(rs.getInt("costosVariables"));
+                presupuestos.setPrecioTotal(rs.getInt("precioTotal"));
+                presupuestos.setManoDeObra(rs.getInt("costoManoDeObra"));
+                presupuestos.setDiasEstimados(rs.getInt("diasEstimados"));
+                presupuestos.setObservaciones(rs.getString("observaciones"));
+                presupuestos.setTotalProductos(rs.getFloat("totalProductos"));
+
+                Timestamp fecha = rs.getTimestamp("fechaHora");
+                presupuestos.setFechaHora(fecha != null ? fecha.toLocalDateTime().toString() : "-");
+
+                presupuestos.setEquipo(rs.getString("dispositivo"));
+                String propietario = rs.getString("nombre") + " " + rs.getString("apellido");
+                presupuestos.setPropietario(propietario);
+
+                listaPresupuestos.add(presupuestos);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace(); // Mejorar manejo de errores en producción
+        }
+
+        return listaPresupuestos;
     }
 
 }
