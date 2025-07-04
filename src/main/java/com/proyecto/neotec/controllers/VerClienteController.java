@@ -15,6 +15,8 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import org.apache.log4j.Logger;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,6 +52,7 @@ public class VerClienteController {
     private TableColumn<Cliente, String> columna6;
     @FXML
     private TableColumn<Cliente, String> columna7;
+    private static final Logger logger = Logger.getLogger(VerClienteController.class);
 
     private ObservableList<Cliente> clientes;
     private ClienteDAO clienteDAO;
@@ -130,8 +133,8 @@ public class VerClienteController {
             }
         });
     }
-
     private void BuscarActivosInnactivos(int estado) {
+        logger.debug("Buscando clientes Activos/Innativos. Parametro de busqueda:"+ estado);
         List<Cliente> listaclientes =clienteDAO.filtrarActivoInnactivo(estado);
         clientes.clear();
         clientes.addAll(listaclientes);
@@ -139,6 +142,7 @@ public class VerClienteController {
         tablaClientes.setItems(clientes);
     }
     private void cargarDatos() {
+        logger.debug("Intento de cargar datos por pantalla");
         clientes = FXCollections.observableArrayList();
         // Configurar columnas
         columna1.setCellValueFactory(new PropertyValueFactory<>("idclientes"));
@@ -160,9 +164,11 @@ public class VerClienteController {
     public void mostrarFormModificarCliente() {
         Cliente clienteSeleccionado = tablaClientes.getSelectionModel().getSelectedItem();
         if (clienteSeleccionado == null) {
+            logger.warn("No se ha seleccionado ningún cliente para modificar");
             mostrarAlerta("Error", "No se ha seleccionado ningún cliente.", Alert.AlertType.ERROR);
             return;
         }
+        logger.debug("Intento de abrir formulario modificar cliente..");
         try {
             // Cargar el archivo FXML del formulario
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/vistas/modificarCliente.fxml"));
@@ -186,11 +192,12 @@ public class VerClienteController {
 
             cargarDatos();
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Error, ha ocurrido una excepción al intentar abrir el fomulario. Detalles:"+ e.getMessage() + ". " +e);
         }
     }
 
     public void mostrarFormCrearCliente() {
+        logger.debug("Intento de cargar el formulario crear clientes");
         try {
             // Cargar el archivo FXML del formulario
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/vistas/crearCliente.fxml"));
@@ -206,11 +213,12 @@ public class VerClienteController {
             stage.showAndWait();
             cargarDatos();
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Error, Ha ocurrido una excepción al cargar el formulario crear clientes. Detalles: "+ e.getMessage()+ ". " + e);
         }
     }
 
     public void cambiarActivoCliente() {
+        logger.debug("Intento de cambiar el estado del cliente a Activo/Innactivo");
         // Verifica si hay un usuario seleccionado en la tabla
         Cliente clienteSeleccionado = tablaClientes.getSelectionModel().getSelectedItem();
 
@@ -218,6 +226,7 @@ public class VerClienteController {
             int idCliente = clienteSeleccionado.getIdclientes(); // Obtener el ID del usuario seleccionado
             // Cambiar el estado actual de "Activo" a "Inactivo" y viceversa
             String estadoNuevoString = clienteSeleccionado.getActivo().equals("Activo") ? "Inactivo" : "Activo";
+            logger.debug("Nuevo estado para el cliente " + clienteSeleccionado.getNombre()+" "+clienteSeleccionado.getApellido()+ ": "+estadoNuevoString);
             int nuevoEstado;
             //pasarlo a int
             if(estadoNuevoString == "Activo"){
@@ -225,7 +234,6 @@ public class VerClienteController {
             }else {
                 nuevoEstado=0;
             }
-
             // Llamar al método del DAO para cambiar el estado en la base de datos
             ClienteDAO.cambiarEstadoActivo(idCliente, nuevoEstado);
             // Actualizar el estado del usuario en la tabla
@@ -236,14 +244,14 @@ public class VerClienteController {
             alert.setContentText("Se ha cambiado el estado del cliente "+clienteSeleccionado.getNombre()+" "+clienteSeleccionado.getApellido());
             alert.showAndWait();
         } else {
+            logger.warn("No se ha seleccionado ningún cliente de la tabla");
             // Mostrar alerta o mensaje indicando que no hay un usuario seleccionado
             Alert alert = new Alert(Alert.AlertType.WARNING);
             alert.setTitle("Activacion / Desactivacion");
-            alert.setContentText("Debe seleccionar un usuario en la tabla");
+            alert.setContentText("Debe seleccionar un cliente en la tabla");
             alert.showAndWait();
         }
     }
-
 
     private void mostrarAlerta(String titulo, String mensaje, Alert.AlertType tipodealerta) {
         Alert alert = new Alert(tipodealerta);

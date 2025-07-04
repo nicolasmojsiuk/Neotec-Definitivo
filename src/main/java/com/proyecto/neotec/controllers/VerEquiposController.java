@@ -1,6 +1,7 @@
 package com.proyecto.neotec.controllers;
 
 
+import com.mysql.cj.x.protobuf.MysqlxExpr;
 import com.proyecto.neotec.DAO.*;
 import com.proyecto.neotec.models.*;
 import com.proyecto.neotec.util.MostrarAlerta;
@@ -32,7 +33,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
+import org.apache.log4j.Logger;
 public class VerEquiposController {
     @FXML
     public TextField txtBuscardor;
@@ -74,7 +75,7 @@ public class VerEquiposController {
     private TableColumn<Equipos, String> columna9;
     @FXML
     private Pane workspace;
-
+    private static final Logger logger= Logger.getLogger(VerEquiposController.class);
     private ObservableList<Equipos> equipos;
 
     // Constructor sin argumentos
@@ -164,9 +165,8 @@ public class VerEquiposController {
         });
     }
 
-
-
     private void cargarDatos() {
+        logger.debug("Intento de cargar los datos por pantalla");
         EquipoDAO equipoDAO = new EquipoDAO();
         equipos = FXCollections.observableArrayList();
         // Configurar columnas
@@ -205,12 +205,13 @@ public class VerEquiposController {
         tablaEquipos.setItems(equipos);
     }
     public void buscarPorFechasalida(DatePicker datePicker) {
+
         LocalDate fecha = datePicker.getValue();
         if (fecha != null) {
             //  mismo formato que espera la base de datos
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
             String fechaFormateada = fecha.format(formatter);
-
+            logger.debug("Intento de filtrar equipo por fecha salida:"+fechaFormateada);
             EquipoDAO equiposDAO = new EquipoDAO();
             List<Equipos> listaEquipos = equiposDAO.buscarFechaSalida(fechaFormateada);
             tablaEquipos.getItems().setAll(listaEquipos);
@@ -224,7 +225,7 @@ public class VerEquiposController {
             //  mismo formato que espera la base de datos
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
             String fechaFormateada = fecha.format(formatter);
-
+            logger.debug("Intento de filtrar equipo por fecha entrada:"+fechaFormateada);
             EquipoDAO equiposDAO = new EquipoDAO();
             List<Equipos> listaEquipos = equiposDAO.buscarPorFechaIngreso(fechaFormateada);
             tablaEquipos.getItems().setAll(listaEquipos);
@@ -232,8 +233,9 @@ public class VerEquiposController {
         }
     }
     private void BuscarActivosInnactivos(int estado) {
+        logger.debug("Intento de buscar equipos por estado: "+ estado);
         EquipoDAO equipoDAO = new EquipoDAO();
-        List<Equipos> listaEquipos =equipoDAO.filtrarActivoInnactivo(estado);
+        List<Equipos> listaEquipos =equipoDAO.filtrarActivoInactivo(estado);
         equipos.clear();
         equipos.addAll(listaEquipos);
         // Configurar el TableView con la lista observable
@@ -242,6 +244,7 @@ public class VerEquiposController {
 
     @FXML
     public void mostrarFormAgregarEquipos(ActionEvent actionEvent) {
+        logger.debug("Intento de cargar formulario Agregar Equipos");
         try {
             // Cargar el archivo FXML del formulario
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/vistas/agregarEquipos.fxml"));
@@ -266,7 +269,7 @@ public class VerEquiposController {
             stage.showAndWait();
             cargarDatos();
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Error, no se pudo cargar el formulario Crear Equipos. Detalles:" + e.getMessage()+ ". "+ e);
         }
     }
 
@@ -284,9 +287,10 @@ public class VerEquiposController {
 
     @FXML
     public void mostrarFormModificarEquipos(ActionEvent actionEvent) {
+        logger.debug("Intento de cargar formulario Modificar Equipos");
         Equipos equipoSeleccionado = tablaEquipos.getSelectionModel().getSelectedItem();
-
         if (equipoSeleccionado == null) {
+            logger.warn("No se ha seleccionado ningún equipo");
             mostrarAlerta("Error", "No se ha seleccionado ningún equipo.", Alert.AlertType.ERROR);
             return; // Salir si no hay selección
         }
@@ -317,7 +321,7 @@ public class VerEquiposController {
             // Recargar los datos en la tabla después de cerrar el pop-up
             cargarDatos();
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Error, Ha ocurrido una excepción al cargar el formulario Modificar Equipos. Detalles:"+ e.getMessage()+". "+e);
             mostrarAlerta("Error", "Error al cargar la ventana de modificación.", Alert.AlertType.ERROR);
         }
     }
@@ -331,19 +335,24 @@ public class VerEquiposController {
         alert.showAndWait();
     }
 
-
-
     public void sacarPresupuesto(ActionEvent actionEvent) {
+        logger.debug("Intento de sacar presupuesto");
         Equipos equipoSeleccionado = tablaEquipos.getSelectionModel().getSelectedItem();
         if (equipoSeleccionado == null){
+            logger.warn("Se intento crear el presupuesto sin seleccionar un equipo");
             mostrarAlerta("Error","Debe seleccionar un equipo",Alert.AlertType.ERROR);
         }else {
             PresupuestoDAO pd = new PresupuestoDAO();
             // Obtener todos los presupuestos del equipo
             List<Presupuestos> listaPresupuestos = pd.obtenerPresupuestosPorIdEquipo(equipoSeleccionado.getId());
 
+            logger.debug("Verificando si se puede crear un nuevo presupuesto para el equipo:");
             // Verificar si se puede crear un nuevo presupuesto
             if (puedeCrearNuevoPresupuesto(listaPresupuestos)) {
+                //por aca
+                EquipoDAO equipoDAO = new EquipoDAO();
+                logger.debug("Intento de crear nuevo presupuesto para el equipo:" + equipoDAO.obtenerEquipoPorId(listaPresupuestos.get(0).getIdEquipo()).getDispositivo());
+
                 try {
                     FXMLLoader loader = new FXMLLoader(getClass().getResource("/vistas/crearPresupuestos.fxml"));
                     Parent root = loader.load();
@@ -368,11 +377,12 @@ public class VerEquiposController {
                     stage.showAndWait();
                     cargarDatos();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    logger.error("Error, Ha ocurrido una excepción al cargar el formulario de modificación de equipos. Detalles:"+ e.getMessage()+ ". "+ e);
                     mostrarAlerta("Error", "Error al cargar la ventana de modificación.", Alert.AlertType.ERROR);
                 }
             } else {
-                // Mostrar mensaje de que no se puede crear
+                String nombreEquipo = equipoSeleccionado.getDispositivo();
+                logger.info("No se puede crear un nuevo presupuesto para este equipo." + nombreEquipo + ". Hasta que el presupuesto actual esté cancelado o pagado");
                 MostrarAlerta.mostrarAlerta("Sacar Presupuesto","No puede crear un nuevo presupuesto hasta que el actual esté cancelado o pagado", Alert.AlertType.ERROR);
             }
         }
@@ -393,13 +403,12 @@ public class VerEquiposController {
                 return false;
             }
         }
-
         // Todos los presupuestos están cancelados o pagados
         return true;
     }
 
-
     public void DefinirEstados(ActionEvent actionEvent) {
+        logger.debug("Intento de filtrar equipos por estados");
         Dialog<String> dialog = new Dialog<>();
         dialog.setTitle("Seleccionar Estado");
         dialog.setHeaderText("Por favor, elige un estado:");
@@ -429,6 +438,7 @@ public class VerEquiposController {
         Optional<String> resultado = dialog.showAndWait();
         EquipoDAO equipoDAO= new EquipoDAO();
         resultado.ifPresent(estadoSeleccionado -> {
+            logger.debug("Estado seleccionado para filtrar:"+ estadoSeleccionado);
             if (estadoSeleccionado.equals("Seleccionar todos los Equipos")){
                 List<Equipos> selectAllEquipos= equipoDAO.selectAllEquipos();
                 tablaEquipos.getItems().setAll(selectAllEquipos);
@@ -440,8 +450,10 @@ public class VerEquiposController {
     }
 
     public void mostrarDetalles(ActionEvent actionEvent) {
+        logger.debug("Intento de mostrar detalles del equipo");
         Equipos equipoSeleccionado = tablaEquipos.getSelectionModel().getSelectedItem();
         if (equipoSeleccionado == null) {
+            logger.warn("No se ha seleccionado ningún equipo para mostrar sus detalles");
             mostrarAlerta("Error", "No se ha seleccionado ningún equipo.", Alert.AlertType.ERROR);
             return;
         }
@@ -467,20 +479,24 @@ public class VerEquiposController {
             // Mostrar el pop-up
             stage.showAndWait();
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Error, Ha ocurrido una excepción al cargar la ventana Ver Detalles: "+ e.getMessage() + ". "+e);
             mostrarAlerta("Error", "Error al cargar la ventana.", Alert.AlertType.ERROR);
         }
     }
     public void entregarEquipo(ActionEvent actionEvent) {
+        logger.debug("Intento de entregar equipo");
         Equipos equipoSeleccionado = tablaEquipos.getSelectionModel().getSelectedItem();
         PresupuestoDAO pd = new PresupuestoDAO();
         EquipoDAO equipoDAO = new EquipoDAO();
 
         if (equipoSeleccionado == null){
+            logger.warn("Intento de entregar equipo sin seleccionar uno en especifico");
             mostrarAlerta("Error", "Por favor seleccione un equipo",Alert.AlertType.ERROR);
         }else if (equipoSeleccionado.getEstado() == 7){
+            logger.warn("Intento de entregar un equipo que ha sido entregado anteriormente");
             mostrarAlerta("Entregar Equipo", "Este equipo ya fue entregado",Alert.AlertType.INFORMATION);
         }else if (!pd.existePresupuestoParaEquipo(equipoSeleccionado.getId())) {
+            logger.warn("Intento de entregar equipo sin presupuestos asociados");
             mostrarAlerta("Entregar Equipo", "El equipo no tiene presupuestos asociados",Alert.AlertType.INFORMATION);
         }else {
             List<Presupuestos> listaPresupuestos = pd.obtenerPresupuestosPorIdEquipo(equipoSeleccionado.getId());
@@ -523,10 +539,12 @@ public class VerEquiposController {
             if (puedeEntregarse && !listaPresupuestos.isEmpty()) {
                 // Todos los presupuestos están en estado correcto
                 equipoDAO.actualizarEstadoEquipo(equipoSeleccionado.getId(), 7);
+                logger.debug("El equipo "+equipoDAO.obtenerEquipoPorId(listaPresupuestos.get(0).getIdEquipo()).getDispositivo()+" ha sido entregado con exito");
                 mostrarAlerta("Entregar Equipo", "El equipo ha sido entregado", Alert.AlertType.INFORMATION);
                 cargarDatos();
-
             } else {
+
+                logger.debug("El equipo "+equipoDAO.obtenerEquipoPorId(listaPresupuestos.get(0).getIdEquipo()).getDispositivo() +" no se puede entregar. Hay presupuestos pendientes o por resolver");
                 // Hay presupuestos pendientes o por resolver
                 StringBuilder mensaje = new StringBuilder();
                 String titulo = "No se puede entregar el equipo";
@@ -547,7 +565,6 @@ public class VerEquiposController {
                     mensaje.append("Existen presupuestos sin estado definido (IDs: ").append(porResolver).append(")\n\n");
                     mensaje.append("Deben aprobarse o cancelarse para proceder con la entrega.");
                 }
-
                 // Mostrar alerta solo si hay problemas
                 if (mensaje.length() > 0) {
                     mostrarAlerta(titulo, mensaje.toString(), tipo);

@@ -1,9 +1,7 @@
 package com.proyecto.neotec.controllers;
 
 import com.proyecto.neotec.DAO.ClienteDAO;
-import com.proyecto.neotec.DAO.ProductosDAO;
 import com.proyecto.neotec.models.Cliente;
-import com.proyecto.neotec.models.Producto;
 import com.proyecto.neotec.util.MostrarAlerta;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -12,6 +10,7 @@ import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.GridPane;
+import org.apache.log4j.Logger;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -39,7 +38,6 @@ public class VerMejoresClientesController {
     private RadioButton rbAnio;
     @FXML
     private RadioButton rbPeriodo;
-
     @FXML
     private RadioButton rbCompras;
     @FXML
@@ -52,15 +50,13 @@ public class VerMejoresClientesController {
     private Spinner<Integer> spLimite;
     @FXML
     private Label lblPeriodo;
-
     private LocalDate desde;
     private LocalDate hasta;
     private ObservableList<Cliente> listaClientes = FXCollections.observableArrayList();
-
-
-
+    private static final Logger logger = Logger.getLogger(VerMejoresClientesController.class);
     @FXML
     public void initialize(){
+        logger.info("Intento de inicializar parámetros de la clase");
         // Configurar el Spinner (1 a 100, por defecto 10)
         spLimite.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 100, 10));
 
@@ -78,6 +74,7 @@ public class VerMejoresClientesController {
     }
 
     public void cambioCriterio() {
+        logger.info("Intento de cambiar criterios");
         if(rbCompras.isSelected()) {
             columnaCantidad.setText("N° de Compras");
         }
@@ -92,6 +89,7 @@ public class VerMejoresClientesController {
         }
     }
     public void seleccionarPeriodo() {
+        logger.info("Intento de seleccionar periodo personalizado");
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.setTitle("Seleccionar período personalizado");
 
@@ -120,21 +118,24 @@ public class VerMejoresClientesController {
                 LocalDate hastaSeleccionado = dpHasta.getValue();
 
                 if (desdeSeleccionado == null || hastaSeleccionado == null) {
+                    logger.warn("Período inválido, El periodo debe seleccionarse para ambas fechas. 'Desde|Hasta'");
                     MostrarAlerta.mostrarAlerta("Período inválido", "Debe seleccionar ambas fechas.", Alert.AlertType.WARNING);
                 } else if (desdeSeleccionado.isAfter(hastaSeleccionado)) {
+                    logger.error("Período inválido, La fecha 'Desde' no puede ser posterior a la fecha 'Hasta'.");
                     MostrarAlerta.mostrarAlerta("Período inválido", "La fecha 'Desde' no puede ser posterior a la fecha 'Hasta'.", Alert.AlertType.WARNING);
                 } else {
                     desde = desdeSeleccionado;
                     hasta = hastaSeleccionado;
                     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
                     lblPeriodo.setText("Periodo Especifico: " + desde.format(formatter) + " | Hasta: " + hasta.format(formatter));
-
+                    logger.debug("Periodo Especifico: " + desde.format(formatter) + " | Hasta: " + hasta.format(formatter));
                 }
             }
         });
     }
 
     public void cargarTabla() {
+        logger.info("Intento de cargar tabla");
         int limite = spLimite.getValue();
         int periodo = 0;
         int tipoCliente = 0;
@@ -149,11 +150,13 @@ public class VerMejoresClientesController {
 
         } else if (rbPeriodo.isSelected()) {
             if (desde == null || hasta == null) {
+                logger.warn("Se debe seleccionar un período válido para acceder al Ranking de mejores clientes");
                 MostrarAlerta.mostrarAlerta("Ranking Clientes", "Debe seleccionar un período válido usando el botón correspondiente", Alert.AlertType.WARNING);
                 return;
             }
 
         } else {
+            logger.error("No se ha seleccionado ningún periodo de tiempo para ver el Ranking de mejores clientes");
             MostrarAlerta.mostrarAlerta("Ranking Clientes", "Seleccione un periodo de tiempo para ver el ranking", Alert.AlertType.WARNING);
             return;
         }
@@ -163,10 +166,10 @@ public class VerMejoresClientesController {
         } else if (rbClientesTienda.isSelected()) {
             tipoCliente = 2;
         } else {
+            logger.error("No se ha seleccionado ningún tipo de clientes para ver el Ranking de mejores Clientes");
             MostrarAlerta.mostrarAlerta("Ranking Clientes", "Seleccione un tipo de cliente para ver el ranking", Alert.AlertType.WARNING);
             return;
         }
-
         //Criterio = 1 N de compras; =2 Monto de compras
         int criterio =0;
         if (rbCompras.isSelected()){
@@ -175,38 +178,35 @@ public class VerMejoresClientesController {
             criterio=2;
         }
         if (criterio==0){
+            logger.error("No se ha seleccionado ningún críterio para ver el ranking");
             MostrarAlerta.mostrarAlerta("Ranking Clientes", "Seleccione un criterio para ver el ranking", Alert.AlertType.WARNING);
             return;
         }
-
-
         // Obtener datos desde la base de datos
         ClienteDAO cd = new ClienteDAO();
-
-
-
         //Mejores Clientes de la tienda Ordenados por monto gastado
         if (criterio==2 && tipoCliente==2){
+            logger.debug("Intento de obtener los mejores clientes de la tienda ordenados por monto gastado");
             listaClientes.setAll(cd.mejoresCliPorMontoVentas(limite, periodo, desde, hasta));
         }
-
-        //Mejores clientes del taller por cantidad de presupuiestos pagados
+        //Mejores clientes del taller por cantidad de presupuestos pagados
         if (criterio==1 && tipoCliente==1){
+            logger.debug("Intento de obtener los mejores clientes del taller ordenados por cantidad de presupuestos pagados");
             listaClientes.setAll(cd.mejoresCliPorNumTaller(limite, periodo, desde, hasta));
         }
-
         //Mejores Clientes del taller Ordenados por monto gastado
         if (criterio==2 && tipoCliente==1){
+            logger.debug("Intento de obtener los mejores clientes del taller ordenados por monto gastado");
             listaClientes.setAll(cd.mejoresCliPorMontoTaller(limite, periodo, desde, hasta));
         }
-
         //Mejores clientes de la tienda por cantidad de compras realizadas
         if (criterio==1 && tipoCliente==2){
+            logger.debug("Intento de obtener los mejores clientes la tienda por cantidad de compras realizadas");
             listaClientes.setAll(cd.mejoresCliPorNumVentas(limite, periodo, desde, hasta));
         }
-
         // Si la lista está vacía, mostrar alerta
         if (listaClientes.isEmpty()) {
+            logger.error("Error, La lista está vacía. No se encontraron datos para mostrar");
             MostrarAlerta.mostrarAlerta("Ranking Clientes", "No se encontraron datos para mostrar", Alert.AlertType.INFORMATION);
         }
     }

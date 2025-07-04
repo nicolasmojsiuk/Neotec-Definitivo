@@ -8,6 +8,8 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyEvent;
 import javafx.stage.Stage;
+import org.apache.log4j.Logger;
+
 
 import java.util.List;
 import java.util.function.UnaryOperator;
@@ -25,7 +27,7 @@ public class AgregarProductoController {
     @FXML
     public TextField txtMarcaProducto;
     @FXML
-    public ComboBox cbCategoria;
+    public ComboBox<String> cbCategoria;
     @FXML
     public TextField txtCantidadProducto;
     @FXML
@@ -34,6 +36,7 @@ public class AgregarProductoController {
     public TextField txtPCostoProducto;
     @FXML
     public TextArea txtDescProducto;
+    private static final Logger logger = Logger.getLogger(AgregarProductoController.class);
     @FXML
     public void initialize() {
         restriccionesCampos();
@@ -84,7 +87,6 @@ public class AgregarProductoController {
 
 
     public void crearProducto(ActionEvent actionEvent) {
-        System.out.println("El método crearProducto ha sido llamado");
         String codigoP = txtCodigoProducto.getText();
         String marca = txtMarcaProducto.getText();
         String cantidad = txtCantidadProducto.getText();
@@ -94,22 +96,12 @@ public class AgregarProductoController {
         String nomP = txtNomProducto.getText();
         int cat = cbCategoria.getSelectionModel().getSelectedIndex();
 
-        System.out.println("indice categoia:"+cat);
-
         if (cat < 0){
             cat=0;
         }
 
-        System.out.println("Código del producto: '" + codigoP + "'");
-        System.out.println("Marca: '" + marca + "'");
-        System.out.println("Cantidad: '" + cantidad + "'");
-        System.out.println("Precio Costo: '" + precioC + "'");
-        System.out.println("Precio Unitario: '" + precioU + "'");
-        System.out.println("Descripción: '" + desc + "'");
-        System.out.println("Nombre del Producto: '" + nomP + "'");
-
-
         if (codigoP.isEmpty() || marca.isEmpty() || cantidad.isEmpty() || precioU.isEmpty() || precioC.isEmpty()|| desc.isEmpty()|| nomP.isEmpty()) {
+            logger.warn("Error de validación: campos requeridos no completados en el formulario de creación de productos");
             mostrarAlerta("Error", "Por favor, complete todos los campos.", Alert.AlertType.WARNING);
             return;
         }
@@ -117,23 +109,31 @@ public class AgregarProductoController {
         int cant;
         int pU;
         int pC;
-        cant = Integer.parseInt(cantidad);
-        pC = Integer.parseInt(precioC);
-        pU = Integer.parseInt(precioU);
 
-        Producto productoNuevo = new Producto(nomP,codigoP,marca,cant,pC,pU,desc);
+        try {
+            cant = Integer.parseInt(cantidad);
+            pC = Integer.parseInt(precioC);
+            pU = Integer.parseInt(precioU);
+        } catch (NumberFormatException e) {
+            logger.error("Error al parsear los campos numéricos: " + e.getMessage());
+            mostrarAlerta("Error", "Por favor ingresá solo números en los campos de cantidad y precios.", Alert.AlertType.ERROR);
+            return;
+        }
+        Producto productoNuevo = new Producto(nomP, codigoP, marca, cant, pC, pU, desc);
         productoNuevo.setCategoriaInt(cat);
         try {
             ProductosDAO.agregarProducto(productoNuevo);
+            logger.info("Producto agregado con éxito. Código: " + productoNuevo.getCodigoProducto());
         } catch (IllegalArgumentException e) {
-            // Manejo del error, tal vez mostrando un mensaje al usuario
-            System.out.println("Error al agregar producto: " + e.getMessage());
+            logger.error("Error al agregar producto: " + e.getMessage());
         }
+
         Stage stage = (Stage) btnCrear.getScene().getWindow();
         stage.close();
     }
 
     public void cancelar(ActionEvent action) {
+        logger.debug("El usuario ha cancelado la operación");
         Stage stage = (Stage) btnCancelar.getScene().getWindow();
         stage.close();
     }

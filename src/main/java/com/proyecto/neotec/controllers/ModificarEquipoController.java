@@ -10,6 +10,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import org.apache.log4j.Logger;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -28,10 +29,11 @@ public class ModificarEquipoController {
     @FXML
     private Button btnCancelar;
     private Equipos equipoMod;
-
+    private static final Logger logger = Logger.getLogger(ModificarEquipoController.class);
     EquipoDAO equipoDAO = new EquipoDAO();
 
     public void cancelar() {
+        logger.debug("El usuario a cancelado la operación.");
         stage.close();
     }
     public void setEquipo(Equipos equipo) {
@@ -70,14 +72,12 @@ public class ModificarEquipoController {
                 tipoEstado.getItems().add(estadoActualDescripcion);
                 break;
         }
-
         // Seleccionar el estado actual por defecto
         tipoEstado.getSelectionModel().select(estadoActualDescripcion);
         // Desactivar el ComboBox si el estado no puede cambiarse
         boolean editable = (estadoActual == 1 || estadoActual== 4|| estadoActual == 5 || estadoActual == 6);
         tipoEstado.setDisable(!editable);
     }
-
 
     private String obtenerActivoInnactivo(int activo) {
         if (activo ==0){
@@ -110,15 +110,22 @@ public class ModificarEquipoController {
 
         int id = equipoMod.getId();
         if (dispositivo.isEmpty() || estado.isEmpty() || observaciones.isEmpty()){
+            logger.error("Hay campos incompletos. No se pudo modificar la información");
             mostrarAlerta("Error", "Por favor, complete todos los campos.", Alert.AlertType.WARNING);
         }
         if (equipoDAO.obtenerIDCliente(dniDuenno) == 0){
+            logger.info("No se encontró cliente con el DNI ingresado. Mostrando alerta de confirmación para crear nuevo cliente.");
             alertaConfirmacion();
         }else {
-
             Equipos equipos = new Equipos(equipoDAO.obtenerIDCliente(dniDuenno),dispositivo,equipoDAO.obtenerEstadoEquipoIdDesdeBD(estado),observaciones,id, obtenerActivoInnactivoString(activo));
 
             if (equipoDAO.ModificarEquipo(equipos)){
+                logger.debug("Equipo modificado con éxito - ID: " + equipos.getId() +
+                        ", ClienteID: " + equipos.getIdcliente() +
+                        ", Dispositivo: " + equipos.getDispositivo() +
+                        ", Estado: " + equipos.getEstado() +
+                        ", Activo: " + equipos.getActivo());
+
                 mostrarAlerta("Modificación de equipo", "Equipo Modificado", Alert.AlertType.INFORMATION);
                 stage.close(); // Cerrar el Stage
             }
@@ -149,7 +156,10 @@ public class ModificarEquipoController {
         // Mostrar la alerta y esperar la respuesta
         alert.showAndWait().ifPresent(response -> {
             if (response == buttonCrear) {
+                logger.debug("El usuario confirmó la creación de un nuevo cliente.");
                 mostrarFormCrearCliente();
+            }else {
+                logger.debug("El usuario canceló la creación de un nuevo cliente.");
             }
         });
     }
@@ -168,12 +178,9 @@ public class ModificarEquipoController {
             stage.initModality(Modality.APPLICATION_MODAL); // Bloquea la ventana principal hasta que el pop-up se cierre
             // Mostrar el pop-up
             stage.showAndWait();
-            //mostrarAlerta("Creación de cliente ","Cliente Creado",Alert.AlertType.INFORMATION);
+            //mostrarAlerta("Creación de cliente","Cliente Creado",Alert.AlertType.INFORMATION);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Error, No se pudo cargar la pantalla Crear Clientes. Detalles: " + e.getMessage());
         }
     }
-
-
-
 }

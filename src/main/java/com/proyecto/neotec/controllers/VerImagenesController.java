@@ -8,6 +8,7 @@ import javafx.scene.control.Button;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.stage.Stage;
+import org.apache.log4j.Logger;
 
 import java.awt.*;
 import java.io.File;
@@ -16,7 +17,6 @@ import java.util.List;
 
 public class VerImagenesController {
     public static Equipos equipo;
-
     @FXML
     private ImageView img1;
     @FXML
@@ -25,22 +25,20 @@ public class VerImagenesController {
     private ImageView img3;
     @FXML
     private ImageView img4;
-
     private String ruta0 ="";
     private String ruta1="";
     private String ruta2="";
     private String ruta3="";
-
-
+    private static final Logger logger= Logger.getLogger(VerImagenesController.class);
     @FXML
     public void initialize() {
         cargarImagenes();
     }
 
     public void cargarImagenes() {
+        logger.info("Intento de cargar imágenes por pantalla");
         EquipoDAO equipodao = new EquipoDAO();
         List<String> listaImagenes = equipodao.obtenerImagenes(equipo);
-
         // Asegúrate de que no haya más de 4 imágenes en la lista
         int imagenIndex = 0;
 
@@ -73,7 +71,7 @@ public class VerImagenesController {
                 }
                 imagenIndex++;
             } else {
-                System.out.println("El archivo " + rutaImagen + " no existe.");
+                logger.error("El archivo " + rutaImagen + " no existe.");
             }
         }
     }
@@ -88,21 +86,24 @@ public class VerImagenesController {
     }
 
     public void abrirImagen0(){
-        System.out.println(ruta0);
+        logger.info("Intento de abrir Imagen N°1 en la ruta: "+ ruta0);
         abrirImagenConAplicacionDeFotos(ruta0);
     }
     public void abrirImagen1(){
+        logger.info("Intento de abrir Imagen N°2 en la ruta: "+ ruta1);
         abrirImagenConAplicacionDeFotos(ruta1);
     }
     public void abrirImagen2(){
+        logger.info("Intento de abrir Imagen N°3 en la ruta: "+ ruta2);
         abrirImagenConAplicacionDeFotos(ruta2);
     }
     public void abrirImagen3(){
+        logger.info("Intento de abrir Imagen N°4 en la ruta: "+ ruta3);
         abrirImagenConAplicacionDeFotos(ruta3);
     }
 
     private void abrirImagenConAplicacionDeFotos(String rutaImagen) {
-
+        logger.info("Intento de abrir la imagen con la aplicación de fotos predeterminada");
         // Abrir la imagen con la aplicación predeterminada de fotos
         try {
             File archivo = new File(rutaImagen);
@@ -110,7 +111,7 @@ public class VerImagenesController {
                 Desktop.getDesktop().open(archivo);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("No se ha podido abrir la imagen en la ruta:"+ rutaImagen+ ". Detalles:"+ e.getMessage()+ ". " +e);
         }
     }
 }

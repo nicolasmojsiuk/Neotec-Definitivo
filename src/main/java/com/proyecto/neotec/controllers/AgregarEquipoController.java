@@ -11,12 +11,14 @@ import javafx.scene.control.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.EventListener;
 import java.util.List;
 import java.util.Optional;
+
 
 public class AgregarEquipoController {
     @FXML
@@ -35,11 +37,12 @@ public class AgregarEquipoController {
     private TextField txfDuenno;
     @FXML
     private TextField txfDispositivo;
-
+    private static final Logger logger = Logger.getLogger(AgregarEquipoController.class);
     @FXML
     private Button btnCancelar;
 
     public void cancelar(ActionEvent actionEvent) {
+        logger.debug("El usuario ha cancelado la operación");
         Stage stage = (Stage) btnCancelar.getScene().getWindow();
         stage.close();
     }
@@ -57,6 +60,7 @@ public class AgregarEquipoController {
         int activo = 1;
 
         if (duenno.isEmpty() || dispositivo.isEmpty() || observaciones.isEmpty()) {
+            logger.warn("Error de validación: campos requeridos no completados en el formulario de creación de equipos");
             mostrarAlerta("Error", "Por favor, complete todos los campos.", Alert.AlertType.WARNING);
             return;
         }
@@ -65,6 +69,7 @@ public class AgregarEquipoController {
         int idCliente = equipoDAO.obtenerIDCliente(duenno);
 
         if (idCliente == 0) {
+            logger.info("No se encontró cliente con el DNI ingresado. Mostrando alerta de confirmación para crear nuevo cliente.");
             alertaConfirmacion();
             return;
         }
@@ -95,9 +100,11 @@ public class AgregarEquipoController {
                 // Agregar equipo sin imágenes
                 Equipos equipoSinImagenes = new Equipos(idCliente, dispositivo, estado, observaciones, activo);
                 if (equipoDAO.AgregarEquipoSinImagenes(equipoSinImagenes)) {
+                    logger.debug("Equipo Agregado sin Imagenes");
                     mostrarAlerta("Equipo Agregado", "Equipo agregado sin imágenes exitosamente", Alert.AlertType.INFORMATION);
                     stage.close();
                 } else {
+                    //Agregar Log en el dao equipo no aquí
                     mostrarAlerta("Error", "No se pudo agregar el equipo", Alert.AlertType.ERROR);
                 }
                 return;
@@ -111,6 +118,7 @@ public class AgregarEquipoController {
                         (img4 != null && !img4.isEmpty());
 
                 if (!hayImagenes) {
+                    logger.error("Error, no se han seleccionado las 4 imágenes del equipo");
                     mostrarAlerta("Error", "Debe seleccionar exactamente 4 imágenes.", Alert.AlertType.WARNING);
                     return;
                 }
@@ -125,6 +133,7 @@ public class AgregarEquipoController {
         equipoConImagenes.setImg4(img4);
 
         if (equipoDAO.AgregarEquipoConImagenes(equipoConImagenes)) {
+            logger.debug("Equipo Agregado con Imágenes");
             mostrarAlerta("Equipo Agregado", "Equipo agregado con imágenes exitosamente", Alert.AlertType.INFORMATION);
             stage.close();
         }
@@ -138,6 +147,7 @@ public class AgregarEquipoController {
         alert.showAndWait();
     }
     public void agregarImagenes() {
+        logger.debug("Se inició el proceso para agregar imágenes al registro del equipo.");
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Seleccionar Imágenes");
 
@@ -153,7 +163,6 @@ public class AgregarEquipoController {
             // Inicializar contador y recorrer archivos seleccionados
             int cont = 0;
             for (File file : selectedFiles) {
-                System.out.println("Imagen seleccionada: " + file.getAbsolutePath());
                 switch (cont) {
                     case 0:
                         img1 = file.getAbsolutePath();
@@ -171,12 +180,14 @@ public class AgregarEquipoController {
                 cont++; // Incrementar el contador para la siguiente imagen
             }
         } else {
+            logger.warn("Se seleccionaron " + selectedFiles + " imágenes. Se requieren exactamente 4.");
             mostrarAlerta("Seleccionar imágenes", "Debe seleccionar exactamente 4 imágenes", Alert.AlertType.WARNING);
         }
 
     }
     private void alertaConfirmacion() {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+
         alert.setTitle("Confirmación");
         alert.setHeaderText("El dni ingresado no esta asociado a ningún cliente actualmente");
         alert.setContentText("¿Desea crear un nuevo cliente?:");
@@ -190,7 +201,10 @@ public class AgregarEquipoController {
         // Mostrar la alerta y esperar la respuesta
         alert.showAndWait().ifPresent(response -> {
             if (response == buttonCrear) {
+                logger.debug("El usuario confirmó la creación de un nuevo cliente.");
                 mostrarFormCrearCliente();
+            } else {
+                logger.debug("El usuario canceló la creación de un nuevo cliente.");
             }
         });
     }

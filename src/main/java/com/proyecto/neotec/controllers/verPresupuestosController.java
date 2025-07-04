@@ -34,6 +34,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import org.apache.log4j.Logger;
 
 import java.awt.*;
 import java.io.File;
@@ -133,19 +134,24 @@ public class verPresupuestosController {
             buscarPorFechaCreacion(dateFechaCreacion);
         });
     }
-
+    private static final Logger logger = Logger.getLogger(verPresupuestosController.class);
     private void buscarPorFechaCreacion(DatePicker dateFechaCreacion) {
+        logger.info("Iniciando búsqueda de presupuestos por fecha de creación.");
         LocalDate fecha = dateFechaCreacion.getValue();
         if (fecha != null) {
-            // formatear al formato que espera la base de datos
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
             String fechaFormateada = fecha.format(formatter);
+            logger.debug("Fecha seleccionada para búsqueda: "+ fechaFormateada);
             presupuestoDAO = new PresupuestoDAO();
             List<Presupuestos> listaPresupuestos = presupuestoDAO.buscarPorFechaCreacion(fechaFormateada);
+            logger.info("Se encontraron " +listaPresupuestos.size()+ " presupuestos para la fecha "+ fechaFormateada);
             cargarDatos(listaPresupuestos);
+        } else {
+            logger.warn("No se seleccionó una fecha para la búsqueda de presupuestos.");
         }
     }
     private void cargarDatos(List<Presupuestos> listaPresupuestos) {
+        logger.info("Intento de cargar datos de la tabla presupuestos");
         presupuestos = FXCollections.observableArrayList();
         columna1.setCellValueFactory(new PropertyValueFactory<>("idpresupuesto"));
         columna2.setCellValueFactory(new PropertyValueFactory<>("equipo"));
@@ -164,12 +170,15 @@ public class verPresupuestosController {
     }
 
     public void verDetalles() {
+        logger.info("Intento de ver detalles del presupuesto");
         Presupuestos prVer = tablaPresupuestos.getSelectionModel().getSelectedItem();
         if (prVer == null){
+            logger.warn("No se ha seleccionado ningún presupuesto");
             MostrarAlerta.mostrarAlerta("Presupuestos", "Debe seleccionar un presupuesto para poder ver los detalles", Alert.AlertType.WARNING);
             return;
         }
         int idpresupuesto = prVer.getIdpresupuesto();
+        logger.debug("Intento de cargar el presupuesto");
         try {
             File file = new File("C:/PRESUPUESTOS_NEOTEC/Presupuesto_" + idpresupuesto + ".pdf"); // "destino" es la ruta del PDF que generaste
             System.out.println("C:/PRESUPUESTOS_NEOTEC/Presupuesto_" + idpresupuesto + ".pdf");
@@ -179,22 +188,22 @@ public class verPresupuestosController {
                 MostrarAlerta.mostrarAlerta("Presupuestos", "El archivo que contenia los detalles del presupuesto ya no existe o su nombre fue cambiado y no se pudo encontrarlo", Alert.AlertType.WARNING);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Ha ocurrido una excepción al tratar de abrir el presupuesto. Detalles: "+ e.getMessage() + ". " + e);
         }
     }
 
     public void crearPresupuesto() {
+        logger.info("Intento de abrir el formulario de creación de presupuestos");
         Integer idequipo = obtenerNumeroDeEquipo();
         if (idequipo == null) return; // Si es null, ya se mostró una alerta y no seguimos.
-
         EquipoDAO ed = new EquipoDAO();
         Equipos equipoSeleccionado = ed.obtenerEquipoPorId(idequipo);
 
         if (equipoSeleccionado == null) {
+            logger.warn("No se ha seleccionado ningún equipo para crear un presupuesto");
             MostrarAlerta.mostrarAlerta("Crear Presupuesto", "No se encontró ningún equipo con el número ingresado.", Alert.AlertType.WARNING);
             return;
         }
-
         abrirVentanaCrearPresupuesto(equipoSeleccionado);
         tablaPresupuestos.refresh();
     }
@@ -219,32 +228,60 @@ public class verPresupuestosController {
         }
     }
 
+    public boolean puedeCrearNuevoPresupuesto(List<Presupuestos> listaPresupuestos) {
+        // Si no hay presupuestos, se puede crear uno nuevo
+        if (listaPresupuestos == null || listaPresupuestos.isEmpty()) {
+            return true;
+        }
+
+        // Verificar el estado de todos los presupuestos
+        for (Presupuestos presupuesto : listaPresupuestos) {
+            int estado = presupuesto.getEstado(); // Asumiendo que hay un método getEstado()
+
+            // Si encontramos algún presupuesto que NO esté cancelado (3) ni pagado (4)
+            if (estado != 3 && estado != 4) {
+                return false;
+            }
+        }
+        // Todos los presupuestos están cancelados o pagados
+        return true;
+    }
+
     private void abrirVentanaCrearPresupuesto(Equipos equipo) {
-        System.out.println("ESTADO EQUIPO AL ABRIR LA VENTANA CREAR PRESUPUESTO DESDE PRESUPUESTOS: "+equipo.getEstado() );
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/vistas/crearPresupuestos.fxml"));
-            Parent root = loader.load();
+        logger.debug("Verificando si se puede crear un nuevo presupuesto para el equipo:");
+        List<Presupuestos> listaPresupuestos = presupuestoDAO.obtenerPresupuestosPorIdEquipo(equipo.getId());
+        if (puedeCrearNuevoPresupuesto(listaPresupuestos)){
+            logger.debug("Intento de crear nuevo presupuesto para el equipo:" + equipo.getDispositivo());
+            try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/vistas/crearPresupuestos.fxml"));
+                Parent root = loader.load();
 
-            CrearPresupuestoController controller = loader.getController();
-            controller.setEquipo(equipo);
+                CrearPresupuestoController controller = loader.getController();
+                controller.setEquipo(equipo);
 
-            Stage stage = new Stage();
-            stage.setTitle("Crear Presupuesto");
-            stage.setScene(new Scene(root));
-            stage.initModality(Modality.APPLICATION_MODAL);
-            controller.setStage(stage);
+                Stage stage = new Stage();
+                stage.setTitle("Crear Presupuesto");
+                stage.setScene(new Scene(root));
+                stage.initModality(Modality.APPLICATION_MODAL);
+                controller.setStage(stage);
 
-            stage.showAndWait();
-        } catch (IOException e) {
-            MostrarAlerta.mostrarAlerta("Error", "No se puede crear presupuestos en este momento.", Alert.AlertType.ERROR);
-            e.printStackTrace();
+                stage.showAndWait();
+            } catch (IOException e) {
+                MostrarAlerta.mostrarAlerta("Error", "No se puede crear presupuestos en este momento.", Alert.AlertType.ERROR);
+                logger.error("Error, Ocurrio una excepción al tratar de cargar el formulario de cración. Detalles:"+e.getMessage()+ ". "+e);
+            }
+        }else {
+            String nombreEquipo = equipo.getDispositivo();
+            logger.info("No se puede crear un nuevo presupuesto para este equipo." + nombreEquipo + ". Hasta que el presupuesto actual esté cancelado o pagado");
+            MostrarAlerta.mostrarAlerta("Sacar Presupuesto","No puede crear un nuevo presupuesto hasta que el actual esté cancelado o pagado", Alert.AlertType.ERROR);
         }
     }
 
     public void modificarPresupuesto(){
-        Presupuestos pre_mod;
-        pre_mod = tablaPresupuestos.getSelectionModel().getSelectedItem();
+        logger.info("Intento de modificar presupuesto");
+        Presupuestos pre_mod = tablaPresupuestos.getSelectionModel().getSelectedItem();
         if (pre_mod == null){
+            logger.warn("No se ha seleccionado ningún presupuesto para modificar");
             MostrarAlerta.mostrarAlerta("Presupuestos", "Debe seleccionar un presupuesto para poder modificarlo", Alert.AlertType.WARNING);
         }else {
             EquipoDAO equipoDAO = new EquipoDAO();
@@ -253,6 +290,7 @@ public class verPresupuestosController {
         }
     }
     public void abrirModificarPresupuesto(Equipos equipo, Presupuestos presupuesto){
+        logger.info("Intento de abrir formulario de modificación");
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/vistas/modificarPresupuesto.fxml"));
             Parent root = loader.load();
@@ -270,24 +308,34 @@ public class verPresupuestosController {
             stage.showAndWait();
         } catch (IOException e) {
             MostrarAlerta.mostrarAlerta("Error", "No se puede crear presupuestos en este momento.", Alert.AlertType.ERROR);
-            e.printStackTrace();
+            logger.error("Error, No se pudo cargar el formulario. Detalles:"+e.getMessage()+ ". "+ e);
         }
     }
     public void pagarPresupuesto() {
+        logger.info("Intento de pagar presupuesto");
+
         try {
             Presupuestos pr = tablaPresupuestos.getSelectionModel().getSelectedItem();
+
             if (pr == null) {
+                logger.warn("No se ha seleccionado ningún presupuesto");
                 MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "Debe seleccionar un presupuesto antes de continuar.", Alert.AlertType.WARNING);
                 return;
             }
+
+            logger.debug("Presupuesto seleccionado: ID " + pr.getIdpresupuesto());
+
             PresupuestoDAO presupuestoDAO = new PresupuestoDAO();
-            // Verificar si el presupuesto ya fue pagado
-            if (presupuestoDAO.verificarEstadoPagado(pr.getIdpresupuesto()))  {
+
+            if (presupuestoDAO.verificarEstadoPagado(pr.getIdpresupuesto())) {
+                logger.debug("El presupuesto N°" + pr.getIdpresupuesto() + " ya ha sido pagado anteriormente");
                 MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "Este presupuesto ya fue pagado anteriormente.", Alert.AlertType.WARNING);
                 return;
             }
-            // Realizar pago si el presupuesto está autorizado (ID: 2)
+
             if (presupuestoDAO.verificarEstadoPresupuesto(pr, 2)) {
+                logger.debug("El presupuesto N°" + pr.getIdpresupuesto() + " está aprobado. Mostrando confirmación de pago...");
+
                 Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
                 alert.setTitle("Confirmar pago");
                 alert.setHeaderText("¿El pago fue con efectivo?");
@@ -295,21 +343,26 @@ public class verPresupuestosController {
                 ButtonType buttonSi = new ButtonType("Sí", ButtonBar.ButtonData.OTHER);
                 ButtonType buttonNo = new ButtonType("No", ButtonBar.ButtonData.OTHER);
                 ButtonType btnCerrar = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
-
-                alert.getButtonTypes().setAll(buttonSi, buttonNo,btnCerrar);
+                alert.getButtonTypes().setAll(buttonSi, buttonNo, btnCerrar);
 
                 Optional<ButtonType> result = alert.showAndWait();
 
                 if (result.get() == buttonSi) {
-                    // Verificar que hay una caja establecida
+                    logger.debug("Pago seleccionado: efectivo");
+
                     Caja cajaestablecida = CajaEstablecida.getCajaSeleccionada();
+
                     if (cajaestablecida == null) {
+                        logger.warn("No se puede registrar el movimiento. No se ha seleccionado una caja");
                         MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "Debe establecer una caja en Caja -> Establecer Caja.", Alert.AlertType.WARNING);
                     } else {
-                        // Verificar apertura de caja
                         CajaDAO cajadao = new CajaDAO();
                         int idCaja = cajaestablecida.getIdcaja();
+                        logger.debug("Caja establecida: ID " + idCaja);
+
                         if (cajadao.verificarApertura(idCaja)) {
+                            logger.debug("La caja está abierta. Registrando movimiento...");
+
                             String respuesta = cajadao.registrarMovimientoDeCaja(
                                     idCaja,
                                     0,
@@ -317,115 +370,122 @@ public class verPresupuestosController {
                                     SesionUsuario.getUsuarioLogueado().getIdusuarios(),
                                     "Pago presupuesto"
                             );
+
                             if ("Error: Ocurrió un problema al registrar el movimiento.".equals(respuesta)) {
+                                logger.error("Ha ocurrido un error en la base de datos al tratar de registrar el movimiento");
                                 MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "Error: Ocurrió un problema al registrar el movimiento en la caja", Alert.AlertType.WARNING);
-                            } else if (cambiarEstadoEquipo(pr)){
-                                presupuestoDAO.cambiarEstadoPresupuesto(pr,4);// Confirmación del pago en efectivo
+                            } else if (cambiarEstadoEquipo(pr)) {
+                                logger.info("Movimiento registrado con éxito. Cambiando estado de presupuesto a PAGADO.");
+                                presupuestoDAO.cambiarEstadoPresupuesto(pr, 4);
                                 MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "El pago en efectivo se ha realizado correctamente.", Alert.AlertType.INFORMATION);
                                 GenerarComprobante(pr);
-                            }else if (!cambiarEstadoEquipo(pr)){
-                                MostrarAlerta.mostrarAlerta(
-                                        "Error",
-                                        "El presupuesto utiliza productos no disponibles en stock",
-                                        Alert.AlertType.INFORMATION
-                                );
+                            } else {
+                                logger.error("No se pudo registrar el movimiento. El presupuesto utiliza productos no disponibles en stock");
+                                MostrarAlerta.mostrarAlerta("Error", "El presupuesto utiliza productos no disponibles en stock", Alert.AlertType.INFORMATION);
                             }
                         } else {
+                            logger.warn("No se pudo registrar el pago. La caja está cerrada");
                             MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "La caja establecida está cerrada", Alert.AlertType.WARNING);
                         }
                     }
+
                 } else if (result.get() == buttonNo) {
-                    // Crear el cuadro de diálogo
+                    logger.debug("Pago seleccionado: transacción digital");
+
                     Dialog<String> dialog = new Dialog<>();
                     dialog.setTitle("Indique el tipo de transacción digital");
 
                     TextField textField = new TextField();
                     textField.setPromptText("Escriba aquí...");
 
-                    // Agregar el campo de texto al contenido del diálogo
                     VBox content = new VBox(10, new Label("Observación:"), textField);
                     dialog.getDialogPane().setContent(content);
 
-                    // Agregar botones
                     ButtonType btnAceptar = new ButtonType("Aceptar", ButtonBar.ButtonData.OK_DONE);
                     ButtonType btnCancelar = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
                     dialog.getDialogPane().getButtonTypes().addAll(btnAceptar, btnCancelar);
 
-                    // Establecer el resultado del diálogo
                     dialog.setResultConverter(button -> (button == btnAceptar) ? textField.getText() : null);
 
-                    // Mostrar el diálogo y obtener el resultado
                     Optional<String> resultado = dialog.showAndWait();
 
-                    // Solo ejecutar el bloque si se presionó Aceptar (es decir, si hay un valor)
                     if (resultado.isPresent()) {
-                        AtomicReference<String> mensaje = new AtomicReference<>(resultado.get());
+                        String observacion = resultado.get();
+                        logger.debug("Observación de transacción digital: " + observacion);
 
                         try {
                             TransaccionesDigitalesDAO tdd = new TransaccionesDigitalesDAO();
-                            tdd.registrarTransaccion(0, pr.getPrecioTotal(), 1, mensaje.get());
-                            if (cambiarEstadoEquipo(pr)){
-                                presupuestoDAO.cambiarEstadoPresupuesto(pr,4);
-                                // Confirmación del pago en efectivo
+                            tdd.registrarTransaccion(0, pr.getPrecioTotal(), 1, observacion);
+                            logger.info("Transacción digital registrada");
+
+                            if (cambiarEstadoEquipo(pr)) {
+                                presupuestoDAO.cambiarEstadoPresupuesto(pr, 4);
                                 MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "El pago en efectivo se ha realizado correctamente.", Alert.AlertType.INFORMATION);
                                 GenerarComprobante(pr);
-                            }else if (!cambiarEstadoEquipo(pr)){
-                                MostrarAlerta.mostrarAlerta(
-                                        "Error",
-                                        "El presupuesto utiliza productos no disponibles en stock",
-                                        Alert.AlertType.INFORMATION
-                                );
+                            } else {
+                                logger.error("No se pudo completar el pago digital. El presupuesto usa productos no disponibles en stock");
+                                MostrarAlerta.mostrarAlerta("Error", "El presupuesto utiliza productos no disponibles en stock", Alert.AlertType.INFORMATION);
                             }
                         } catch (Exception e) {
-                            e.printStackTrace();
+                            logger.error("Error al registrar la transacción digital", e);
                             MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "Error al registrar la transacción digital.", Alert.AlertType.ERROR);
                         }
                     }
 
                 } else if (result.get() == btnCerrar) {
+                    logger.debug("Pago cancelado por el usuario");
                     alert.close();
                 }
 
             } else {
+                logger.warn("El presupuesto no está en estado aprobado. No puede pagarse.");
                 MostrarAlerta.mostrarAlerta("Pago de presupuesto", "El presupuesto debe estar aprobado", Alert.AlertType.INFORMATION);
             }
 
         } catch (Exception e) {
+            logger.error("Error inesperado durante el proceso de pago del presupuesto", e);
             MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "Ocurrió un error inesperado: " + e.getMessage(), Alert.AlertType.ERROR);
         }
     }
 
 
     public boolean cambiarEstadoEquipo(Presupuestos pr) {
+        logger.info("Iniciando cambio de estado del equipo asociado al presupuesto ID: "+pr.getIdpresupuesto() );
+
         ProductosDAO productosDAO = new ProductosDAO();
         EquipoDAO equipoDAO = new EquipoDAO();
 
         List<Producto> productos = productosDAO.obtenerProductosPorPresupuesto(pr.getIdpresupuesto());
+        logger.debug("Se obtuvieron "+productos.size()+" productos asociados al presupuesto ID: "+ pr.getIdpresupuesto());
+
         boolean hayFaltante = false;
 
-        // Verificar existencia y descontar stock
         for (Producto producto : productos) {
             int idProducto = producto.getIdProductos();
             int cantidadRequerida = producto.getCantidad();
 
             if (!productosDAO.productoExiste(idProducto)) {
+                logger.warn("El producto ID "+idProducto+" no existe en la base de datos.");
                 hayFaltante = true;
                 break;
             }
-
             int stockDisponible = productosDAO.obtenerCantidad(idProducto);
+            logger.debug("Producto ID "+idProducto+": stock disponible = "+stockDisponible+", requerido = "+ cantidadRequerida);
+
             if (cantidadRequerida > stockDisponible) {
+                logger.warn("Stock insuficiente para el producto ID "+idProducto+". Requerido:" +cantidadRequerida +" , Disponible:"+ stockDisponible);
                 hayFaltante = true;
                 break;
             }
         }
 
-        // Obtener el equipo relacionado al presupuesto
         int idEquipo = equipoDAO.obtener_IDequipo_con_idpresupuesto(pr.getIdpresupuesto());
         Equipos equipo = equipoDAO.obtenerEquipoPorId(idEquipo);
+        logger.debug("Equipo asociado al presupuesto: ID = "+equipo.getId()+ ", Dispositivo = {}"+  equipo.getDispositivo());
 
         if (hayFaltante) {
-            equipoDAO.actualizarEstadoEquipo(equipo.getId(), 3); // Espera de Autorización
+            logger.info("Se detectaron faltantes. El equipo ID "+equipo.getId()+" pasará a estado 'En espera de autorización' (estado 3)" );
+            equipoDAO.actualizarEstadoEquipo(equipo.getId(), 3);
             List<Presupuestos> lista = presupuestoDAO.selectAllPresupuestos();
             cargarDatos(lista);
             return false;
@@ -434,46 +494,46 @@ public class verPresupuestosController {
                 int idProducto = producto.getIdProductos();
                 int cantidadRequerida = producto.getCantidad();
                 productosDAO.descontarStock(idProducto, cantidadRequerida);
+                logger.debug("Se descontaron "+cantidadRequerida+" unidades del producto ID "+ idProducto);
             }
+            logger.info("Todos los productos tienen stock suficiente. Cambio de estado del equipo exitoso.");
             return true;
         }
     }
 
     public void cambiarEstado(ActionEvent actionEvent) {
-        Presupuestos pr = tablaPresupuestos.getSelectionModel().getSelectedItem(); // Esto deberías adaptarlo
+        logger.info("Intento de cambiar el estado de un presupuesto desde la interfaz.");
+        Presupuestos pr = tablaPresupuestos.getSelectionModel().getSelectedItem();
         if (pr == null) {
-            Alert alert = new Alert(Alert.AlertType.WARNING, "Selecciona un pr primero.", ButtonType.OK);
-            alert.showAndWait();
+            logger.warn("No se ha seleccionado ningún presupuesto para modificar su estado");
+            MostrarAlerta.mostrarAlerta("Error","Debe seleccionar un presupuesto para cambiar su estado", Alert.AlertType.WARNING);
             return;
         }
         int estadoActual = pr.getEstado();
-
+        logger.debug("Presupuesto seleccionado: ID="+pr.getIdpresupuesto()+", Estado actual="+  estadoActual);
         Dialog<String> dialog = new Dialog<>();
         dialog.setTitle("Seleccionar Estado");
         dialog.setHeaderText("Por favor, elige un estado:");
 
         ComboBox<String> comboBox = new ComboBox<>();
-        comboBox.getItems().clear(); // Por si acaso
+        comboBox.getItems().clear(); // Limpiar el comboBox por si acaso
         PresupuestoDAO presupuestoDAO = new PresupuestoDAO();
         if (estadoActual == 1) { //id:1 = "En espera"
             comboBox.getItems().addAll("Aprobado", "Cancelado");
         } else {
-            Alert alerta = new Alert(Alert.AlertType.INFORMATION);
-            alerta.setTitle("Cambio no permitido");
-            alerta.setHeaderText(null);
-            alerta.setContentText("No se puede cambiar el estado. Este presupuesto ya fue " + presupuestoDAO.obtenerDescripcionEstadoDesdeBD(estadoActual).toLowerCase() + ".");
-            alerta.showAndWait();
+            String estadoDescripcion = presupuestoDAO.obtenerDescripcionEstadoDesdeBD(estadoActual);
+            logger.info("Cambio de estado no permitido. El presupuesto ya fue."+ estadoDescripcion.toLowerCase());
+            MostrarAlerta.mostrarAlerta("Cambio no permitido","No se puede cambiar el estado. Este presupuesto ya fue "+presupuestoDAO.obtenerDescripcionEstadoDesdeBD(estadoActual).toLowerCase(), Alert.AlertType.INFORMATION);
             return; // Se sale del método para no continuar con el diálogo
         }
-
         if (comboBox.getItems().isEmpty()) {
-            Alert alert = new Alert(Alert.AlertType.INFORMATION, "Este pr ya no puede cambiar de estado.", ButtonType.OK);
+            logger.warn("El presupuesto actual no puede cambiar su estado. Presupuesto N°"+pr.getIdpresupuesto());
+            Alert alert = new Alert(Alert.AlertType.INFORMATION, "Este presupuesto ya no puede cambiar de estado.", ButtonType.OK);
             alert.showAndWait();
             return;
         }
-
+        logger.debug("Presupuesto en estado 'En espera'. Se permite cambio de estado.");
         comboBox.setValue(comboBox.getItems().get(0));
-
         VBox content = new VBox(10, new Label("Selecciona:"), comboBox);
         dialog.getDialogPane().setContent(content);
 
@@ -486,53 +546,70 @@ public class verPresupuestosController {
         );
 
         Optional<String> resultado = dialog.showAndWait();
-
         resultado.ifPresent(estadoSeleccionado -> {
-
+            logger.debug("Usuario seleccionó nuevo estado para el presupuesto: "+ estadoSeleccionado);
             EquipoDAO equipoDAO = new EquipoDAO();
             int estado = presupuestoDAO.obtenerEstadoIntDesdeBD(estadoSeleccionado);
             int idEquipoPresupuesto = equipoDAO.obtener_IDequipo_con_idpresupuesto(pr.getIdpresupuesto());
             if (estado == 3){
-                // si el pr es cancelado, cambiamos el estado del equipo a no autorizado para la reparación
+                logger.info("Presupuesto cancelado. Actualizando estado del equipo ID " +idEquipoPresupuesto+" a 'No autorizado para reparación' (estado 4)");
                 equipoDAO.actualizarEstadoEquipo(idEquipoPresupuesto,4);
-
             }
             if (estado==2) {
-                //pr aprobado = equipo autorizado para la reparación
+                logger.info("Presupuesto aprobado. Actualizando estado del equipo ID "+idEquipoPresupuesto+" a 'Autorizado para reparación' (estado 5)");
                 equipoDAO.actualizarEstadoEquipo(idEquipoPresupuesto,5);
             }
             presupuestoDAO.cambiarEstadoPresupuesto(pr,estado);
+            logger.debug("Actualizando estado del presupuesto ID "+pr.getIdpresupuesto()+" a " + estado);
             cargarDatos(presupuestoDAO.selectAllPresupuestos());
         });
     }
 
     public void QuitarFiltros(ActionEvent actionEvent) {
+        logger.info("Quitando filtros de busqueda");
         presupuestoDAO= new PresupuestoDAO();
         cargarDatos(presupuestoDAO.selectAllPresupuestos());
     }
     public void GenerarComprobante(Presupuestos prSeleccionado){
-
+        logger.info("Intento de generar comprobante de pago");
         PresupuestoDAO pd = new PresupuestoDAO();
         Presupuestos pr = pd.obtenerPresupuestoPorId(prSeleccionado.getIdpresupuesto());
         EquipoDAO equipoDAO = new EquipoDAO();
         Equipos equipo = equipoDAO.obtenerEquipoPorId(equipoDAO.obtener_IDequipo_con_idpresupuesto(pr.getIdpresupuesto()));
-
         LocalDateTime fechaYhora = pd.obtenerFechaHora(pr.getIdpresupuesto());
-
         DecimalFormat formatoPrecio = new DecimalFormat("#0.00");
         String destino = "";
+        // Definiendo variables antes de try para evitar inconvenientes
+        String fechaHora = "";
+        String fechaFormateada="";
+        String horaFormateada="";
         try {
-            String fechaHora = fechaYhora.format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-            String fechaFormateada = fechaYhora.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-            String horaFormateada = fechaYhora.format(DateTimeFormatter.ofPattern("HH:mm:ss"));
-            destino = "C:/COMPROBANTES_NEOTEC/Comprobante_"  + ".pdf";
-
-            PdfWriter writer = new PdfWriter(destino);
-            PdfDocument pdf = new PdfDocument(writer);
-            Document document = new Document(pdf);
+            logger.debug("Formateando fecha y hora...");
+            fechaHora = fechaYhora.format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            fechaFormateada = fechaYhora.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+            horaFormateada = fechaYhora.format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+            destino = "C:/COMPROBANTES_NEOTEC/Comprobante_" + ".pdf";
+        } catch (Exception e) {
+            logger.error("Error al formatear la fecha y hora", e);
+            return;
+        }
+        // Definiendo variables antes de try para evitar inconvenientes
+        PdfWriter writer = null;
+        PdfDocument pdf = null;
+        Document document = null;
+        try {
+            logger.debug("Inicializando PDF...");
+            writer = new PdfWriter(destino);
+            pdf = new PdfDocument(writer);
+            document = new Document(pdf);
             document.setMargins(30, 30, 30, 30);
+        } catch (Exception e) {
+            logger.error("Error al crear PDFWriter o PdfDocument", e);
+            return;
+        }
 
-            // Estilo similar a Mercado Pago
+        try {
+            logger.debug("Agregando encabezado...");
             Paragraph header = new Paragraph("NEOTEC REPARACIONES")
                     .setTextAlignment(TextAlignment.CENTER)
                     .setFontSize(16)
@@ -546,8 +623,12 @@ public class verPresupuestosController {
                     .setBold()
                     .setMarginBottom(20);
             document.add(tipoComprobante);
+        } catch (Exception e) {
+            logger.error("Error al agregar encabezado al documento", e);
+        }
 
-            // Sección de detalles principales
+        try {
+            logger.debug("Agregando sección de servicio y total pagado...");
             Paragraph detalleServicio = new Paragraph("Reparación de equipo")
                     .setTextAlignment(TextAlignment.CENTER)
                     .setFontSize(12)
@@ -560,8 +641,6 @@ public class verPresupuestosController {
                     .setMarginBottom(5);
             document.add(totalPagado);
 
-            // Monto grande como en el ejemplo
-            //TODO traer total general
             float totalGeneral = pr.getPrecioTotal();
             Paragraph monto = new Paragraph("$ " + formatoPrecio.format(totalGeneral))
                     .setTextAlignment(TextAlignment.CENTER)
@@ -569,12 +648,15 @@ public class verPresupuestosController {
                     .setBold()
                     .setMarginBottom(20);
             document.add(monto);
+        } catch (Exception e) {
+            logger.error("Error al agregar detalle de servicio o monto", e);
+        }
 
-            // Línea divisoria
+        try {
+            logger.debug("Agregando línea divisoria y título de detalles...");
             LineSeparator ls = new LineSeparator(new SolidLine());
             document.add(ls);
 
-            // Sección de Detalles
             Paragraph detallesHeader = new Paragraph("Detalles")
                     .setTextAlignment(TextAlignment.LEFT)
                     .setFontSize(12)
@@ -582,16 +664,17 @@ public class verPresupuestosController {
                     .setMarginTop(10)
                     .setMarginBottom(10);
             document.add(detallesHeader);
+        } catch (Exception e) {
+            logger.error("Error al agregar línea divisoria o sección de detalles", e);
+        }
 
-            // Tabla de detalles
-            float[] columnWidths = {3, 1};
-            Table detallesTable = new Table(columnWidths);
-            detallesTable.setWidth(UnitValue.createPercentValue(100));
+        float totalproductos;
+        ProductosDAO productosDAO = new ProductosDAO();
+        List<Producto> productosUtilizados = null;
 
-            // TODO traer Productos utilizados
-            ProductosDAO productosDAO = new ProductosDAO();
-
-            List<Producto> productosUtilizados = productosDAO.obtenerProductosPorPresupuesto(pr.getIdpresupuesto());
+        try {
+            logger.debug("Obteniendo productos utilizados...");
+            productosUtilizados = productosDAO.obtenerProductosPorPresupuesto(pr.getIdpresupuesto());
 
             Paragraph subtitulo2 = new Paragraph("Productos utilizados")
                     .setTextAlignment(TextAlignment.CENTER)
@@ -599,16 +682,14 @@ public class verPresupuestosController {
                     .setBold();
             document.add(subtitulo2);
 
-            // Tabla de productos
             float[] columnW = {200F, 100F, 80F, 100F};
             Table productosTable = new Table(columnW);
             productosTable.setWidth(UnitValue.createPercentValue(100));
 
-            productosTable.addHeaderCell(new com.itextpdf.layout.element.Cell().add(new Paragraph("Producto").setBold()));
-            productosTable.addHeaderCell(new com.itextpdf.layout.element.Cell().add(new Paragraph("Precio U").setBold()));
-            productosTable.addHeaderCell(new com.itextpdf.layout.element.Cell().add(new Paragraph("Cantidad").setBold()));
-            productosTable.addHeaderCell(new com.itextpdf.layout.element.Cell().add(new Paragraph("Total Línea").setBold()));
-            float totalproductos;
+            productosTable.addHeaderCell(new Cell().add(new Paragraph("Producto").setBold()));
+            productosTable.addHeaderCell(new Cell().add(new Paragraph("Precio U").setBold()));
+            productosTable.addHeaderCell(new Cell().add(new Paragraph("Cantidad").setBold()));
+            productosTable.addHeaderCell(new Cell().add(new Paragraph("Total Línea").setBold()));
 
             if (!productosUtilizados.isEmpty()) {
                 for (Producto p1 : productosUtilizados) {
@@ -619,11 +700,22 @@ public class verPresupuestosController {
                     productosTable.addCell("$" + formatoPrecio.format(totalproductos));
                 }
             } else {
+                logger.warn("No se ha cargado la tabla de productos utilizados. La tabla esta vacía.");
                 productosTable.addCell(new Cell(1, 4)
                         .add(new Paragraph("Tabla sin contenido"))
                         .setTextAlignment(TextAlignment.CENTER));
             }
             document.add(productosTable);
+        } catch (Exception e) {
+            logger.error("Error al obtener o mostrar productos utilizados", e);
+        }
+
+        try {
+            logger.debug("Agregando mano de obra y costos variables...");
+            float[] columnWidths = {3, 1};
+            Table detallesTable = new Table(columnWidths);
+            detallesTable.setWidth(UnitValue.createPercentValue(100));
+
             float manoDeObra = pr.getManoDeObra();
             if (manoDeObra > 0) {
                 detallesTable.addCell(new Cell().add(new Paragraph("Mano de obra")));
@@ -631,18 +723,21 @@ public class verPresupuestosController {
                         .setTextAlignment(TextAlignment.RIGHT));
             }
 
-            //agregado
             float costosVariables = pr.getCostosVariables();
             if (costosVariables > 0) {
                 detallesTable.addCell(new Cell().add(new Paragraph("Costos variables:")));
                 detallesTable.addCell(new Cell().add(new Paragraph("$" + formatoPrecio.format(costosVariables)))
                         .setTextAlignment(TextAlignment.RIGHT));
             }
-            document.add(detallesTable);
-            // Línea divisoria
-            document.add(ls);
 
-            // Sección Total
+            document.add(detallesTable);
+            document.add(new LineSeparator(new SolidLine()));
+        } catch (Exception e) {
+            logger.error("Error al agregar detalles financieros (mano de obra, costos)", e);
+        }
+
+        try {
+            logger.debug("Agregando total final...");
             Paragraph totalHeader = new Paragraph("Total")
                     .setTextAlignment(TextAlignment.LEFT)
                     .setFontSize(12)
@@ -651,17 +746,20 @@ public class verPresupuestosController {
                     .setMarginBottom(5);
             document.add(totalHeader);
 
+            float totalGeneral = pr.getPrecioTotal();
             Paragraph totalFinal = new Paragraph("$ " + formatoPrecio.format(totalGeneral))
                     .setTextAlignment(TextAlignment.LEFT)
                     .setFontSize(12)
                     .setBold()
                     .setMarginBottom(20);
             document.add(totalFinal);
+            document.add(new LineSeparator(new SolidLine()));
+        } catch (Exception e) {
+            logger.error("Error al mostrar total final", e);
+        }
 
-            // Línea divisoria
-            document.add(ls);
-
-            // Sección de información adicional
+        try {
+            logger.debug("Agregando información adicional del cliente...");
             Paragraph infoHeader = new Paragraph("Información adicional")
                     .setTextAlignment(TextAlignment.LEFT)
                     .setFontSize(14)
@@ -682,14 +780,16 @@ public class verPresupuestosController {
                     .setMarginBottom(12);
             document.add(clienteInfo);
 
-            // TODO traer Observaciones si las hay
-            Paragraph observaciones = new Paragraph("Observaciones:\n" +pr.getObservaciones())
+            Paragraph observaciones = new Paragraph("Observaciones:\n" + pr.getObservaciones())
                     .setFontSize(12)
                     .setMarginBottom(12);
             document.add(observaciones);
+        } catch (Exception e) {
+            logger.error("Error al mostrar información adicional del cliente", e);
+        }
 
-
-            // Footer
+        try {
+            logger.debug("Agregando footer y cerrando documento...");
             Paragraph footer = new Paragraph("Gracias por confiar en NEOTEC")
                     .setTextAlignment(TextAlignment.CENTER)
                     .setFontSize(14)
@@ -697,17 +797,23 @@ public class verPresupuestosController {
                     .setBold()
                     .setMarginTop(20);
             document.add(footer);
-
             document.close();
-
+            logger.debug("El comprobante ha sido creado correctamente");
             System.out.println("✅ Comprobante generado en: " + destino);
-            AbrirComprobante(destino);
-
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Error al finalizar y cerrar el documento PDF", e);
         }
+
+        try {
+            logger.debug("Intentando abrir el comprobante generado...");
+            AbrirComprobante(destino);
+        } catch (Exception e) {
+            logger.error("Error al abrir el comprobante PDF generado", e);
+        }
+
     }
     public void AbrirComprobante(String destino){
+        logger.info("Intento de abrir el comprobante ubicado en la ruta: "+ destino);
         // Abrir el pdf
         try {
             File file = new File(destino);
@@ -715,13 +821,15 @@ public class verPresupuestosController {
                 Desktop.getDesktop().open(file);
                 MostrarAlerta.mostrarAlerta("Crear Comprobante", "El comprobante ha sido creado", Alert.AlertType.INFORMATION);
             } else {
+                logger.error("Error, al abrir el archivo en la ruta indicada:" + destino);
                 MostrarAlerta.mostrarAlerta("Error", "Error al abrir el archivo", Alert.AlertType.ERROR);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Ha ocurrido un error al intentar abrir el comprobante. Detalles:" + e.getMessage() + ". "+ e);
         }
     }
     public void DefinirEstados(ActionEvent actionEvent) {
+        logger.info("Intento de filtrar por estados");
         Dialog<String> dialog = new Dialog<>();
         dialog.setTitle("Seleccionar Estado");
         dialog.setHeaderText("Por favor, elige un estado:");
@@ -750,11 +858,14 @@ public class verPresupuestosController {
         Optional<String> resultado = dialog.showAndWait();
         PresupuestoDAO presupuestosDAO = new PresupuestoDAO();
         resultado.ifPresent(estadoSeleccionado -> {
+            logger.debug("Estado seleccionado para el filtrado: "+ estadoSeleccionado);
             if (estadoSeleccionado.equals("Seleccionar todos los Equipos")){
                 List<Presupuestos> todos= presupuestosDAO.selectAllPresupuestos();
+                logger.debug("Cargando los presupuestos");
                 tablaPresupuestos.getItems().setAll(todos);
             }else{
                 List<Presupuestos> equiposFiltrados = presupuestosDAO.filtrarPorEstadoPresupuesto(presupuestosDAO.obtenerEstadoIntDesdeBD(estadoSeleccionado));
+                logger.debug("Cargando los presupuestos");
                 tablaPresupuestos.getItems().setAll(equiposFiltrados);
             }
         });

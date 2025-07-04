@@ -8,6 +8,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyEvent;
 import javafx.stage.Stage;
+import org.apache.log4j.Logger;
 
 import java.util.List;
 import java.util.function.UnaryOperator;
@@ -17,10 +18,9 @@ public class ModProductoController {
     private Producto productoMod;
     @FXML
     private Button btnCancelar;
+    private static final Logger logger = Logger.getLogger(ModProductoController.class);
     @FXML
-    private Button btnModificar;
-    @FXML
-    public ComboBox cbCategoria;
+    public ComboBox<String> cbCategoria;
     @FXML
     private TextField txtNomProducto;
     @FXML
@@ -39,7 +39,6 @@ public class ModProductoController {
     public void initialize() {
         restriccionesCampos();
         cargarCategorias();
-
     }
 
     private void cargarCategorias() {
@@ -87,7 +86,8 @@ public class ModProductoController {
 
     private void cargarDatosActuales() {
         if (productoMod == null) {
-            mostrarAlerta("Error", "No se ha seleccionado ningún usuario.", Alert.AlertType.WARNING);
+            logger.error("Error, No se seleccionado ningún producto");
+            mostrarAlerta("Error", "No se ha seleccionado ningún producto.", Alert.AlertType.WARNING);
             return;
         }
         txtNomProducto.setText(productoMod.getNombreProducto());
@@ -117,6 +117,7 @@ public class ModProductoController {
 
         // Validar que todos los campos estén completos
         if (codigoP.isEmpty() || marca.isEmpty() || cantidad.isEmpty() || precioC.isEmpty() || precioU.isEmpty() || desc.isEmpty() || nomP.isEmpty()) {
+            logger.warn("Error de validación: campos requeridos no completados en el formulario de modificación de productos.");
             mostrarAlerta("Error", "Por favor, complete todos los campos.", Alert.AlertType.ERROR);
             return;
         }
@@ -136,9 +137,14 @@ public class ModProductoController {
 
             // Llamar a modificarProducto y obtener resultado
             String resultado = ProductosDAO.modificarProducto(producto);
+            logger.debug("Producto modificado con éxito - ID: " + producto.getIdProductos() +
+                    ", Nombre: " + producto.getNombreProducto() +
+                    ", Precio: " + producto.getPrecioUnitario() +
+                    ", Stock: " + producto.getCantidad());
             mostrarAlerta("Éxito", resultado, Alert.AlertType.INFORMATION);
 
         } catch (NumberFormatException e) {
+            logger.error("Error, Se han ingresado valores invalidos. Detalles:"+ e.getMessage());
             mostrarAlerta("Error", "Por favor, ingrese valores válidos para la cantidad y precios.", Alert.AlertType.ERROR);
             return;
         }
@@ -151,6 +157,7 @@ public class ModProductoController {
 
     @FXML
     public void cancelar() {
+        logger.debug("El usuario ha cancelado la operación");
         Stage stage = (Stage) btnCancelar.getScene().getWindow();
         stage.close();
     }

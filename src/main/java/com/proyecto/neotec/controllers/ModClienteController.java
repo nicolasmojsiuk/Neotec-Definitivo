@@ -8,15 +8,14 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyEvent;
 import javafx.stage.Stage;
+import org.apache.log4j.Logger;
 import org.mindrot.jbcrypt.BCrypt;
 
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 
 public class ModClienteController {
-
     private Cliente clientemodificacion;
-
     @FXML
     private TextField txfNombre;
     @FXML
@@ -31,8 +30,7 @@ public class ModClienteController {
     private Button btnMod;
     @FXML
     private Button btnCancelar;
-
-
+    private static final Logger logger = Logger.getLogger(ModUsuarioController.class);
 
     @FXML
     public void initialize() {
@@ -54,7 +52,6 @@ public class ModClienteController {
 
     }
 
-
     public void setCliente(Cliente cliente) {
         this.clientemodificacion = cliente;
         cargarDatosActuales();
@@ -62,7 +59,8 @@ public class ModClienteController {
 
     private void cargarDatosActuales() {
         if (clientemodificacion == null) {
-            mostrarAlerta("Error", "No se ha seleccionado ningún usuario.", Alert.AlertType.WARNING);
+            logger.error("Error, se ha seleccionado un cliente a modificar");
+            mostrarAlerta("Error", "No se ha seleccionado ningún Cliente.", Alert.AlertType.WARNING);
             return;
         }
         txfNombre.setText(clientemodificacion.getNombre());
@@ -84,12 +82,14 @@ public class ModClienteController {
 
         // Validar que todos los campos estén completos
         if (nombre.isEmpty() || apellido.isEmpty() || dni.isEmpty() || email.isEmpty() || telefono.isEmpty()) {
+            logger.error("Error, Existen campos incompletos, No se pudo guardar la información");
             mostrarAlerta("Error", "Por favor, complete todos los campos.", Alert.AlertType.ERROR);
             return;
         }
 
         // Validar el email (debe contener '@' y '.')
         if (!email.contains("@") || !email.contains(".") || email.contains(" ")) {
+            logger.error("Error, El formato del correo no es valido");
             mostrarAlerta("Error", "Por favor, ingrese un correo electrónico válido.", Alert.AlertType.ERROR);
             return;
         }
@@ -102,15 +102,14 @@ public class ModClienteController {
         try {
             ndni = Integer.parseInt(dni);
         } catch (NumberFormatException e) {
+            logger.error("Error, en el formato del DNI. Detalles: " + e.getMessage() );
             mostrarAlerta("Error", "Por favor, ingrese un DNI válido (solo números).", Alert.AlertType.ERROR);
             return;
         }
-
-
-            // Actualizar cliente
+        // Actualizar cliente
         Cliente clienteModificar = new Cliente(id, nombre, apellido,email,telefono,ndni);
         String mensaje = ClienteDAO.modificarCliente(clienteModificar);
-
+        logger.debug("Datos del cliente modificado con éxito.");
         // Mostrar mensaje de confirmación
         mostrarAlerta("Modificación de usuario", mensaje, Alert.AlertType.INFORMATION);
 
@@ -119,10 +118,9 @@ public class ModClienteController {
         stage.close();
     }
 
-
-
     @FXML
     public void cancelar() {
+        logger.debug("El usuario ha cancelado la operación");
         Stage stage = (Stage) btnCancelar.getScene().getWindow();
         stage.close();
     }

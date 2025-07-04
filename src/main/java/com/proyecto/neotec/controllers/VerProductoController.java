@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
+import org.apache.log4j.Logger;
 public class VerProductoController {
     @FXML
     public Button btnCategoria;
@@ -34,10 +34,8 @@ public class VerProductoController {
     public ToggleButton toggleMarca;
     @FXML
     public TextField txtBuscardor;
-
     @FXML
     private TableView<Producto> tablaProductos;
-
     @FXML
     private TableColumn<Producto, Integer> columna1;
     @FXML
@@ -56,13 +54,11 @@ public class VerProductoController {
     private TableColumn<Producto, String> columna8;
     @FXML
     private TableColumn<Producto, String> columna9;
-
-
     @FXML
     private ObservableList<Producto> producto;
     private ProductosDAO productosDAO;
     private Stage stage;
-
+    private static final Logger logger = Logger.getLogger(VerProductoController.class);
     public Button btnEliminar;
     public Button btnMod;
     public Button btnCrearProducto;
@@ -128,6 +124,7 @@ public class VerProductoController {
 
     }
     private void cargarDatos() {
+        logger.debug("Intento de cargar datos por pantalla");
         producto = FXCollections.observableArrayList();
         // Configurar columnas
         columna1.setCellValueFactory(new PropertyValueFactory<>("idProductos"));
@@ -150,6 +147,7 @@ public class VerProductoController {
     }
 
     public void mostrarCrearProducto(){
+        logger.debug("Intento de mostrar el formulario de creación de productos");
         try {
             // Cargar el archivo FXML del formulario
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/vistas/agregarProducto.fxml"));
@@ -165,7 +163,7 @@ public class VerProductoController {
             stage.showAndWait();
             cargarDatos();
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.error("Error, No se pudo cargar el formulario. Detalles: "+ e.getMessage()+ ". "+ e);
             }
         }
 
@@ -173,9 +171,11 @@ public class VerProductoController {
         Producto productoSeleccionado = tablaProductos.getSelectionModel().getSelectedItem();
 
         if (productoSeleccionado == null) {
+            logger.warn("No se ha seleccionado ningún producto para modificar");
             mostrarAlerta("Selección Incorrecta", "Por favor, selecciona un producto para modificar", Alert.AlertType.INFORMATION);
             return;
         }
+        logger.debug("Intento de cargar el formulario de modificación de productos");
         try {
             // Cargar el archivo FXML del formulario
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/vistas/modificarProducto.fxml"));
@@ -201,35 +201,35 @@ public class VerProductoController {
             // Recargar los datos después de cerrar la ventana
             cargarDatos(); // Asegúrate de que cargarDatos() esté bien implementado
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Error, no se pudo cargar el formulario de modificación. Detalles:"+e.getMessage() + ". "+ e);
         }
     }
-
-
-
 
     public void eliminarProducto(){
         Producto productoSeleccionado = tablaProductos.getSelectionModel().getSelectedItem();
         if (productoSeleccionado==null){
-            mostrarAlerta("Seleccion Incorrecta","Profavor, selecciona un usuario para eliminar", Alert.AlertType.INFORMATION);
+            logger.warn("No se ha seleccionado ningún producto para eliminar");
+            mostrarAlerta("Selección Incorrecta","Por favor, selecciona un usuario para eliminar", Alert.AlertType.INFORMATION);
             return;
         }
+        logger.debug("Intento de eliminar el producto: "+ productoSeleccionado.getNombreProducto() +" con ID:" + productoSeleccionado.getIdProductos());
         //Si seleccionaste un usario proseguimos con el dialogo e informacion
         Alert confirmacion =new Alert(Alert.AlertType.CONFIRMATION);
-        confirmacion.setTitle("Confirmacion de Eliminacion");
-        confirmacion.setHeaderText("¿Estas segurode eliminar el usuario?");
-        confirmacion.setContentText("Esta accion no se puede revertir");
+        confirmacion.setTitle("Confirmación de Eliminación");
+        confirmacion.setHeaderText("¿Estas seguro de eliminar el usuario?");
+        confirmacion.setContentText("Esta acción no se puede revertir");
         ButtonType btnConfirmacion = new ButtonType("Eliminar");//boton de cancelar y cerrar
         ButtonType btnCancelar = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
         //añade a la alerta los botones
         confirmacion.getButtonTypes().setAll(btnConfirmacion,btnCancelar);
         if (confirmacion.showAndWait().orElse(btnCancelar)==btnConfirmacion){
-            //eliminamos el usuario
+            //eliminamos el producto
             ProductosDAO.eliminarProductoSeleccionado(productoSeleccionado);
+            logger.info("Producto eliminado: " + productoSeleccionado.getNombreProducto() + " (ID: " + productoSeleccionado.getIdProductos() + ")");
+        }else {
+            logger.info("El usuario ha decidido cancelar la operación.");
         }
         cargarDatos();
-
-
     }
     private void mostrarAlerta(String titulo, String mensaje, Alert.AlertType tipodealerta) {
         Alert alert = new Alert(tipodealerta);
@@ -241,8 +241,9 @@ public class VerProductoController {
     public void setStage(Stage stage) {
         this.stage = stage;
     }
-
     public void filtrarPorCategoria(ActionEvent actionEvent) {
+        logger.debug("Apertura del diálogo para filtrar productos por categoría");
+
         Dialog<String> dialog = new Dialog<>();
         dialog.setTitle("Seleccionar Estado");
         dialog.setHeaderText("Por favor, elige un estado:");
@@ -256,33 +257,36 @@ public class VerProductoController {
         comboBox.getItems().addAll(productosDAO.obtenerCategorias(estados));
         comboBox.setValue(estados.get(0)); // Preseleccionar el primer estado
 
-        // Agregar el ComboBox al contenido del diálogo
         VBox content = new VBox(10, new Label("Selecciona:"), comboBox);
         dialog.getDialogPane().setContent(content);
 
-        // Agregar botones al diálogo
         ButtonType btnAceptar = new ButtonType("Aceptar", ButtonBar.ButtonData.OK_DONE);
         ButtonType btnCancelar = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
         dialog.getDialogPane().getButtonTypes().addAll(btnAceptar, btnCancelar);
 
-        // Configurar resultado cuando se presiona "Aceptar"
         dialog.setResultConverter(dialogButton ->
                 dialogButton == btnAceptar ? comboBox.getValue() : null
         );
 
-        // Mostrar el diálogo y obtener el resultado
         Optional<String> resultado = dialog.showAndWait();
 
         resultado.ifPresent(estadoSeleccionado -> {
-            if (estadoSeleccionado.equals("Seleccionar todos los Productos")){
+            logger.debug("Categoría seleccionada: " + estadoSeleccionado);
 
-                List<Producto> selectAllProductos= productosDAO.selectAllProductos();
+            if (estadoSeleccionado.equals("Seleccionar todos los Productos")) {
+                List<Producto> selectAllProductos = productosDAO.selectAllProductos();
                 tablaProductos.getItems().setAll(selectAllProductos);
-
-            }else{
-                List<Producto> equiposFiltrados = productosDAO.filtrarPorCategoria(productosDAO.obtenerIDcategorias(estadoSeleccionado));
+                logger.info("Se han cargado todos los productos sin aplicar filtro por categoría");
+            } else {
+                int idCategoria = productosDAO.obtenerIDcategorias(estadoSeleccionado);
+                List<Producto> equiposFiltrados = productosDAO.filtrarPorCategoria(idCategoria);
                 tablaProductos.getItems().setAll(equiposFiltrados);
+                logger.info("Se han filtrado productos por categoría: " + estadoSeleccionado + " (ID: " + idCategoria + ")");
             }
         });
+
+        if (resultado.isEmpty()) {
+            logger.debug("El usuario canceló la selección de categoría");
+        }
     }
 }

@@ -12,7 +12,6 @@ import com.itextpdf.layout.element.Table;
 import com.itextpdf.layout.property.TextAlignment;
 import com.itextpdf.layout.property.UnitValue;
 import com.proyecto.neotec.DAO.ClienteDAO;
-import com.proyecto.neotec.DAO.EquipoDAO;
 import com.proyecto.neotec.DAO.PresupuestoDAO;
 import com.proyecto.neotec.DAO.ProductosDAO;
 import com.proyecto.neotec.models.Equipos;
@@ -32,14 +31,13 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.stage.Stage;
+import org.apache.log4j.Logger;
 
 import java.awt.*;
 import java.io.File;
 import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 
 public class CrearPresupuestoController {
 
@@ -79,103 +77,120 @@ public class CrearPresupuestoController {
     private ObservableList<Producto> productosUtilizados;
     private Stage stage;
     private Equipos equipo;
+    private static Logger logger = Logger.getLogger(CrearClienteController.class);
     @FXML
     public void initialize() {
-        //TODO: Atajo de teclas
+        logger.debug("Inicializando controlador...");
+
         Platform.runLater(() -> {
             Scene scene = btnAgregarLinea.getScene();
             scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
                 if (event.getCode() == KeyCode.ENTER) {
+                    logger.debug("ENTER presionado - Activando btnAgregarLinea");
                     btnAgregarLinea.fire();
-                    event.consume(); // evita que el Enter haga otra acción como saltar de campo
+                    event.consume();
                 }
             });
         });
 
         productosUtilizados = FXCollections.observableArrayList();
         tablaProductos.setItems(productosUtilizados);
+        logger.debug("Tabla de productos vinculada con lista observable");
+
         vincularTabla(); // Configura las columnas correctamente
 
-        // Inicializar el Spinner de cantidad con valores predeterminados
         SpinnerValueFactory<Integer> valueFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 300, 1);
         spCantidad.setValueFactory(valueFactory);
-        // Inicializar el Spinner de cantidad con valores predeterminados
+        logger.debug("Spinner de cantidad inicializado");
+
         SpinnerValueFactory<Integer> valueFactory2 = new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 300, 0);
         spTiempoReparacion.setValueFactory(valueFactory2);
+        logger.debug("Spinner de tiempo de reparación inicializado");
 
-        //Permitir solamente el ingreso de numeros a los campos de costos
         TextFieldSoloNumeros.allowOnlyNumbers(txfManoDeObra);
         TextFieldSoloNumeros.allowOnlyNumbers(txfCostosVariables);
         TextFieldSoloNumeros.allowOnlyNumbers(txfTotalPresupuestado);
+        logger.debug("Restricciones de solo números aplicadas a campos de texto");
 
-        //Agregar un listener para calcular el total en todo momento
         txfManoDeObra.textProperty().addListener((observable, oldValue, newValue) -> {
             calculatTotal();
         });
         txfCostosVariables.textProperty().addListener((observable, oldValue, newValue) -> {
             calculatTotal();
         });
+
+        logger.info("Inicialización completa");
     }
 
     private void vincularTabla() {
-        // Configuración de columnas
+        logger.debug("Configurando columnas de la tabla de productos");
         columnaProducto.setCellValueFactory(new PropertyValueFactory<>("nombreProducto"));
         columnaPrecioUnitario.setCellValueFactory(new PropertyValueFactory<>("precioUnitario"));
         columnaCantidad.setCellValueFactory(new PropertyValueFactory<>("cantidad"));
         columnaTotalLinea.setCellValueFactory(new PropertyValueFactory<>("totalLinea"));
+        logger.info("Columnas de la tabla configuradas");
     }
 
     public void setEquipo(Equipos equipo) {
+        logger.debug("Asignando equipo con ID cliente: "+equipo.getIdcliente());
         this.equipo = equipo;
+
         ClienteDAO cd = new ClienteDAO();
         String nombreCliente = cd.obtenerNombre(equipo.getIdcliente());
+        logger.debug("Nombre del cliente obtenido: "+ nombreCliente);
+
         txfClienteNombre.setText(nombreCliente);
         txfDispositivo.setText(equipo.getDispositivo());
         txaEquipoDescripcion.setText(equipo.getObservaciones());
+
+        logger.info("Datos del equipo cargados en los campos");
     }
 
     public void setStage(Stage stage) {
         this.stage = stage;
     }
 
-
     public void agregarLinea() {
         String codigo = txfCodigo.getText().trim();
+        logger.debug("Intentando agregar un producto a la línea con código: "+codigo);
 
-        // Verificar si el código está vacío
         if (codigo.isEmpty()) {
+            logger.warn("Código de producto vacío al intentar agregar línea");
             MostrarAlerta.mostrarAlerta("Creación de Presupuesto", "Ingrese el código de un producto para agregarlo al presupuesto.", Alert.AlertType.WARNING);
             return;
         }
 
-        // Obtener el producto por código
         ProductosDAO pd = new ProductosDAO();
         Producto productoLinea = pd.obtenerProductoLinea(codigo);
 
-        // Verificar si el producto existe
         if (productoLinea == null || productoLinea.getNombreProducto() == null) {
-            MostrarAlerta.mostrarAlerta("Ventas", "Producto no encontrado.", Alert.AlertType.WARNING);
+            logger.error("Producto no encontrado para el código: "+ codigo);
+            MostrarAlerta.mostrarAlerta("Productos", "Producto no encontrado.", Alert.AlertType.WARNING);
             return;
         }
 
-        // Obtener la cantidad del Spinner
         Integer cantidad = spCantidad.getValue();
+        logger.debug("Cantidad seleccionada: "+cantidad);
+
         if (cantidad == null || cantidad <= 0) {
+            logger.warn("Cantidad inválida: "+ cantidad);
             MostrarAlerta.mostrarAlerta("Creación de Presupuesto", "Ingrese una cantidad válida.", Alert.AlertType.WARNING);
             return;
         }
 
-        // Calcular el total de la línea
         productoLinea.setCantidad(cantidad);
         productoLinea.setTotalLinea(cantidad * productoLinea.getPrecioUnitario());
-
-        // Agregar el producto a la lista y actualizar la tabla
         productosUtilizados.add(productoLinea);
+
+        logger.info("Producto agregado: " + productoLinea.getNombreProducto() + " x " + cantidad + " = " + productoLinea.getTotalLinea());
         calculatTotal();
         txfCodigo.clear();
         txfCodigo.requestFocus();
     }
+
     public void calculatTotal() {
+        logger.debug("Calculando total del presupuesto");
+
         float costosVariables = txfCostosVariables.getText().isEmpty() ? 0 : Float.parseFloat(txfCostosVariables.getText());
         float manoDeObra = txfManoDeObra.getText().isEmpty() ? 0 : Float.parseFloat(txfManoDeObra.getText());
         float totalProductos = 0;
@@ -186,12 +201,14 @@ public class CrearPresupuestoController {
 
         float totalGeneral = totalProductos + manoDeObra + costosVariables;
         txfTotalPresupuestado.setText(String.valueOf(((int) totalGeneral)));
+        logger.info("Total actualizado: Productos = " + totalProductos + ", Mano de Obra = " + manoDeObra + ", Costos Variables = " + costosVariables + ", Total = " + totalGeneral);
     }
 
     public void generarPDF() {
         int respuesta = guardarPresupuesto();
         if (respuesta==-1){
-            MostrarAlerta.mostrarAlerta("Crear Presupuesto","Error al crear el presupuesto, no se generara el PDF", Alert.AlertType.WARNING);
+            logger.error("Error al crear el presupuesto, PDF no generado ");
+            MostrarAlerta.mostrarAlerta("Crear Presupuesto","Error al crear el presupuesto, PDF no generado", Alert.AlertType.WARNING);
             return;
         }
 
@@ -340,10 +357,10 @@ public class CrearPresupuestoController {
 
             document.close();
 
-            System.out.println("✅ Presupuesto generado en: " + destino);
+            logger.debug("Presupuesto Creado exitosamente. El PDF se ha generado con éxito");
 
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Error al crear el PDF. Detalles:" + e.getMessage());
         }
 
         //Abrir el pdf
@@ -357,7 +374,7 @@ public class CrearPresupuestoController {
                 MostrarAlerta.mostrarAlerta("Error", "Error al abrir el archivo", Alert.AlertType.ERROR);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Error, no se ha podido abrir el PDF. Detalles:" + e.getMessage());
         }
     }
     public int guardarPresupuesto() {
@@ -372,6 +389,7 @@ public class CrearPresupuestoController {
         String observaciones = txaObs.getText();
         PresupuestoDAO pd = new PresupuestoDAO();
         int respuesta = pd.insertPresupuesto(spTiempoReparacion.getValue(), costosVariables, manoDeObra, totalGeneral, idequipo, totalProductos, observaciones);
+        logger.debug("El presupuesto con ID: "+ respuesta + " ha sido creado");
         if (respuesta != -1){
             guardarProductosPresupuestos(respuesta);
         }
@@ -380,8 +398,15 @@ public class CrearPresupuestoController {
 
     private void guardarProductosPresupuestos(int idpresupuesto) {
         PresupuestoDAO pd = new PresupuestoDAO();
+        logger.info("Iniciando registro de productos en presupuesto. ID Presupuesto: " + idpresupuesto);
+        int insertados = 0;
         for (Producto p1 : productosUtilizados){
+            int idProducto = p1.getIdProductos();
+            logger.info("Producto insertado en presupuesto. ID Presupuesto: " + idpresupuesto +
+                    ", ID Producto: " + idProducto + ", Cantidad: " + p1.getCantidad());
+            insertados++;
             pd.insertProductoPresupuesto(idpresupuesto,p1.getIdProductos(), p1.getCantidad());
         }
+        logger.debug("Registro de productos en el presupuesto: "+ idpresupuesto+ ". Finalizado");
     }
 }

@@ -1,17 +1,18 @@
 package com.proyecto.neotec.DAO;
 
 import com.proyecto.neotec.bbdd.Database;
-import com.proyecto.neotec.models.Equipos;
 import com.proyecto.neotec.models.Presupuestos;
-
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.log4j.Logger;
 
 public class PresupuestoDAO {
+    private static final Logger logger = Logger.getLogger(PresupuestoDAO.class);
     public int modificarPresupuesto(int idpresupuesto, Integer tiempoEstimado, float costosVariables, float manoDeObra, float totalGeneral, int idequipo, float totalProductos, String observaciones) {
         // Consulta de actualización
+        logger.debug("Intento de ejecutar script de actualización Presupuestos");
         String queryUpdate = "UPDATE presupuestos SET idEquipo = ?, costosVariables = ?, precioTotal = ?, diasEstimados = ?, costoManoDeObra = ?, totalProductos = ?, observaciones = ?, fechaHora = NOW() WHERE idpresupuestos = ?";
 
         int idGenerado = -1; // Variable para guardar el id del presupuesto
@@ -35,14 +36,15 @@ public class PresupuestoDAO {
             if (affectedRows > 0) {
                 // Si se actualizó correctamente, devolver el id del presupuesto
                 idGenerado = idpresupuesto;
-                System.out.println("Presupuesto actualizado exitosamente.");
+                logger.debug("Presupuesto actualizado correctamente con ID: "+ idGenerado);
             } else {
                 // Si no se afectaron filas, el presupuesto no fue encontrado
-                System.out.println("No se encontró el presupuesto para actualizar.");
+                logger.debug("El Presupuesto no fue encontrado");
             }
 
         } catch (SQLException e) {
             Database.handleSQLException(e);
+            logger.error("Ha ocurrido una excepción al intentar actualizar los presupuestos. Detalles:"+e);
         }
 
         return idGenerado; // Devolver el id del presupuesto que fue actualizado (el mismo id)
@@ -67,11 +69,14 @@ public class PresupuestoDAO {
     }
 
     public int insertPresupuesto(int tiempoEstimado, float costoVariable, float costoManoObra, float totalGeneral, int idEquipo, float totalProductos, String obs) {
+        logger.debug("Intento de inserción de Presupuesto");
         String query = "INSERT INTO presupuestos (idEquipo, costosVariables, precioTotal, diasEstimados, costoManoDeObra, totalProductos, observaciones, estado, fechaHora) VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW())";
         int IDgenerado = -1;
 
         try (Connection conn = Database.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
+
+            // Establecer parámetros
             pstmt.setInt(1, idEquipo);
             pstmt.setFloat(2, costoVariable);
             pstmt.setFloat(3, totalGeneral);
@@ -81,39 +86,53 @@ public class PresupuestoDAO {
             pstmt.setString(7, obs);
 
             int affectedRows = pstmt.executeUpdate();
+
             if (affectedRows > 0) {
                 try (ResultSet rs = pstmt.getGeneratedKeys()) {
                     if (rs.next()) {
                         IDgenerado = rs.getInt(1);
+                        logger.debug("Presupuesto insertado correctamente con ID: " + IDgenerado);
                     }
                 }
+            } else {
+                logger.warn("No se insertó ningún registro en la tabla presupuestos");
             }
+
         } catch (SQLException e) {
-            Database.handleSQLException(e);
+            logger.error("Error al insertar presupuesto", e); // loguea stacktrace
+            Database.handleSQLException(e); // adicional si querés log separado por clase
         }
+
+        // Cambio de estado del equipo
         EquipoDAO cambiarestadoEquipo = new EquipoDAO();
-        //Se cambia al equipo al estado Espera autorización:
-        cambiarestadoEquipo.actualizarEstadoEquipo(idEquipo,3);
+        logger.debug("Cambiando estado del equipo con ID: " + idEquipo + " a estado: 3 (Espera autorización)");
+        cambiarestadoEquipo.actualizarEstadoEquipo(idEquipo, 3);
+
         return IDgenerado;
     }
 
 
-    public void insertProductoPresupuesto (int idPresupuesto, int idProductos, int cantidadUtilizada) {
+
+    public void insertProductoPresupuesto(int idPresupuesto, int idProductos, int cantidadUtilizada) {
+        logger.debug("Intento de insertar producto en presupuesto. IDpresupuesto: " + idPresupuesto + ", IDproducto: " + idProductos + ", Cantidad: " + cantidadUtilizada);
         String query = "INSERT INTO productopresupuesto (IDpresupuestos, IDproductos, cantidadUtilizada) VALUES(?, ?, ?)";
         try (Connection conn = Database.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(query);
-        ){
-            stmt.setInt(1,idPresupuesto);
-            stmt.setInt(2,idProductos);
-            stmt.setInt(3,cantidadUtilizada);
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+
+            stmt.setInt(1, idPresupuesto);
+            stmt.setInt(2, idProductos);
+            stmt.setInt(3, cantidadUtilizada);
             stmt.executeUpdate();
-        }catch (SQLException e){
+
+            logger.debug("Producto agregado al Presupuesto correctamente");
+
+        } catch (SQLException e) {
+            logger.error("Error al insertar producto en presupuesto", e);
             Database.handleSQLException(e);
         }
-        System.out.println("llega al dao");
     }
-
     public List<Presupuestos> selectAllPresupuestos() {
+        logger.debug("Inicio de la consulta para obtener todos los presupuestos");
         List<Presupuestos> listaPresupuestos = new ArrayList<>();
         String sql= "SELECT * FROM presupuestos";
         try(Connection conn= Database.getConnection();
@@ -142,9 +161,12 @@ public class PresupuestoDAO {
                 presupuestos.setTotalProductos(rs.getFloat("totalProductos"));
                 presupuestos.setObservaciones(rs.getString("observaciones"));
                 listaPresupuestos.add(presupuestos);
+                logger.debug("Presupuesto cargado con ID: " + presupuestos.getIdpresupuesto());
             }
+            logger.debug("Total de presupuestos obtenidos: " + listaPresupuestos.size());
 
         }catch(SQLException e){
+            logger.error("Error al consultar todos los presupuestos", e);
             Database.handleSQLException(e);
         }
         return listaPresupuestos;
@@ -172,9 +194,8 @@ public class PresupuestoDAO {
         }
         return fechaHora; // Retorna null si no se encuentra el presupuesto
     }
-
-
     public boolean verificarProductoPresupuesto(int idPresupuesto, int idProducto) {
+        logger.debug("Verificando si el producto con ID: " + idProducto + " ya está asociado al presupuesto ID: " + idPresupuesto);
         String sql = "SELECT COUNT(*) FROM productopresupuesto WHERE IDpresupuestos = ? AND IDproductos = ?";
 
         try (Connection connection = Database.getConnection();
@@ -185,17 +206,22 @@ public class PresupuestoDAO {
 
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next() && rs.getInt(1) > 0) {
+                    logger.debug("El producto ya está asociado al presupuesto");
                     return true; // El producto ya existe en el presupuesto
+                } else {
+                    logger.debug("El producto no está asociado al presupuesto");
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace(); // Manejo del error
+            logger.error("Error al verificar producto en presupuesto", e);
+            Database.handleSQLException(e);
         }
 
         return false; // No se encontró el producto en el presupuesto
     }
 
     public void cambiarEstadoPresupuesto(Presupuestos presupuesto, int estadoSeleccionado) {
+        logger.debug("Intentando cambiar el estado del presupuesto con ID: " + presupuesto.getIdpresupuesto() + " al estado: " + estadoSeleccionado);
 
         String query = "UPDATE presupuestos SET estado = ? WHERE idpresupuestos = ?";
 
@@ -208,17 +234,20 @@ public class PresupuestoDAO {
             int filasAfectadas = stmt.executeUpdate();
 
             if (filasAfectadas > 0) {
-                System.out.println("Estado del presupuesto actualizado correctamente.");
+                logger.debug("Estado del presupuesto actualizado correctamente");
             } else {
-                System.out.println("No se encontró el presupuesto con ID: " + presupuesto.getIdpresupuesto());
+                logger.warn("No se encontró el presupuesto con ID: " + presupuesto.getIdpresupuesto());
             }
 
         } catch (SQLException e) {
+            logger.error("Error al cambiar el estado del presupuesto", e);
             Database.handleSQLException(e);
         }
     }
 
     public int obtenerEstadoIntDesdeBD(String descripcion) {
+        logger.debug("Buscando ID del estado con descripción: " + descripcion);
+
         String query = "SELECT idestadospresupuestos FROM estadospresupuestos WHERE descripcion = ?";
 
         try (Connection conn = Database.getConnection();
@@ -228,16 +257,25 @@ public class PresupuestoDAO {
 
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    return rs.getInt("idestadospresupuestos");
+                    int idEstado = rs.getInt("idestadospresupuestos");
+                    logger.debug("ID del estado encontrado: " + idEstado);
+                    return idEstado;
+                } else {
+                    logger.warn("No se encontró ningún estado con la descripción: " + descripcion);
                 }
             }
         } catch (SQLException e) {
+            logger.error("Error al obtener el ID del estado desde la base de datos", e);
             Database.handleSQLException(e);
         }
+
         return -1; // Estado no encontrado
     }
 
+
     public String obtenerDescripcionEstadoDesdeBD(int idEstado) {
+        logger.debug("Buscando descripción del estado con ID: " + idEstado);
+
         String query = "SELECT descripcion FROM estadospresupuestos WHERE idestadospresupuestos = ?";
 
         try (Connection conn = Database.getConnection();
@@ -247,16 +285,22 @@ public class PresupuestoDAO {
 
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    return rs.getString("descripcion");
+                    String descripcion = rs.getString("descripcion");
+                    logger.debug("Descripción del estado encontrada: " + descripcion);
+                    return descripcion;
+                } else {
+                    logger.warn("No se encontró ninguna descripción para el estado con ID: " + idEstado);
                 }
             }
         } catch (SQLException e) {
+            logger.error("Error al obtener la descripción del estado desde la base de datos", e);
             Database.handleSQLException(e);
         }
         return "Desconocido"; // ID no válido
     }
 
     public boolean verificarEstadoPresupuesto(Presupuestos pr, int estadoEsperado) {
+        logger.debug("Verificando si el presupuesto con ID: " + pr.getIdpresupuesto() + " tiene estado esperado: " + estadoEsperado);
         String sql = "SELECT estado FROM presupuestos WHERE idpresupuestos = ?";
 
         try (Connection conn = Database.getConnection();
@@ -267,16 +311,21 @@ public class PresupuestoDAO {
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     int estadoActual = rs.getInt("estado");
+                    logger.debug("Estado actual del presupuesto: " + estadoActual);
                     return estadoActual == estadoEsperado;
+                } else {
+                    logger.warn("No se encontró el presupuesto con ID: " + pr.getIdpresupuesto());
                 }
             }
         } catch (SQLException e) {
+            logger.error("Error al verificar estado del presupuesto", e);
             Database.handleSQLException(e);
         }
 
         return false; // Si no se encontró el presupuesto o hubo error
     }
     public boolean verificarEstadoPagado(int idPresupuesto) {
+        logger.debug("Verificando si el presupuesto con ID: " + idPresupuesto + " tiene estado 'Pagado' (estado = 4)");
         String sql = "SELECT 1 FROM presupuestos WHERE idpresupuestos = ? AND estado = 4 LIMIT 1";
 
         try (Connection conn = Database.getConnection();
@@ -284,10 +333,18 @@ public class PresupuestoDAO {
 
             stmt.setInt(1, idPresupuesto);
             ResultSet rs = stmt.executeQuery();
-            return rs.next();
+
+            if (rs.next()) {
+                logger.debug("El presupuesto con ID: " + idPresupuesto + " tiene estado 'Pagado'");
+                return true;
+            } else {
+                logger.debug("El presupuesto con ID: " + idPresupuesto + " no tiene estado 'Pagado'");
+                return false;
+            }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Error al verificar si el presupuesto está pagado", e);
+            Database.handleSQLException(e);
             return false;
         }
     }
@@ -299,12 +356,17 @@ public class PresupuestoDAO {
 
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
+            logger.info("Preparando consulta de presupuestos para fecha: " + fechaFormateada);
             // Buscar presupuestos creados estableciendo un rango de fecha y hora
             stmt.setString(1, fechaFormateada + " 00:00:00");
             stmt.setString(2, fechaFormateada + " 23:59:59");
+            logger.debug("Parámetros de consulta: fechaInicio=" + fechaFormateada + " 00:00:00, fechaFin=" + fechaFormateada + " 23:59:59");
 
             try (ResultSet rs = stmt.executeQuery()) {
+                logger.info("Ejecutando consulta de presupuestos");
+                int contador = 0;
                 while (rs.next()) {
+                    contador++;
                     presupuesto = new Presupuestos();
                     ClienteDAO clienteDAO = new ClienteDAO();
                     EquipoDAO equipoDAO = new EquipoDAO();
@@ -320,15 +382,19 @@ public class PresupuestoDAO {
                     presupuesto.setTotalProductos(rs.getFloat("totalProductos"));
                     presupuesto.setFechaHora(rs.getString("fechaHora"));
                     presupuestos.add(presupuesto);
+                    logger.debug("Presupuesto #" + contador + " cargado: ID=" + rs.getInt("idpresupuestos") +
+                            ", Equipo=" + rs.getInt("idEquipo") +
+                            ", Estado=" + rs.getInt("estado"));
                 }
+                logger.info("Total de presupuestos encontrados: " + contador);
             }
         } catch (SQLException e) {
+            logger.error("Error al buscar presupuestos por fecha: " + e.getMessage());
             Database.handleSQLException(e);
         }
 
         return presupuestos;
     }
-
     public List<Presupuestos> buscarPresupuestosPorNombreDeEquipo(String nombreParcial) {
         List<Presupuestos> lista = new ArrayList<>();
         String query = "SELECT p.* FROM presupuestos p " +
@@ -337,11 +403,15 @@ public class PresupuestoDAO {
 
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
-
+            logger.info("Iniciando búsqueda de presupuestos para equipo: " + nombreParcial);
             stmt.setString(1, "%" + nombreParcial + "%");
+            logger.debug("Parámetro de búsqueda SQL: %" + nombreParcial + "%");
 
             try (ResultSet rs = stmt.executeQuery()) {
+                logger.info("Ejecutando consulta de presupuestos por nombre de equipo");
+                int contador = 0;
                 while (rs.next()) {
+                    contador++;
                     Presupuestos presupuesto = new Presupuestos();
 
                     EquipoDAO equipoDAO = new EquipoDAO();
@@ -364,15 +434,20 @@ public class PresupuestoDAO {
                             )
                     );
                     lista.add(presupuesto);
+                    logger.debug("Presupuesto encontrado #" + contador +
+                            " | ID: " + rs.getInt("idpresupuestos") +
+                            " | Equipo: " + presupuesto.getEquipo() +
+                            " | Estado: " + rs.getInt("estado"));
                 }
+                logger.info("Total de presupuestos encontrados: " + contador);
             }
         } catch (SQLException e) {
+            logger.error("Error en buscarPresupuestosPorNombreDeEquipo: " + e.getMessage());
             Database.handleSQLException(e);
         }
 
         return lista;
     }
-
     public List<Presupuestos> buscarPresupuestosPorNombreCliente(String nombreParcial) {
         List<Presupuestos> lista = new ArrayList<>();
         String query = "SELECT p.*, e.dispositivo, c.nombre, c.apellido " +
@@ -384,12 +459,17 @@ public class PresupuestoDAO {
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
 
+            logger.info("Iniciando búsqueda de presupuestos para cliente: '" + nombreParcial + "'");
             String likePattern = "%" + nombreParcial + "%";
             stmt.setString(1, likePattern);
             stmt.setString(2, likePattern);
+            logger.debug("Parámetros de búsqueda SQL: [" + likePattern + ", " + likePattern + "]");
 
             try (ResultSet rs = stmt.executeQuery()) {
+                logger.info("Ejecutando consulta de presupuestos por nombre de cliente");
+                int contador = 0;
                 while (rs.next()) {
+                    contador++;
                     Presupuestos presupuesto = new Presupuestos();
 
                     presupuesto.setIdpresupuesto(rs.getInt("idpresupuestos"));
@@ -409,15 +489,20 @@ public class PresupuestoDAO {
                     presupuesto.setPropietario(nombreCompleto);
 
                     lista.add(presupuesto);
+                    logger.debug("Presupuesto #" + contador +
+                            " encontrado | ID: " + presupuesto.getIdpresupuesto() +
+                            " | Cliente: " + nombreCompleto +
+                            " | Equipo: " + presupuesto.getEquipo());
                 }
+                logger.info("Total de presupuestos encontrados: " + contador);
             }
         } catch (SQLException e) {
+            logger.error("Error al buscar presupuestos por nombre de cliente: " + e.getMessage());
             Database.handleSQLException(e);
         }
 
         return lista;
     }
-
     public List<Presupuestos> obtenerPresupuestosPorIdEquipo(int idEquipo) {
         List<Presupuestos> listaPresupuestos = new ArrayList<>();
         String query = "SELECT * FROM presupuestos WHERE idEquipo = ?";
@@ -425,10 +510,16 @@ public class PresupuestoDAO {
         try (Connection con = Database.getConnection();
              PreparedStatement stmt = con.prepareStatement(query)) {
 
+            logger.info("Buscando presupuestos para equipo ID: " + idEquipo);
             stmt.setInt(1, idEquipo);
+            logger.debug("Parámetro de consulta - idEquipo: " + idEquipo);
+
             ResultSet rs = stmt.executeQuery();
+            logger.info("Consulta ejecutada para obtener presupuestos del equipo");
+            int contador = 0;
 
             while (rs.next()) {
+                contador++;
                 Presupuestos pr = new Presupuestos();
                 pr.setIdpresupuesto(rs.getInt("idpresupuestos"));
                 pr.setIdEquipo(rs.getInt("idEquipo"));
@@ -441,15 +532,22 @@ public class PresupuestoDAO {
                 pr.setTotalProductos(rs.getFloat("totalProductos"));
                 pr.setFechaHora(rs.getString("fechaHora"));
                 listaPresupuestos.add(pr);
+
+                logger.debug("Presupuesto encontrado #" + contador +
+                        " | ID: " + pr.getIdpresupuesto() +
+                        " | Estado: " + pr.getEstado() +
+                        " | Precio Total: " + pr.getPrecioTotal());
             }
 
+            logger.info("Total de presupuestos encontrados para el equipo: " + contador);
+
         } catch (SQLException e) {
+            logger.error("Error al obtener presupuestos por ID de equipo: " + e.getMessage());
             Database.handleSQLException(e);
         }
 
         return listaPresupuestos;
     }
-
     public Presupuestos obtenerPresupuestoPorId(int idPresupuesto) {
         String query = "SELECT * FROM presupuestos WHERE idpresupuestos = ?";
         Presupuestos pr = null;
@@ -457,8 +555,12 @@ public class PresupuestoDAO {
         try (Connection con = Database.getConnection();
              PreparedStatement stmt = con.prepareStatement(query)) {
 
+            logger.info("Buscando presupuesto con ID: " + idPresupuesto);
             stmt.setInt(1, idPresupuesto);
+            logger.debug("Parámetro de consulta - idPresupuesto: " + idPresupuesto);
+
             ResultSet rs = stmt.executeQuery();
+            logger.info("Consulta ejecutada para obtener presupuesto por ID");
 
             if (rs.next()) {
                 pr = new Presupuestos();
@@ -472,15 +574,22 @@ public class PresupuestoDAO {
                 pr.setObservaciones(rs.getString("observaciones"));
                 pr.setTotalProductos(rs.getFloat("totalProductos"));
                 pr.setFechaHora(rs.getString("fechaHora"));
+
+                logger.info("Presupuesto encontrado - ID: " + pr.getIdpresupuesto() +
+                        " | Equipo ID: " + pr.getIdEquipo() +
+                        " | Estado: " + pr.getEstado() +
+                        " | Precio Total: $" + pr.getPrecioTotal());
+            } else {
+                logger.warn("No se encontró presupuesto con ID: " + idPresupuesto);
             }
 
         } catch (SQLException e) {
+            logger.error("Error al obtener presupuesto por ID: " + e.getMessage());
             Database.handleSQLException(e);
         }
 
         return pr;
     }
-
     public List<Presupuestos> filtrarPorEstadoPresupuesto(int estado) {
         List<Presupuestos> listaPresupuestos = new ArrayList<>();
         String query = "SELECT " +
@@ -496,10 +605,15 @@ public class PresupuestoDAO {
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
 
+            logger.info("Filtrando presupuestos por estado: " + estado);
             stmt.setInt(1, estado);
+
             ResultSet rs = stmt.executeQuery();
+            logger.info("Ejecutando consulta de presupuestos por estado");
+            int contador = 0;
 
             while (rs.next()) {
+                contador++;
                 Presupuestos presupuestos = new Presupuestos();
                 presupuestos.setIdpresupuesto(rs.getInt("idpresupuestos"));
                 presupuestos.setEstado(rs.getInt("estado"));
@@ -518,13 +632,21 @@ public class PresupuestoDAO {
                 presupuestos.setPropietario(propietario);
 
                 listaPresupuestos.add(presupuestos);
+
+                logger.debug("Presupuesto #" + contador +
+                        " | ID: " + presupuestos.getIdpresupuesto() +
+                        " | Cliente: " + propietario +
+                        " | Equipo: " + presupuestos.getEquipo() +
+                        " | Estado: " + presupuestos.getEstado());
             }
 
+            logger.info("Total de presupuestos encontrados con estado " + estado + ": " + contador);
+
         } catch (SQLException e) {
-            e.printStackTrace(); // Mejorar manejo de errores en producción
+            logger.error("Error al filtrar presupuestos por estado " + estado + ": " + e.getMessage(), e);
+            Database.handleSQLException(e);
         }
 
         return listaPresupuestos;
     }
-
 }

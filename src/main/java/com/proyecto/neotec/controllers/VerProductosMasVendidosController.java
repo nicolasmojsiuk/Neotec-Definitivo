@@ -4,7 +4,7 @@ import com.proyecto.neotec.DAO.ProductosDAO;
 import com.proyecto.neotec.models.Producto;
 import com.proyecto.neotec.models.Categoria;
 import com.proyecto.neotec.util.MostrarAlerta;
-import javafx.application.Platform;
+
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -18,8 +18,10 @@ import javafx.scene.layout.GridPane;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import org.apache.log4j.Logger;
 
 public class VerProductosMasVendidosController {
+    private static Logger logger = Logger.getLogger(VerProductosMasVendidosController.class);
     @FXML
     private TableView<Producto> tablaRanking;
     @FXML
@@ -42,7 +44,6 @@ public class VerProductosMasVendidosController {
     private RadioButton rbIngresosBrutos1;
     @FXML
     private RadioButton rbUnidades1;
-
     @FXML
     private RadioButton rbIngresosBrutos;
     @FXML

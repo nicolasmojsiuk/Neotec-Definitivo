@@ -8,8 +8,11 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.input.KeyEvent;
 import javafx.stage.Stage;
+import org.apache.log4j.Logger;
+
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
+
 
 public class CrearClienteController {
     @FXML
@@ -24,6 +27,7 @@ public class CrearClienteController {
     private TextField txfEmail;
     @FXML
     private TextField txfTelefono;
+    private static final Logger logger = Logger.getLogger(CrearClienteController.class);
 
     @FXML
     public void initialize() {
@@ -63,22 +67,40 @@ public class CrearClienteController {
             mostrarAlerta("Error", "Por favor, ingrese un correo electrónico válido.", Alert.AlertType.WARNING);
             return;
         }
+        try {
+            int ndni = Integer.parseInt(dni);
 
-        //convertir dni en un int
-        int ndni;
-        ndni = Integer.parseInt(dni);
+            Cliente nuevoCliente = new Cliente(nombre, apellido, email, telefono, ndni);
+            String mensaje = ClienteDAO.crearCliente(nuevoCliente);
+            logger.debug("Cliente creado con éxito - Nombre: " + nombre + ", Apellido: " + apellido + ", DNI: " + ndni);
 
-        Cliente clientenuevo = new Cliente(nombre, apellido, email, telefono, ndni);
+            mostrarAlerta("Creación de Cliente", mensaje, Alert.AlertType.INFORMATION);
 
-        String mensaje = ClienteDAO.crearCliente(clientenuevo);
+        } catch (NumberFormatException e) {
+            logger.error("Error de formato, Cliente no Creado. Detalle: " + e.getMessage());
 
-        mostrarAlerta("Creacion De cliente", mensaje, Alert.AlertType.INFORMATION);
-
+            mostrarAlerta(
+                    "Error de Formato",
+                    "El valor ingresado para el DNI no es válido o es demasiado grande.",
+                    Alert.AlertType.ERROR
+            );
+            return;
+        } catch (Exception e) {
+            logger.error("Error al Crear al Cliente Detalle: " + e.getMessage());
+            mostrarAlerta(
+                    "Error al Crear Cliente",
+                    "No se pudo crear el cliente. Inténtelo de nuevo.",
+                    Alert.AlertType.ERROR
+            );
+        }
+        // Cerrar ventana
         Stage stage = (Stage) btnCancelar.getScene().getWindow();
         stage.close();
+
     }
 
     public void cancelar() {
+        logger.debug("Operación cancelada por el usuario.");
         Stage stage = (Stage) btnCancelar.getScene().getWindow();
         stage.close();
     }

@@ -5,7 +5,6 @@ import com.proyecto.neotec.util.BloquearLogin;
 import com.proyecto.neotec.util.SesionUsuario;
 import com.proyecto.neotec.util.TextFieldSoloNumeros;
 import com.proyecto.neotec.util.VolverPantallas;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Rectangle2D;
@@ -17,8 +16,10 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
-
 import java.io.IOException;
+import org.apache.log4j.Logger;
+
+import static com.proyecto.neotec.util.MostrarAlerta.mostrarAlerta;
 
 public class LoginController {
     @FXML
@@ -31,6 +32,7 @@ public class LoginController {
     // Inicializo el contador de intentos en 5
     private int intentos = 5;
     private int minutosBloqueo = 0;
+    private static final Logger logger = Logger.getLogger(LoginController.class);
 
     @FXML
     public void initialize() {
@@ -65,6 +67,9 @@ public class LoginController {
         try {
             dni = Integer.parseInt(txfUsuario.getText());
         } catch (NumberFormatException e) {
+
+            logger.warn("Intento de login con DNI inválido: " + txfUsuario.getText());
+
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("Inicio de Sesión");
             alert.setHeaderText("Datos inválidos");
@@ -81,6 +86,7 @@ public class LoginController {
             FXMLLoader loader = new FXMLLoader();
 
             if (!UsuarioDAO.verificarActivo(dni)){
+                logger.warn("Intento de login con usuario inactivo. DNI: " + dni);
                 // Si devuelve false, informo que las credenciales son inválidas y resto intentos
                 intentos--;
                 Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -103,20 +109,31 @@ public class LoginController {
             }
 
             // Cargar la vista correspondiente
-            Parent root = loader.load();
-            Scene escena = new Scene(root);
-            Stage primaryStage = (Stage) txfUsuario.getScene().getWindow();
-            primaryStage.setScene(escena);
-            primaryStage.setTitle("Neotec Multiplayer");
+            try {
+                Parent root = loader.load();
+                Scene escena = new Scene(root);
+                Stage primaryStage = (Stage) txfUsuario.getScene().getWindow();
+                primaryStage.setScene(escena);
+                primaryStage.setTitle("Neotec Multiplayer");
 
-            // Centrar la ventana en la pantalla
-            Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();
-            primaryStage.setX((screenBounds.getWidth() - primaryStage.getWidth()) / 2);
-            primaryStage.setY((screenBounds.getHeight() - primaryStage.getHeight()) / 2);
-            primaryStage.show();
+                Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();
+                primaryStage.setX((screenBounds.getWidth() - primaryStage.getWidth()) / 2);
+                primaryStage.setY((screenBounds.getHeight() - primaryStage.getHeight()) / 2);
+                primaryStage.show();
+
+                SesionUsuario.setUsuarioLogueado(UsuarioDAO.obtenerUsuarioPorDni(dni));
+                UsuarioDAO.actualizarUltimoAcceso(dni);
+
+                logger.info("Inicio de sesión exitoso para el usuario con DNI: " + dni);
+
+            } catch (IOException e) {
+                logger.error("Error al cargar la vista luego de login para DNI: " + dni, e);
+                mostrarAlerta("Error", "No se pudo cargar la interfaz.", Alert.AlertType.ERROR);
+            }
 
         } else {
             // Si devuelve false, informo que las credenciales son inválidas y resto intentos
+            logger.warn("Intento fallido de login. Credenciales invalidas. DNI: " + dni + " | Intentos restantes: " + intentos);
             intentos--;
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("Inicio de Sesión");
@@ -125,6 +142,7 @@ public class LoginController {
             alert.showAndWait();
 
             if (intentos == 0) {
+                logger.error("Intento fallido de login. DNI: " + dni + " | Intentos restantes: " + intentos);
                 minutosBloqueo = 10;
                 alert.setTitle("Inicio de Sesión");
                 alert.setHeaderText("Ya no quedan intentos");

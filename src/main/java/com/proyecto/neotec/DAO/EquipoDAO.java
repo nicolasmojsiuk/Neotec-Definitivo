@@ -7,8 +7,9 @@ import com.proyecto.neotec.models.Equipos;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
-
+import org.apache.log4j.Logger;
 public class EquipoDAO {
+    private static final Logger logger = Logger.getLogger(EquipoDAO.class);
     public List<Equipos> selectAllEquipos() {
         List<Equipos> equipos = new ArrayList<>();
         String sql = "SELECT idequipos, idclientes, estado, observaciones,dispositivo,activo, fechaIngreso, fechaModificacion,fechaSalida FROM equipos";
@@ -17,7 +18,11 @@ public class EquipoDAO {
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
 
+            logger.info("Iniciando consulta para obtener todos los equipos");
+            int contador = 0;
+
             while (rs.next()) {
+                contador++;
                 Equipos equipo = new Equipos();
                 equipo.setId(rs.getInt("idequipos"));
                 equipo.setIdcliente(rs.getInt("idclientes"));
@@ -25,38 +30,40 @@ public class EquipoDAO {
                 equipo.setObservaciones(rs.getString("observaciones"));
                 equipo.setDispositivo(rs.getString("dispositivo"));
                 equipo.setActivo(rs.getInt("activo"));
-                Timestamp fechaIngresoTimestamp = rs.getTimestamp("fechaIngreso");
-                String fechaIngreso;
-                if (fechaIngresoTimestamp != null) {
-                    fechaIngreso = String.valueOf(fechaIngresoTimestamp.toLocalDateTime());
-                } else {
-                    fechaIngreso = "-";
-                }
 
+                // Procesamiento de fechas
+                Timestamp fechaIngresoTimestamp = rs.getTimestamp("fechaIngreso");
+                String fechaIngreso = (fechaIngresoTimestamp != null) ?
+                        String.valueOf(fechaIngresoTimestamp.toLocalDateTime()) : "-";
                 equipo.setFechaIngreso(fechaIngreso);
 
                 Timestamp fechaModificacionTimestamp = rs.getTimestamp("fechaModificacion");
-                String fechaModificacion;
-                if (fechaModificacionTimestamp != null) {
-                    fechaModificacion = String.valueOf(fechaModificacionTimestamp.toLocalDateTime());
-                } else {
-                    fechaModificacion = "-";  // O cualquier valor por defecto
-                }
+                String fechaModificacion = (fechaModificacionTimestamp != null) ?
+                        String.valueOf(fechaModificacionTimestamp.toLocalDateTime()) : "-";
                 equipo.setFechaModificacion(fechaModificacion);
 
                 Timestamp fechaSalidaTimestamp = rs.getTimestamp("fechaSalida");
-                String fechaSalida;
-                if (fechaSalidaTimestamp != null) {
-                    fechaSalida = String.valueOf(fechaModificacionTimestamp.toLocalDateTime());
-                } else {
-                    fechaSalida = "-";  // O cualquier valor por defecto
-                }
+                String fechaSalida = (fechaSalidaTimestamp != null) ?
+                        String.valueOf(fechaSalidaTimestamp.toLocalDateTime()) : "-";
                 equipo.setFechaSalida(fechaSalida);
+
                 equipos.add(equipo);
+
+                logger.debug("Equipo #" + contador +
+                        " | ID: " + equipo.getId() +
+                        " | Dispositivo: " + equipo.getDispositivo() +
+                        " | Estado: " + equipo.getEstado() +
+                        " | Cliente ID: " + equipo.getIdcliente());
             }
+
+            logger.info("Total de equipos encontrados: " + contador);
+
         } catch (SQLException e) {
+            logger.error("Error al obtener todos los equipos: " + e.getMessage());
             Database.handleSQLException(e);
         }
+
+        logger.info("Retornando lista de equipos. Cantidad: " + equipos.size());
         return equipos;
     }
 
@@ -64,6 +71,12 @@ public class EquipoDAO {
         String sql = "INSERT INTO equipos (idclientes,dispositivo,estado,observaciones,activo,img1,img2,img3,img4,fechaIngreso) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            logger.info("Iniciando inserción de nuevo equipo con imágenes");
+            logger.debug("Datos del equipo: " +
+                    "ClienteID=" + equipos.getIdcliente() +
+                    ", Dispositivo=" + equipos.getDispositivo() +
+                    ", Estado=" + equipos.getEstado());
 
             stmt.setInt(1, equipos.getIdcliente());
             stmt.setString(2, equipos.getDispositivo());
@@ -74,28 +87,62 @@ public class EquipoDAO {
             stmt.setString(7, equipos.getImg2());
             stmt.setString(8, equipos.getImg3());
             stmt.setString(9, equipos.getImg4());
-            stmt.executeUpdate();
-            return true;
+
+            int filasAfectadas = stmt.executeUpdate();
+            if (filasAfectadas > 0) {
+                logger.info("Equipo insertado correctamente. Filas afectadas: " + filasAfectadas);
+                logger.debug("Imágenes asociadas: " +
+                        (equipos.getImg1() != null ? "[Img1]" : "") +
+                        (equipos.getImg2() != null ? "[Img2]" : "") +
+                        (equipos.getImg3() != null ? "[Img3]" : "") +
+                        (equipos.getImg4() != null ? "[Img4]" : ""));
+                return true;
+            } else {
+                logger.error("No se ha insertado ningún equipo");
+            }
 
         } catch (SQLException e) {
+            logger.error("Error al insertar equipo con imágenes: " + e.getMessage());
+            logger.debug("Detalle del error: ", e);
             Database.handleSQLException(e);
-            return false; // Retornar false si hubo una excepción
         }
+
+        return false;
     }
 
-    public boolean ModificarEquipo(Equipos equipos){
-        String sql = "UPDATE equipos SET idclientes = ?, dispositivo = ?, estado = ?, observaciones = ?, activo = ?,  fechaModificacion = now() WHERE idequipos = ?";
+
+    public boolean ModificarEquipo(Equipos equipos) {
+        String sql = "UPDATE equipos SET idclientes = ?, dispositivo = ?, estado = ?, observaciones = ?, activo = ?, fechaModificacion = now() WHERE idequipos = ?";
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            logger.info("Iniciando modificación del equipo ID: " + equipos.getId());
+            logger.debug("Datos a actualizar: " +
+                    "ClienteID=" + equipos.getIdcliente() +
+                    ", Dispositivo='" + equipos.getDispositivo() + "'" +
+                    ", Estado=" + equipos.getEstado() +
+                    ", Activo=" + equipos.getActivo());
+
             stmt.setInt(1, equipos.getIdcliente());
             stmt.setString(2, equipos.getDispositivo());
             stmt.setInt(3, equipos.getEstado());
             stmt.setString(4, equipos.getObservaciones());
             stmt.setInt(5, equipos.getActivo());
             stmt.setInt(6, equipos.getId());
-            stmt.executeUpdate();
-            return true;
+
+            int filasActualizadas = stmt.executeUpdate();
+
+            if (filasActualizadas > 0) {
+                logger.info("Equipo ID: " + equipos.getId() + " actualizado correctamente. Filas afectadas: " + filasActualizadas);
+                return true;
+            } else {
+                logger.warn("No se encontró el equipo ID: " + equipos.getId() + " para actualizar");
+                return false;
+            }
+
         } catch (SQLException e) {
+            logger.error("Error al modificar equipo ID: " + equipos.getId() + " - " + e.getMessage());
+            logger.debug("Detalle del error:", e);
             Database.handleSQLException(e);
             return false;
         }
@@ -104,55 +151,74 @@ public class EquipoDAO {
     // Método para obtener las imágenes desde la base de datos y devolver una lista de rutas
     public List<String> obtenerImagenes(Equipos equipo) {
         List<String> rutasImagenes = new ArrayList<>();
-
-        // Consulta SQL para obtener las imágenes
         String sql = "SELECT img1, img2, img3, img4 FROM equipos WHERE idequipos = ?";
 
-        // Obtener conexión de la base de datos
         try (Connection connection = Database.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            // Establecer el id del equipo en la consulta
+            logger.info("Obteniendo imágenes para equipo ID: " + equipo.getId());
             statement.setInt(1, equipo.getId());
 
-            // Ejecutar la consulta y obtener el resultado
             ResultSet resultSet = statement.executeQuery();
+            logger.debug("Consulta ejecutada para obtener imágenes del equipo");
 
             if (resultSet.next()) {
-                // Obtener las rutas de las imágenes de los campos de la base de datos
                 String img1 = resultSet.getString("img1");
                 String img2 = resultSet.getString("img2");
                 String img3 = resultSet.getString("img3");
                 String img4 = resultSet.getString("img4");
 
-                // Agregar las rutas de las imágenes a la lista si no son nulas
-                if (img1 != null && !img1.isEmpty()) rutasImagenes.add(img1);
-                if (img2 != null && !img2.isEmpty()) rutasImagenes.add(img2);
-                if (img3 != null && !img3.isEmpty()) rutasImagenes.add(img3);
-                if (img4 != null && !img4.isEmpty()) rutasImagenes.add(img4);
+                if (img1 != null && !img1.isEmpty()) {
+                    rutasImagenes.add(img1);
+                    logger.debug("Imagen 1 encontrada");
+                }
+                if (img2 != null && !img2.isEmpty()) {
+                    rutasImagenes.add(img2);
+                    logger.debug("Imagen 2 encontrada");
+                }
+                if (img3 != null && !img3.isEmpty()) {
+                    rutasImagenes.add(img3);
+                    logger.debug("Imagen 3 encontrada");
+                }
+                if (img4 != null && !img4.isEmpty()) {
+                    rutasImagenes.add(img4);
+                    logger.debug("Imagen 4 encontrada");
+                }
+
+                logger.info("Total de imágenes encontradas: " + rutasImagenes.size());
             } else {
-                System.out.println("No se encontraron imágenes para el equipo con ID: " + equipo.getId());
+                logger.warn("No se encontró el equipo con ID: " + equipo.getId());
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
-            // Manejo de errores de SQL
+            logger.error("Error al obtener imágenes para equipo ID: " + equipo.getId() + " - " + e.getMessage() +"Detalle del error:"+ e);
         }
 
-        // Devolver la lista de rutas de las imágenes
+        logger.debug("Retornando lista con " + rutasImagenes.size() + " imágenes");
         return rutasImagenes;
-
     }
     public void actualizarEstadoEquipo(int idEquipo, int nuevoEstado) {
         String sql = "UPDATE equipos SET estado = ?, fechaModificacion = CURRENT_TIMESTAMP WHERE idequipos = ?";
 
         try (Connection connection = Database.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)){
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
+
+            logger.info("Actualizando estado del equipo ID: " + idEquipo +
+                    " | Nuevo estado: " + nuevoEstado);
             stmt.setInt(1, nuevoEstado);
             stmt.setInt(2, idEquipo);
-            stmt.executeUpdate();
+
+            int filasActualizadas = stmt.executeUpdate();
+
+            if (filasActualizadas > 0) {
+                logger.info("Estado actualizado correctamente. Filas afectadas: " + filasActualizadas);
+            } else {
+                logger.warn("No se encontró el equipo ID: " + idEquipo + " para actualizar");
+            }
+
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Error al actualizar estado del equipo ID: " + idEquipo +
+                    " | Error: " + e.getMessage()+"Detalle del error:"+ e);
         }
     }
 
@@ -163,22 +229,29 @@ public class EquipoDAO {
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
 
-            // Establecer el valor del parámetro de la consulta
+            logger.info("Buscando ID de cliente con DNI: " + dni);
             stmt.setString(1, dni);
 
-            // Ejecutar la consulta y obtener el resultado
             ResultSet rs = stmt.executeQuery();
+            logger.debug("Consulta ejecutada para obtener ID de cliente");
 
-            // Verificar si hay resultados y obtener el valor de idclientes
             if (rs.next()) {
                 idCliente = Integer.parseInt(rs.getString("idclientes"));
+                logger.info("ID encontrado: " + idCliente + " para DNI: " + dni);
+            } else {
+                logger.warn("No se encontró cliente con DNI: " + dni);
             }
 
         } catch (SQLException e) {
+            logger.error("Error al buscar ID de cliente con DNI: " + dni + " - " + e.getMessage());
+            logger.debug("Detalle del error:", e);
             Database.handleSQLException(e);
+        } catch (NumberFormatException e) {
+            logger.error("Error al convertir ID de cliente para DNI: " + dni + " - " + e.getMessage() +". Detalle del error:"+ e);
+            logger.debug("Detalle del error:"+ e);
         }
 
-        // Retornar el valor de idCliente (puede ser vacío si no hay coincidencia)
+        logger.debug("Retornando ID: " + idCliente);
         return idCliente;
     }
 
@@ -189,20 +262,24 @@ public class EquipoDAO {
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
 
-            // Establecer el valor del parámetro de la consulta
-            stmt.setInt(1,idcliente);
+            logger.info("Buscando DNI para cliente ID: " + idcliente);
+            stmt.setInt(1, idcliente);
 
-            // Ejecutar la consulta y obtener el resultado
             ResultSet rs = stmt.executeQuery();
+            logger.debug("Consulta ejecutada para obtener DNI");
 
-            // Verificar si hay resultados y obtener el valor de idclientes
             if (rs.next()) {
-                dni = (rs.getString("dni"));
+                dni = rs.getString("dni");
+                logger.info("DNI encontrado: " + dni + " para cliente ID: " + idcliente);
+            } else {
+                logger.warn("No se encontró DNI para cliente ID: " + idcliente);
             }
         } catch (SQLException e) {
+            logger.error("Error al buscar DNI para cliente ID: " + idcliente + " - " + e.getMessage()+ "Detalle del error:"+ e);
             Database.handleSQLException(e);
         }
-        // Retornar el valor de dni (puede ser vacío si no hay coincidencia)
+
+        logger.debug("Retornando DNI: " + (dni.isEmpty() ? "[no encontrado]" : dni));
         return dni;
     }
     public Equipos obtenerPropietario(int idEquipo) {
@@ -212,28 +289,37 @@ public class EquipoDAO {
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            // Establecer el parámetro idEquipo en la consulta
+            logger.info("Buscando propietario del equipo ID: " + idEquipo);
             stmt.setInt(1, idEquipo);
 
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     equipos.setDispositivo(rs.getString("dispositivo"));
                     equipos.setIdcliente(rs.getInt("idclientes"));
+                    logger.info("Propietario encontrado - Equipo: " + equipos.getDispositivo() +
+                            " | ID Cliente: " + equipos.getIdcliente());
+                } else {
+                    logger.warn("No se encontró el equipo con ID: " + idEquipo);
                 }
             }
         } catch (SQLException e) {
+            logger.error("Error al buscar propietario del equipo ID: " + idEquipo +
+                    " - " + e.getMessage() +"Detalle del error:"+ e);
             Database.handleSQLException(e);
         }
+
+        logger.debug("Retornando datos del equipo/propietario");
         return equipos;
     }
-
     public Equipos obtenerEquipoPorId(int idequipo) {
         String sql = "SELECT idequipos, idclientes, estado, observaciones, dispositivo, activo, fechaIngreso, fechaModificacion, fechaSalida FROM equipos WHERE idequipos = ?";
 
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
+            logger.info("Buscando equipo con ID: " + idequipo);
             stmt.setInt(1, idequipo);
+
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     Equipos equipo = new Equipos();
@@ -246,41 +332,68 @@ public class EquipoDAO {
                     equipo.setFechaIngreso(obtenerFecha(rs, "fechaIngreso"));
                     equipo.setFechaModificacion(obtenerFecha(rs, "fechaModificacion"));
                     equipo.setFechaSalida(obtenerFecha(rs, "fechaSalida"));
+
+                    logger.info("Equipo encontrado - ID: " + equipo.getId() +
+                            " | Dispositivo: " + equipo.getDispositivo() +
+                            " | Cliente ID: " + equipo.getIdcliente());
+                    logger.debug("Detalles completos: " + equipo.toString());
+
                     return equipo;
+                } else {
+                    logger.warn("No se encontró equipo con ID: " + idequipo);
                 }
             }
         } catch (SQLException e) {
+            logger.error("Error al obtener equipo con ID: " + idequipo + " - " + e.getMessage() + "Detalle del error:"+e);
             Database.handleSQLException(e);
         }
-        return null; // Devuelve null si no encuentra el equipo
+        logger.debug("Retornando null (equipo no encontrado)");
+        return null;
     }
-    public int obtener_IDequipo_con_idpresupuesto(int idpresupuesto){
-        String query= "SELECT idEquipo FROM presupuestos WHERE idpresupuestos = ?";
+    public int obtener_IDequipo_con_idpresupuesto(int idpresupuesto) {
+        String query = "SELECT idEquipo FROM presupuestos WHERE idpresupuestos = ?";
+
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
 
+            logger.info("Buscando ID de equipo para presupuesto ID: " + idpresupuesto);
             stmt.setInt(1, idpresupuesto);
+
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     int id_equipo = rs.getInt("idEquipo");
+                    logger.info("ID de equipo encontrado: " + id_equipo + " para presupuesto ID: " + idpresupuesto);
                     return id_equipo;
+                } else {
+                    logger.warn("No se encontró equipo asociado al presupuesto ID: " + idpresupuesto);
                 }
             }
         } catch (SQLException e) {
+            logger.error("Error al buscar ID de equipo para presupuesto ID: " + idpresupuesto + " - " + e.getMessage() +". Detalle del error:"+ e);
             Database.handleSQLException(e);
         }
+
+        logger.debug("Retornando 0 (no se encontró equipo asociado)");
         return 0;
     }
     // Método auxiliar para manejar fechas evitando código repetitivo
     private String obtenerFecha(ResultSet rs, String columna) throws SQLException {
         Timestamp timestamp = rs.getTimestamp(columna);
-        return (timestamp != null) ? timestamp.toLocalDateTime().toString() : "-";
+
+        if (timestamp != null) {
+            logger.debug("Fecha obtenida para columna '" + columna + "': " + timestamp.toLocalDateTime());
+            return timestamp.toLocalDateTime().toString();
+        } else {
+            logger.debug("Columna '" + columna + "' es null, retornando '-'");
+            return "-";
+        }
     }
     public List<Equipos> obtenerEquiposPorClientes(List<Cliente> clientes) {
         List<Equipos> equipos = new ArrayList<>();
 
         if (clientes.isEmpty()) {
-            return equipos; // Retorna una lista vacía si no hay clientes
+            logger.info("Lista de clientes vacía - retornando lista de equipos vacía");
+            return equipos;
         }
 
         StringBuilder query = new StringBuilder("SELECT * FROM equipos WHERE idclientes IN (");
@@ -290,18 +403,22 @@ public class EquipoDAO {
                 query.append(",");
             }
         }
-
         query.append(")");
 
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query.toString())) {
 
+            logger.info("Buscando equipos para " + clientes.size() + " cliente(s)");
+
             for (int i = 0; i < clientes.size(); i++) {
-                stmt.setInt(i + 1, clientes.get(i).getIdclientes()); // Asigna los IDs
+                stmt.setInt(i + 1, clientes.get(i).getIdclientes());
+                logger.debug("Asignado ID cliente " + (i+1) + ": " + clientes.get(i).getIdclientes());
             }
 
             try (ResultSet rs = stmt.executeQuery()) {
+                int contadorEquipos = 0;
                 while (rs.next()) {
+                    contadorEquipos++;
                     Equipos equipo = new Equipos();
                     equipo.setId(rs.getInt("idequipos"));
                     equipo.setIdcliente(rs.getInt("idclientes"));
@@ -316,25 +433,32 @@ public class EquipoDAO {
                     equipo.setFechaSalida(String.valueOf(rs.getTimestamp("fechaSalida")));
 
                     equipos.add(equipo);
+                    logger.debug("Equipo #" + contadorEquipos + " encontrado - ID: " + equipo.getId() +
+                            " | Dispositivo: " + equipo.getDispositivo());
                 }
+                logger.info("Total de equipos encontrados: " + contadorEquipos);
             }
         } catch (SQLException e) {
+            logger.error("Error al obtener equipos por clientes: " + e.getMessage() +"Detalle del error:"+ e);
             Database.handleSQLException(e);
         }
-
+        logger.debug("Retornando lista con " + equipos.size() + " equipos");
         return equipos;
     }
-
-    public List<Equipos> filtrarActivoInnactivo(int estado) {
+    public List<Equipos> filtrarActivoInactivo(int estado) {
         List<Equipos> equipos = new ArrayList<>();
-        String query = "SELECT * FROM equipos WHERE activo = ?"; // Filtrando por estado
+        String query = "SELECT * FROM equipos WHERE activo = ?";
 
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
+            logger.info("Filtrando equipos por estado activo: " + estado);
             stmt.setInt(1, estado);
             ResultSet rs = stmt.executeQuery();
-            EquipoDAO equipoDAO = new EquipoDAO(); // Crear solo una instancia
+            EquipoDAO equipoDAO = new EquipoDAO();
+            int contador = 0;
+
             while (rs.next()) {
+                contador++;
                 Equipos equipo = new Equipos();
 
                 equipo.setId(rs.getInt("idequipos"));
@@ -346,30 +470,42 @@ public class EquipoDAO {
                 equipo.setFechaSalida(rs.getString("fechaSalida"));
                 equipo.setObservaciones(rs.getString("observaciones"));
                 // Obtener el propietario
-                equipo.setIdcliente(equipoDAO.obtenerPropietario(equipo.getId()).getIdcliente());
+                Equipos propietario = equipoDAO.obtenerPropietario(equipo.getId());
+                equipo.setIdcliente(propietario.getIdcliente());
+                logger.debug("Equipo #" + contador +
+                        " | ID: " + equipo.getId() +
+                        " | Dispositivo: " + equipo.getDispositivo() +
+                        " | ID Cliente: " + propietario.getIdcliente());
 
                 equipos.add(equipo);
             }
 
+            logger.info("Total de equipos encontrados: " + contador);
+
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Error al filtrar equipos por estado activo=" + estado + ": " + e.getMessage() +"Detalle del error:"+ e);
         }
 
+        logger.debug("Retornando " + equipos.size() + " equipos");
         return equipos;
     }
-
-
 
     public List<Equipos> filtrarPorEstadoEquipo(int estado) {
         List<Equipos> equipos = new ArrayList<>();
-        String query = "SELECT * FROM equipos WHERE estado = ?"; // Filtrando por estado
+        String query = "SELECT * FROM equipos WHERE estado = ?";
 
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
+
+            logger.info("Filtrando equipos por estado: " + estado);
             stmt.setInt(1, estado);
+
             ResultSet rs = stmt.executeQuery();
-            EquipoDAO equipoDAO = new EquipoDAO(); // Crear solo una instancia
+            EquipoDAO equipoDAO = new EquipoDAO();
+            int contador = 0;
+
             while (rs.next()) {
+                contador++;
                 Equipos equipo = new Equipos();
 
                 equipo.setId(rs.getInt("idequipos"));
@@ -380,16 +516,27 @@ public class EquipoDAO {
                 equipo.setFechaModificacion(rs.getString("fechaModificacion"));
                 equipo.setFechaSalida(rs.getString("fechaSalida"));
                 equipo.setObservaciones(rs.getString("observaciones"));
-                // Obtener el propietario
-                equipo.setIdcliente(equipoDAO.obtenerPropietario(equipo.getId()).getIdcliente());
+
+                Equipos propietario = equipoDAO.obtenerPropietario(equipo.getId());
+                equipo.setIdcliente(propietario.getIdcliente());
+
+                logger.debug("Equipo #" + contador +
+                        " | ID: " + equipo.getId() +
+                        " | Dispositivo: " + equipo.getDispositivo() +
+                        " | Estado: " + equipo.getEstado() +
+                        " | Cliente ID: " + propietario.getIdcliente());
 
                 equipos.add(equipo);
             }
 
+            logger.info("Total de equipos encontrados con estado " + estado + ": " + contador);
+
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Error al filtrar equipos por estado " + estado + ": " + e.getMessage());
+            logger.debug("Stack trace completo:", e);
         }
 
+        logger.debug("Retornando lista con " + equipos.size() + " equipos");
         return equipos;
     }
     public boolean AgregarEquipoSinImagenes(Equipos equipoSinImagenes) {
@@ -397,22 +544,30 @@ public class EquipoDAO {
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
+            logger.info("Iniciando inserción de equipo sin imágenes");
+            logger.debug("Datos del equipo: " +
+                    "ClienteID=" + equipoSinImagenes.getIdcliente() +
+                    ", Dispositivo='" + equipoSinImagenes.getDispositivo() + "'" +
+                    ", Estado=" + equipoSinImagenes.getEstado() +
+                    ", Observaciones='" + equipoSinImagenes.getObservaciones() + "'");
+
             stmt.setInt(1, equipoSinImagenes.getIdcliente());
             stmt.setString(2, equipoSinImagenes.getDispositivo());
-    //ver
-            System.out.println("estado de equipo sin imagenes "+equipoSinImagenes.getEstado());
+
             stmt.setInt(3, equipoSinImagenes.getEstado());
             stmt.setString(4, equipoSinImagenes.getObservaciones());
             stmt.setInt(5, 1); // Estado activo predeterminado
-            stmt.executeUpdate();
+
+            int filasAfectadas = stmt.executeUpdate();
+            logger.info("Equipo insertado correctamente. Filas afectadas: " + filasAfectadas);
             return true;
 
         } catch (SQLException e) {
+            logger.error("Error al insertar equipo sin imágenes: " + e.getMessage()+ "Detalle del error:"+ e);
             Database.handleSQLException(e);
-            return false; // Retornar false si hubo una excepción
+            return false;
         }
     }
-
     public boolean equipoTieneImagenes(int idEquipo) {
         String query = "SELECT img1, img2, img3, img4 FROM equipos WHERE idequipos = ?";
 
@@ -430,7 +585,6 @@ public class EquipoDAO {
         }
         return false;
     }
-
     public List<Equipos> buscarDispositivo(String text) {
         String sql = "SELECT * FROM equipos WHERE dispositivo LIKE ?";
         List<Equipos> equipos = new ArrayList<>();
@@ -438,9 +592,15 @@ public class EquipoDAO {
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setString(1, "%" + text + "%"); // Búsqueda parcial
+            logger.info("Buscando dispositivos con texto: '" + text + "'");
+            String parametroBusqueda = "%" + text + "%";
+            stmt.setString(1, parametroBusqueda);
+            logger.debug("Parámetro de búsqueda SQL: '" + parametroBusqueda + "'");
+
             try (ResultSet rs = stmt.executeQuery()) {
+                int contador = 0;
                 while (rs.next()) {
+                    contador++;
                     Equipos equipo = new Equipos();
                     equipo.setId(rs.getInt("idequipos"));
                     equipo.setDispositivo(rs.getString("dispositivo"));
@@ -451,17 +611,22 @@ public class EquipoDAO {
                     equipo.setFechaModificacion(rs.getString("fechaModificacion"));
                     equipo.setFechaSalida(rs.getString("fechaSalida"));
                     equipo.setObservaciones(rs.getString("observaciones"));
-
                     equipos.add(equipo);
+                    logger.debug("Equipo encontrado #" + contador +
+                            " | ID: " + equipo.getId() +
+                            " | Dispositivo: " + equipo.getDispositivo() +
+                            " | Estado: " + equipo.getEstado());
                 }
+                logger.info("Total de equipos encontrados: " + contador);
             }
         } catch (SQLException e) {
+            logger.error("Error al buscar dispositivos con texto '" + text + "': " + e.getMessage()+ "Detalle del error:" + e);
             Database.handleSQLException(e);
         }
+
+        logger.debug("Retornando " + equipos.size() + " equipos");
         return equipos;
     }
-
-
     public List<Equipos> buscarPorFechaIngreso(String texto) {
         List<Equipos> equipos = new ArrayList<>();
         String query = "SELECT * FROM equipos WHERE DATE(fechaIngreso) = ?";
@@ -469,10 +634,13 @@ public class EquipoDAO {
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
 
+            logger.info("Buscando equipos por fecha de ingreso: " + texto);
             stmt.setString(1, texto); // formato "yyyy-MM-dd"
 
             try (ResultSet rs = stmt.executeQuery()) {
+                int contador = 0;
                 while (rs.next()) {
+                    contador++;
                     Equipos equipo = new Equipos();
                     equipo.setId(rs.getInt("idequipos"));
                     equipo.setDispositivo(rs.getString("dispositivo"));
@@ -483,15 +651,23 @@ public class EquipoDAO {
                     equipo.setFechaModificacion(rs.getString("fechaModificacion"));
                     equipo.setFechaSalida(rs.getString("fechaSalida"));
                     equipo.setObservaciones(rs.getString("observaciones"));
+
                     equipos.add(equipo);
+                    logger.debug("Equipo #" + contador +
+                            " | ID: " + equipo.getId() +
+                            " | Dispositivo: " + equipo.getDispositivo() +
+                            " | Fecha Ingreso: " + equipo.getFechaIngreso());
                 }
+                logger.info("Total de equipos encontrados: " + contador);
             }
         } catch (SQLException e) {
+            logger.error("Error al buscar equipos por fecha '" + texto + "': " + e.getMessage() + "Detalle del error:"+ e);
             Database.handleSQLException(e);
         }
+
+        logger.debug("Retornando " + equipos.size() + " equipos");
         return equipos;
     }
-
 
     public List<Equipos> buscarFechaSalida(String texto) {
         List<Equipos> equipos = new ArrayList<>();
@@ -500,10 +676,13 @@ public class EquipoDAO {
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
 
-            stmt.setString(1, texto); // texto debe ser en formato "yyyy-MM-dd"
+            logger.info("Buscando equipos por fecha de salida: " + texto);
+            stmt.setString(1, texto); // Formato "yyyy-MM-dd"
 
             try (ResultSet rs = stmt.executeQuery()) {
+                int contador = 0;
                 while (rs.next()) {
+                    contador++;
                     Equipos equipo = new Equipos();
                     equipo.setId(rs.getInt("idequipos"));
                     equipo.setDispositivo(rs.getString("dispositivo"));
@@ -514,50 +693,78 @@ public class EquipoDAO {
                     equipo.setFechaModificacion(rs.getString("fechaModificacion"));
                     equipo.setFechaSalida(rs.getString("fechaSalida"));
                     equipo.setObservaciones(rs.getString("observaciones"));
+
                     equipos.add(equipo);
+                    logger.debug("Equipo #" + contador +
+                            " | ID: " + equipo.getId() +
+                            " | Dispositivo: " + equipo.getDispositivo() +
+                            " | Fecha Salida: " + equipo.getFechaSalida());
                 }
+                logger.info("Total de equipos encontrados con fecha de salida " + texto + ": " + contador);
             }
         } catch (SQLException e) {
+            logger.error("Error al buscar equipos por fecha de salida '" + texto + "': " + e);
             Database.handleSQLException(e);
         }
+
+        logger.debug("Retornando lista con " + equipos.size() + " equipos");
         return equipos;
     }
     public int obtenerEstadoEquipoIdDesdeBD(String descripcion) {
+        logger.info("Inicio de obtenerEstadoEquipoIdDesdeBD con descripción: " + descripcion);
+
         String query = "SELECT idestadosequipos FROM estadosequipos WHERE descripcion = ?";
 
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
 
+            logger.debug("Conexión a base de datos establecida correctamente.");
             stmt.setString(1, descripcion);
 
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    return rs.getInt("idestadosequipos");
+                    int idEstado = rs.getInt("idestadosequipos");
+                    logger.info("ID de estado obtenido: " + idEstado);
+                    return idEstado;
+                } else {
+                    logger.warn("No se encontró ningún estado con la descripción: " + descripcion);
                 }
             }
         } catch (SQLException e) {
+            logger.error("Error al obtener ID de estado del equipo desde la BD", e);
             Database.handleSQLException(e);
         }
-        return -1; // Estado no encontrado
+        logger.info("Retornando -1: estado no encontrado");
+        return -1;
     }
 
     public String obtenerDescripcionEstadoEquipoDesdeBD(int idEstado) {
+        logger.info("Inicio de obtenerDescripcionEstadoEquipoDesdeBD con idEstado: " + idEstado);
+
         String query = "SELECT descripcion FROM estadosequipos WHERE idestadosequipos = ?";
 
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
 
+            logger.debug("Conexión a la base de datos establecida correctamente.");
             stmt.setInt(1, idEstado);
 
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    return rs.getString("descripcion");
+                    String descripcion = rs.getString("descripcion");
+                    logger.info("Descripción obtenida: " + descripcion);
+                    return descripcion;
+                } else {
+                    logger.warn("No se encontró ninguna descripción para el ID: " + idEstado);
                 }
             }
         } catch (SQLException e) {
+            logger.error("Error al obtener la descripción del estado del equipo desde la BD", e);
             Database.handleSQLException(e);
         }
-        return "Desconocido"; // ID no válido
+
+        logger.info("Retornando 'Desconocido': ID no válido o no encontrado");
+        return "Desconocido";
     }
 
 

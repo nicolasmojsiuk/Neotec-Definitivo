@@ -17,11 +17,10 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-
+import org.apache.log4j.Logger;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 
 public class VerUsuariosController {
     @FXML
@@ -36,11 +35,8 @@ public class VerUsuariosController {
     public ToggleButton toggleEmail;
     @FXML
     public ToggleButton toggleDNI;
-
     @FXML
     private TableView<Usuario> tablaUsuarios;
-
-
     @FXML
     private TableColumn<Usuario, Integer> columna1;
     @FXML
@@ -63,7 +59,7 @@ public class VerUsuariosController {
     private TableColumn<Usuario, String> columna10;
     private ObservableList<Usuario> usuarios;
     private UsuarioDAO usuarioDAO;
-
+    private static final Logger logger = Logger.getLogger(VerUsuariosController.class);
     @FXML
     public void initialize() {
         // Inicializar el DAO y la lista observable
@@ -139,6 +135,7 @@ public class VerUsuariosController {
     }
 
     private void cargarDatos() {
+        logger.debug("Intento de cargar datos por pantalla");
         usuarios = FXCollections.observableArrayList();
         // Configurar columnas
         columna1.setCellValueFactory(new PropertyValueFactory<>("idusuarios"));
@@ -160,6 +157,7 @@ public class VerUsuariosController {
     }
 
     public void mostrarFormCrearUsuario() {
+        logger.info("Intento de cargar formulario de cración");
         try {
             // Cargar el archivo FXML del formulario
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/vistas/crearUsuario.fxml"));
@@ -175,11 +173,13 @@ public class VerUsuariosController {
             stage.showAndWait();
             cargarDatos();
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Error, Ha ocurrido un error al cargar el fomulario. Detalles:"+e.getMessage() + ". "+e);
         }
     }
 
     public void cambiarActivoUsuario() {
+        logger.debug("Intento de cambiar el estado activo/inactivo de un usuario");
+
         // Verifica si hay un usuario seleccionado en la tabla
         Usuario usuarioSeleccionado = tablaUsuarios.getSelectionModel().getSelectedItem();
 
@@ -188,29 +188,29 @@ public class VerUsuariosController {
 
             // Cambiar el estado actual de "Activo" a "Inactivo" y viceversa
             String estadoNuevoString = usuarioSeleccionado.getActivo().equals("Activo") ? "Inactivo" : "Activo";
-            int nuevoEstado;
+            int nuevoEstado = estadoNuevoString.equals("Activo") ? 1 : 0;
 
-            //pasarlo a int
-            if(estadoNuevoString == "Activo"){
-                nuevoEstado=1;
-            }else {
-                nuevoEstado=0;
-            }
+            logger.debug("Usuario seleccionado: " + usuarioSeleccionado.getNombre() + " " + usuarioSeleccionado.getApellido() +
+                    " (ID: " + idUsuario + "), estado actual: " + usuarioSeleccionado.getActivo() +
+                    ", nuevo estado: " + estadoNuevoString);
 
             // Llamar al método del DAO para cambiar el estado en la base de datos
             UsuarioDAO.cambiarEstadoActivo(idUsuario, nuevoEstado);
+
+            logger.info("Se ha cambiado el estado del usuario (ID: " + idUsuario + ") a: " + estadoNuevoString);
+
             // Actualizar el estado del usuario en la tabla
             cargarDatos();
 
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Activacion / Desactivacion");
-            alert.setContentText("Se ha cambiado el estado del usuario "+usuarioSeleccionado.getNombre()+" "+usuarioSeleccionado.getApellido());
+            alert.setTitle("Activación / Desactivación");
+            alert.setContentText("Se ha cambiado el estado del usuario " + usuarioSeleccionado.getNombre() + " " + usuarioSeleccionado.getApellido());
             alert.showAndWait();
 
         } else {
-            // Mostrar alerta o mensaje indicando que no hay un usuario seleccionado
+            logger.warn("No se ha seleccionado ningún usuario para cambiar su estado");
             Alert alert = new Alert(Alert.AlertType.WARNING);
-            alert.setTitle("Activacion / Desactivacion");
+            alert.setTitle("Activación / Desactivación");
             alert.setContentText("Debe seleccionar un usuario en la tabla");
             alert.showAndWait();
         }
@@ -220,10 +220,11 @@ public class VerUsuariosController {
         Usuario usuarioSeleccionado = tablaUsuarios.getSelectionModel().getSelectedItem();
 
         if (usuarioSeleccionado == null) {
+            logger.warn("No se ha seleccionado ningún usuario para modificar sus datos");
             mostrarAlerta("Error", "No se ha seleccionado ningún usuario.", Alert.AlertType.ERROR);
             return;
         }
-
+        logger.info("Intento de cargar formulario de modificación de usuarios");
         try {
             // Cargar el archivo FXML del formulario
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/vistas/modificarUsuario.fxml"));
@@ -249,7 +250,7 @@ public class VerUsuariosController {
             // Recargar los datos en la tabla después de cerrar el pop-up
             cargarDatos();
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Error, No se ha podido cargar el formulario de modificación. Detalles:"+ e.getMessage() + ". "+ e);
             mostrarAlerta("Error", "Error al cargar la ventana de modificación.", Alert.AlertType.ERROR);
         }
     }
@@ -260,9 +261,4 @@ public class VerUsuariosController {
         alert.setContentText(mensaje);
         alert.showAndWait();
     }
-
-
-
-
-
 }

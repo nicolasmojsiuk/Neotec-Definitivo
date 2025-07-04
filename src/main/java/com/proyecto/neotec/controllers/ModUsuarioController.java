@@ -6,12 +6,15 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyEvent;
 import javafx.stage.Stage;
+import org.apache.log4j.Logger;
+
 import org.mindrot.jbcrypt.BCrypt;
 
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 
 public class ModUsuarioController {
+    private static final Logger logger = Logger.getLogger(ModUsuarioController.class);
     private Usuario usuarioModificacion;
 
     @FXML
@@ -51,7 +54,6 @@ public class ModUsuarioController {
 
     }
 
-
     public void setUsuario(Usuario usuario) {
         this.usuarioModificacion = usuario;
         cargarDatosActuales();
@@ -74,6 +76,7 @@ public class ModUsuarioController {
 
     @FXML
     public void guardarUsuario() {
+
         // Obtener los datos de los campos
         String nombre = txfNombre.getText();
         String apellido = txfApellido.getText();
@@ -84,12 +87,14 @@ public class ModUsuarioController {
 
         // Validar que todos los campos estén completos
         if (nombre.isEmpty() || apellido.isEmpty() || dni.isEmpty() || email.isEmpty() || rol == null) {
-            mostrarAlerta("Error", "Por favor, complete todos los campos.", Alert.AlertType.ERROR);
+            logger.error("Hay campos incompletos. No se pudo modificar la información");
+            mostrarAlerta("Error", "Por favor, complete todos los campos.", Alert.AlertType.WARNING);
             return;
         }
 
         // Validar el email (debe contener '@' y '.')
         if (!email.contains("@") || !email.contains(".") || email.contains(" ")) {
+            logger.error("Error, Formato de Email invalido");
             mostrarAlerta("Error", "Por favor, ingrese un correo electrónico válido.", Alert.AlertType.ERROR);
             return;
         }
@@ -103,7 +108,8 @@ public class ModUsuarioController {
         try {
             ndni = Integer.parseInt(dni);
         } catch (NumberFormatException e) {
-            mostrarAlerta("Error", "Por favor, ingrese un DNI válido (solo números).", Alert.AlertType.ERROR);
+            logger.error("Error, Formato de DNI Invalido. Detalles " + e.getMessage());
+            mostrarAlerta("Error", "Por favor, ingrese un DNI válido.", Alert.AlertType.ERROR);
             return;
         }
 
@@ -112,9 +118,11 @@ public class ModUsuarioController {
             // Actualizar sin cambiar la contraseña
             Usuario usuarioNuevo = new Usuario(id, nombre, apellido, email, ndni, rol);
             mensaje = UsuarioDAO.modificarUsuarioSinContrasenna(usuarioNuevo);
+            logger.debug("Usuario Modificado. La contraseña no ha sido modificada");
         } else {
             // Validar la contraseña (mínimo 8 caracteres)
             if (contrasenna.length() < 8) {
+                logger.error("Error, Formato de contraseña invalido");
                 mostrarAlerta("Error", "La contraseña debe tener al menos 8 caracteres.", Alert.AlertType.ERROR);
                 return;
             }
@@ -125,10 +133,11 @@ public class ModUsuarioController {
             // Actualizar con la nueva contraseña hasheada
             Usuario usuarioNuevo = new Usuario(id, nombre, apellido, email, ndni, contrasennaHash, rol);
             mensaje = UsuarioDAO.modificarUsuarioConContrasenna(usuarioNuevo);
+            logger.debug("Usuario Modificado. Se ha cambiado la contraseña");
         }
 
         // Mostrar mensaje de confirmación
-        mostrarAlerta("Modificación de usuario", mensaje, Alert.AlertType.INFORMATION);
+        mostrarAlerta("Modificación de usuario",mensaje, Alert.AlertType.INFORMATION);
 
         // Cerrar la ventana después de la modificación
         Stage stage = (Stage) btnCancelar.getScene().getWindow();
@@ -137,6 +146,7 @@ public class ModUsuarioController {
 
     @FXML
     public void cancelar() {
+        logger.debug("Modificación cancelada por el usuario.");
         Stage stage = (Stage) btnCancelar.getScene().getWindow();
         stage.close();
     }

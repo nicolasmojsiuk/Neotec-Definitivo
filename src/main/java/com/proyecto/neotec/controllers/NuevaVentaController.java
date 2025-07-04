@@ -37,7 +37,9 @@ import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
+import org.apache.log4j.Logger;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -80,9 +82,7 @@ public class NuevaVentaController {
     private Button btnEliminarLinea;
     @FXML
     private Button btnCancelar;
-
-
-
+    private static final Logger logger= Logger.getLogger(NuevaVentaController.class);
     // Lista observable para cargar las líneas de venta
     private ObservableList<Producto> listaProductos = FXCollections.observableArrayList();
 
@@ -166,14 +166,17 @@ public class NuevaVentaController {
     public void buscarCliente() {
         String dniClienteBuscar = txfDniCliente.getText();
         if (dniClienteBuscar.isEmpty()) {
+            logger.warn("No se ingreso el DNI del cliente ");
             MostrarAlerta.mostrarAlerta("Ventas", "Ingrese el DNI del Cliente para proseguir con la venta.", Alert.AlertType.WARNING);
             return;
         }
 
         ClienteDAO clientedao = new ClienteDAO();
+        logger.debug("Intento de buscar cliente.");
         String nombreCompletoCliente = clientedao.obtenerNombrePorDni(Integer.parseInt(dniClienteBuscar));
 
         if (nombreCompletoCliente.equals(" ")) {
+            logger.warn("El DNI ingresado no corresponde a ningún cliente registrado");
             MostrarAlerta.mostrarAlerta("Ventas", "El DNI ingresado no corresponde a ningún Cliente registrado.", Alert.AlertType.WARNING);
         }
 
@@ -184,21 +187,23 @@ public class NuevaVentaController {
         String codigo = txfCodigo.getText().trim();
 
         if (codigo.isEmpty()) {
+            logger.warn("Intento de ingresar un código vacío");
             MostrarAlerta.mostrarAlerta("Ventas", "Ingrese un código de producto.", Alert.AlertType.WARNING);
             return;
         }
 
         ProductosDAO productosDAO = new ProductosDAO();
         Producto productoLinea;
-
+        logger.debug("Intento de obtener el producto a través del código del producto");
         try {
             productoLinea = productosDAO.obtenerProductoLinea(codigo);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Error al intentar obtener el producto. Detalles: "+ e.getMessage());
             return;
         }
 
         if (productoLinea == null) {
+            logger.error("Error, el producto no fue encontrado. Limpiando campos...");
             MostrarAlerta.mostrarAlerta("Ventas", "Producto no encontrado.", Alert.AlertType.WARNING);
             limpiarCamposProducto();
             return;
@@ -213,47 +218,101 @@ public class NuevaVentaController {
 
         calcularTotalLinea();
     }
-
     public void calcularTotalLinea() {
         if (txfPrecio.getText().isEmpty()) {
             txfTotalLinea.clear();
             return;
         }
+
         float precio = Float.parseFloat(txfPrecio.getText());
         int cantidad = spCantidad.getValue();
+        logger.debug("Precio unitario:"+precio+ " Cantidad seleccionada:"+ cantidad);
+
         float totalLinea = precio * cantidad;
+        logger.debug("Total de la línea calculado: "+ totalLinea);
+
         txfTotalLinea.setText(String.valueOf(totalLinea));
     }
 
     public void agregarLinea() {
         if (txfProducto.getText().isEmpty()) {
+            logger.warn("Intento de agregar producto sin haber ingresado un código.");
             MostrarAlerta.mostrarAlerta("Venta", "Ingrese un código para agregar un producto a la venta", Alert.AlertType.WARNING);
             return;
         }
 
+        logger.debug("Agregando nueva línea de producto a la venta...");
+
+        String precioTexto = txfPrecio.getText();
+
+        if (precioTexto.isEmpty()) {
+            logger.warn("Intento de agregar producto sin precio ingresado.");
+            MostrarAlerta.mostrarAlerta("Venta", "El precio del producto no puede estar vacío", Alert.AlertType.WARNING);
+            return;
+        }
+
+        float precioUnitario;
+
+        try {
+            precioUnitario = Float.parseFloat(precioTexto);
+        } catch (NumberFormatException e) {
+            logger.error("Formato inválido para el precio ingresado: " + precioTexto + ". Detalles:" + e.getMessage());
+            MostrarAlerta.mostrarAlerta("Venta", "El precio ingresado no es válido", Alert.AlertType.ERROR);
+            return;
+        }
+
         Producto linea = new Producto();
+
         linea.setCodigoProducto(txfCodigo.getText());
         linea.setNombreProducto(txfProducto.getText());
         linea.setCantidad(spCantidad.getValue());
-        linea.setPrecioUnitario(Float.parseFloat(txfPrecio.getText()));
+        linea.setPrecioUnitario(precioUnitario);
 
         float totalLinea = linea.getCantidad() * linea.getPrecioUnitario();
         linea.setTotalLinea(totalLinea);
 
+        logger.info("Producto agregado: Código=" + linea.getCodigoProducto() +
+                ", Nombre=" + linea.getNombreProducto() +
+                ", Cantidad=" + linea.getCantidad() +
+                ", Precio Unitario=" + linea.getPrecioUnitario() +
+                ", Total Línea=" + totalLinea);
+
         listaProductos.add(linea);
 
-        //calcular Total
+        // Calcular Total
         calcularTotal(totalLinea);
+
 
         limpiarCamposProducto();
         txfCodigo.requestFocus();
     }
 
     private void calcularTotal(float totalLinea) {
-        float totalActual = Float.parseFloat(txfTotal.getText());
-        txfTotal.setText(String.valueOf(totalActual+totalLinea));
-    }
+        String totalStr = txfTotal.getText();
+        // Validar si el campo está vacío, nulo o solo espacios
+        if (totalStr == null || totalStr.trim().isEmpty()) {
+            logger.warn("El campo de total estaba vacío o nulo. Se inicializa a 0.");
+            totalStr = "0";
+            txfTotal.setText(totalStr);
+        }
 
+        float totalActual;
+        try {
+            totalActual = Float.parseFloat(totalStr.trim());
+        } catch (NumberFormatException e) {
+            logger.error("Error al convertir el total: '" + totalStr + "'", e);
+            MostrarAlerta.mostrarAlerta("Total inválido", "El total actual no es un número válido.", Alert.AlertType.WARNING);
+            txfTotal.setText("0");
+            return;
+        }
+
+        float nuevoTotal = totalActual + totalLinea;
+        txfTotal.setText(String.valueOf(nuevoTotal));
+
+        logger.debug("Calculando total: totalActual=" + totalActual +
+                ", totalLínea=" + totalLinea +
+                ", nuevoTotal=" + nuevoTotal);
+    }
 
     private void limpiarCamposProducto() {
         txfCodigo.clear();
@@ -263,32 +322,37 @@ public class NuevaVentaController {
         txfTotalLinea.clear();
     }
 
-
     public void eliminarLinea() {
         Producto productoSeleccionado = tablaVenta.getSelectionModel().getSelectedItem();
-
         if (productoSeleccionado != null) {
+            float total = Float.parseFloat(txfTotal.getText());
+            txfTotal.setText(String.valueOf(total - productoSeleccionado.getTotalLinea()));
+            logger.info("Producto eliminado: ID=" + productoSeleccionado.getIdProductos() +
+                    ", Nombre=" + productoSeleccionado.getNombreProducto() +
+                    ", Precio=" + productoSeleccionado.getTotalLinea()+ ", Nuevo Total= "+ txfTotal.getText()) ;
             listaProductos.remove(productoSeleccionado);
         } else {
+            logger.debug("Intento de quitar un producto de la linea sin seleccionarlo");
             MostrarAlerta.mostrarAlerta("Eliminar linea", "Debe seleccionar una línea de la tabla para eliminar.", Alert.AlertType.WARNING);
         }
     }
 
     public void cerrarTicket() {
-
-        if (txfDniCliente.getText().isEmpty()){
-            MostrarAlerta.mostrarAlerta("Venta","No se puede realizar una venta si no hay un cliente seleccionado", Alert.AlertType.WARNING);
+        if (txfDniCliente.getText().isEmpty()) {
+            logger.warn("Intento de generar venta sin cliente seleccionado. Campo DNI del cliente está vacío.");
+            MostrarAlerta.mostrarAlerta("Venta", "No se puede realizar una venta si no hay un cliente seleccionado", Alert.AlertType.WARNING);
             cancelarTicket();
             return;
         }
 
-        if (listaProductos.isEmpty()){
-            MostrarAlerta.mostrarAlerta("Venta","No se puede realizar una venta si no hay productos seleccionados", Alert.AlertType.WARNING);
+        if (listaProductos.isEmpty()) {
+            logger.warn("Intento de generar venta sin productos seleccionados. La lista de productos está vacía.");
+            MostrarAlerta.mostrarAlerta("Venta", "No se puede realizar una venta si no hay productos seleccionados", Alert.AlertType.WARNING);
             cancelarTicket();
             return;
         }
 
-
+        logger.debug("Confirmación de método de pago. Esperando ingreso del usuario...");
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Confirmar pago");
         alert.setHeaderText("¿El pago fue con efectivo?");
@@ -303,30 +367,37 @@ public class NuevaVentaController {
 
         if (result.isPresent() && result.get() == buttonSi) {
             //afectar a la caja
-
             //verificar que hay una caja establecida
             Caja cajaestablecida = CajaEstablecida.getCajaSeleccionada();
             if (cajaestablecida == null){
+                logger.warn("Intento de realizar una venta sin una caja establecida o con la caja cerrada.");
                 MostrarAlerta.mostrarAlerta("Venta", "Para realizar una venta en efectivo debera establecer una caja en Caja->Establecer Caja. Tambien debe verificar que la caja esté 'Abierta' ", Alert.AlertType.WARNING);
                 return;
             }
-
+            logger.debug("Verificando apertura de la caja");
             //verificar apertura
             CajaDAO cajadao = new CajaDAO();
             if (cajadao.verificarApertura(cajaestablecida.getIdcaja())){
+                logger.debug("Intento de registrar movimiento");
                 String respuesta = cajadao.registrarMovimientoDeCaja(cajaestablecida.getIdcaja(), 1,Float.parseFloat(txfTotal.getText()),SesionUsuario.getUsuarioLogueado().getIdusuarios(),"Venta en Efectivo");
                 if (respuesta == "Error: Ocurrió un problema al registrar el movimiento."){
+                    //hacer un try para capturar el error
+                    logger.error("Error en la base de datos, ocurrió un problema al registrar el movimiento en la caja");
                     MostrarAlerta.mostrarAlerta("Venta","Error: Ocurrió un problema al registrar el movimiento en la caja", Alert.AlertType.WARNING);
                     cancelarTicket();
-                    return;
+                } else if (respuesta == "Registro exitoso") {
+                    logger.debug("Registro de movimiento exitoso");
+                    registrarVenta();
                 }
             }else{
+                logger.warn("La caja establecida esta cerrada");
                 MostrarAlerta.mostrarAlerta("Venta", "La caja establecida esta Cerrada", Alert.AlertType.WARNING);
                 cancelarTicket();
                 return;
             }
         } else if (result.isPresent() && result.get() == buttonNo) {
             // Crear el cuadro de diálogo
+            logger.debug("Intento de transacción virtual. Esperando ingreso del usuario..");
             Dialog<String> dialog = new Dialog<>();
             dialog.setTitle("Observación de la transacción");
 
@@ -352,59 +423,120 @@ public class NuevaVentaController {
             // Mostrar el cuadro de diálogo y procesar la respuesta
             Optional<String> resultado = dialog.showAndWait();
             resultado.ifPresent(mensaje::set);
+            if (resultado.isPresent()) {
+                // Se apretó Aceptar
+                String observacion = resultado.get();
+                logger.debug("Se ha aceptado la observación: " + observacion);
+                mensaje.set(observacion);
+                TransaccionesDigitalesDAO tdd = new TransaccionesDigitalesDAO();
+                System.out.println("Total de txfTotal en linea 422: "+ txfTotal.getText());
+                // Registrar la transacción con la observación ingresada
+                tdd.registrarTransaccion(0, Float.parseFloat(txfTotal.getText()), 1, mensaje.get());
+                registrarVenta();
+                logger.debug("Se ha registrado la transacción digital");
 
-            // Registrar la transacción con la observación ingresada
-            TransaccionesDigitalesDAO tdd = new TransaccionesDigitalesDAO();
-            tdd.registrarTransaccion(0, Float.parseFloat(txfTotal.getText()), 1, mensaje.get());
+            } else {
+                // Se apretó Cancelar o se cerró el diálogo
+                logger.info("Se ha Cancelado la operación");
+            }
         }
+}
+    private void registrarVenta() {
+        try {
+            // 1) Obtener ID del cliente
+            ClienteDAO clienteDAO = new ClienteDAO();
+            int idCliente = clienteDAO.obtenerIdPorDni(Integer.parseInt(txfDniCliente.getText()));
 
-        //TODO: registrar la venta en la bbdd
-        //obtener los datos necesarios
-        //1) idcliente
-        int idcliente=0;
-        ClienteDAO cd = new ClienteDAO();
-        idcliente = cd.obtenerIdPorDni(Integer.parseInt(txfDniCliente.getText()));
-        if (idcliente==0){
-            MostrarAlerta.mostrarAlerta("Venta", "Error al crear la venta. Error en la base de datos", Alert.AlertType.WARNING);
+            if (idCliente == 0) {
+                logger.error("Error al crear la venta, el cliente no ha sido encontrado");
+                MostrarAlerta.mostrarAlerta("Venta", "Error al crear la venta. El cliente no existe.", Alert.AlertType.WARNING);
+                cancelarTicket();
+                return;
+            }
+
+            // 2) Obtener ID del usuario vendedor
+            int idUsuarioVendedor = SesionUsuario.getUsuarioLogueado().getIdusuarios();
+
+            // 3) Total de la venta
+            float total;
+            try {
+                total = Float.parseFloat(txfTotal.getText());
+            } catch (NumberFormatException e) {
+                logger.error("Error al parsear el total: " + txfTotal.getText(), e);
+                MostrarAlerta.mostrarAlerta("Venta", "Total inválido. Verifica el monto.", Alert.AlertType.WARNING);
+                cancelarTicket();
+                return;
+            }
+
+            // 4) Fecha y hora de la venta
+            LocalDateTime fechaHora = LocalDateTime.now();
+
+            // 5) Ruta del ticket PDF
+            //Opcional: Probar Crear la carpeta si no existe. NO CHECKEADO
+            /*
+            // Crear la carpeta si no existe
+            String carpeta = "C:/TICKETS_NEOTEC";
+             File directorio = new File(carpeta);
+
+            if (!directorio.exists()) {
+                boolean creada = directorio.mkdirs();
+                if (creada) {
+                    logger.info("Carpeta creada en: " + carpeta);
+                } else {
+                    logger.error("No se pudo crear la carpeta: " + carpeta);
+                    MostrarAlerta.mostrarAlerta("Error", "No se pudo crear la carpeta para guardar el ticket.", Alert.AlertType.ERROR);
+                    return;
+                }
+            }
+
+            // Crear la ruta completa del archivo PDF
+            String ruta = carpeta + "/Ticket_" + fechaHora.format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".pdf";
+            */
+            String ruta = "C:/TICKETS_NEOTEC/Ticket_" + fechaHora.format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".pdf";
+
+            // 6) Registrar ticket en base de datos
+            TicketVentaDAO ticketDAO = new TicketVentaDAO();
+            int numeroDeTicket = ticketDAO.insertTicket(idCliente, idUsuarioVendedor, total, ruta, fechaHora);
+
+            if (numeroDeTicket == -1) {
+                logger.error("Error al registrar la venta en la base de datos");
+                MostrarAlerta.mostrarAlerta("Venta", "No se pudo registrar la venta. Reintente más tarde.", Alert.AlertType.WARNING);
+                cancelarTicket();
+                return;
+            } else {
+                logger.debug("Ticket registrado correctamente. Nº: " + numeroDeTicket);
+            }
+
+            // 7) Registrar productos en la base de datos
+            logger.debug("Registrando productos de la venta...");
+            ProductosDAO productosDAO = new ProductosDAO();
+            for (Producto producto : listaProductos) {
+                int idProducto = productosDAO.obtenerIDconCodigoProducto(producto.getCodigoProducto());
+                ticketDAO.insertProductoTicketVenta(numeroDeTicket, idProducto, producto.getCantidad());
+            }
+            logger.debug("Productos registrados correctamente.");
+
+            // 8) Generar PDF del ticket
+            logger.debug("Generando PDF del ticket...");
+            generarPDFTicket(
+                    txfNombreCliente.getText(),
+                    txfDniCliente.getText(),
+                    txfTotal.getText(),
+                    fechaHora,
+                    numeroDeTicket
+            );
+
             cancelarTicket();
-            return;
-        }
 
-        //2) idusuario vendedor
-        int idusuarioVendedor = SesionUsuario.getUsuarioLogueado().getIdusuarios();
-        //3)total
-        float total = Float.parseFloat(txfTotal.getText());
-        //4) fechayhora
-        LocalDateTime fechayhora = LocalDateTime.now();
-        //5)ruta Ticket
-        String ruta = "C:/TICKETS_NEOTEC/Ticket_" + fechayhora + ".pdf";
-
-
-
-        TicketVentaDAO tvd = new TicketVentaDAO();
-        int numerodeticket = tvd.insertTicket(idcliente, idusuarioVendedor,total,ruta,fechayhora);
-
-        //verificar si se creo el ticket en la bbdd antes de crear el ticket en pdf
-        if (numerodeticket == -1){
-            MostrarAlerta.mostrarAlerta("Venta", "Error al registrar la venta en la base de datos", Alert.AlertType.WARNING);
+        } catch (Exception ex) {
+            logger.error("Excepción inesperada al registrar la venta: " + ex.getMessage(), ex);
+            MostrarAlerta.mostrarAlerta("Venta", "Se produjo un error inesperado.", Alert.AlertType.ERROR);
             cancelarTicket();
-            return;
         }
-
-        //Todo: registrar los productos involucrados
-        for (Producto p1 : listaProductos) {
-            ProductosDAO pd = new ProductosDAO();
-            int idproducto = pd.obtenerIDconCodigoProducto(p1.getCodigoProducto());
-            tvd.insertProductoTicketVenta(numerodeticket,idproducto,p1.getCantidad());
-        }
-
-        //TODO: generar un pdf con los datos de la venta
-        generarPDFTicket(txfNombreCliente.getText(), txfDniCliente.getText(), txfTotal.getText(),fechayhora, numerodeticket);
-        cancelarTicket();
     }
 
-
     public void cancelarTicket() {
+        logger.debug("Se ha limpiado el formulario de venta y reseteado los campos.");
         listaProductos.clear();
         tablaVenta.refresh();
         txfNombreCliente.clear();
@@ -420,6 +552,12 @@ public class NuevaVentaController {
         DecimalFormat formatoPrecio = new DecimalFormat("#0.00");
         String destino = "";
         try {
+            // Asegurar que la carpeta destino exista
+            File carpeta = new File("C:/TICKETS_NEOTEC/");
+            if (!carpeta.exists()) {
+                carpeta.mkdirs();
+            }
+
             String fechaHora = fechayhora.format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
             String fechaHoraFormateada = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"));
             destino = "C:/TICKETS_NEOTEC/Ticket_" + numerodeticket + ".pdf";
@@ -443,12 +581,18 @@ public class NuevaVentaController {
             Table infoTable = new Table(new float[]{2, 3});
             infoTable.setWidth(UnitValue.createPercentValue(100));
 
-            // Logo
-            String rutaLogo = "C:/Users/nicol/Documents/ProyectofinalNEOTEC/neotec/src/main/resources/img/NeotecLogo.png"; // Cambiar a tu ruta real
-            Image logo = new Image(ImageDataFactory.create(rutaLogo)).scaleToFit(200, 100);
-            Cell logoCell = new Cell().add(logo)
-                    .setBorder(Border.NO_BORDER);
-            infoTable.addCell(logoCell);
+            // Logo con validación de existencia
+            String rutaLogo = "C:/Users/54375/Desktop/git/Neotec-Definitivo/src/main/resources/img/NeotecLogo.png";
+            File logoFile = new File(rutaLogo);
+            if (logoFile.exists()) {
+                Image logo = new Image(ImageDataFactory.create(rutaLogo)).scaleToFit(200, 100);
+                Cell logoCell = new Cell().add(logo).setBorder(Border.NO_BORDER);
+                infoTable.addCell(logoCell);
+            } else {
+                logger.warn("Logo no encontrado en " + rutaLogo + ", se omite el logo en el ticket.");
+                // Celda vacía para mantener estructura
+                infoTable.addCell(new Cell().setBorder(Border.NO_BORDER));
+            }
 
             // Datos del cliente
             Cell datosCliente = new Cell()
@@ -505,27 +649,27 @@ public class NuevaVentaController {
             document.add(despedida);
 
             document.close();
-
-            System.out.println("✅ Ticket generado: " + destino);
+            logger.debug("El PDF ha sido generado en: " + destino);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Se ha producido un error al crear el PDF. Detalles:" + e.getMessage(), e);
         }
 
-        //Abrir el pdf
+        // Abrir el pdf
         try {
             File file = new File(destino); // "destino" es la ruta del PDF que generaste
             if (file.exists()) {
                 Desktop.getDesktop().open(file);
             } else {
-                System.out.println("Error al abrir el archivo");
+                logger.error("El archivo PDF no existe o no fue encontrado");
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Error, El sistema a arrojado una excepción. Detalles: " + e.getMessage());
         }
     }
 
     public void ingresoManual() {
+        logger.debug("Inicio de búsqueda manual por código de producto. Esperando ingreso del usuario...");
         TextInputDialog dialog = new TextInputDialog();
         dialog.setTitle("Ingrese el codigo");
         dialog.setContentText("Codigo:");
@@ -534,6 +678,7 @@ public class NuevaVentaController {
 
         result.ifPresent(codigo -> {
             txfCodigo.setText(codigo);
+            logger.debug("Código ingresado por el usuario: " + codigo );
         });
     }
 }
