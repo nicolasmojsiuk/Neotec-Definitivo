@@ -48,6 +48,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.proyecto.neotec.util.MostrarAlerta.mostrarAlerta;
+
 public class verPresupuestosController {
     @FXML
     public ToggleButton toggleDispositivo;
@@ -59,6 +61,10 @@ public class verPresupuestosController {
     public DatePicker dateFechaCreacion;
     @FXML
     private TableView<Presupuestos> tablaPresupuestos;
+    @FXML
+    public ToggleButton ordenarASC;
+    @FXML
+    public ToggleButton ordenarDESC;
 
     @FXML
     private TableColumn<Presupuestos, Integer> columna1;
@@ -76,17 +82,28 @@ public class verPresupuestosController {
     private ObservableList<Presupuestos> presupuestos;
 
 
-    private PresupuestoDAO presupuestoDAO;
+    private PresupuestoDAO presupuestoDAO = new PresupuestoDAO();
     @FXML
     public void initialize() {
-        presupuestoDAO = new PresupuestoDAO();
         cargarDatos(presupuestoDAO.selectAllPresupuestos());
 
         ToggleGroup toggleGroup = new ToggleGroup();
         toggleCliente.setToggleGroup(toggleGroup);
         toggleDispositivo.setToggleGroup(toggleGroup);
         txtBuscardor.setDisable(true);
-
+        ToggleGroup toggleFechas = new ToggleGroup();
+        ordenarASC.setToggleGroup(toggleFechas);
+        ordenarDESC.setToggleGroup(toggleFechas);
+        toggleFechas.selectedToggleProperty().addListener((observable, oldvalue, newValue )->{
+            if (newValue != null) {
+                ToggleButton selectedToggle = (ToggleButton) newValue;
+                if (selectedToggle.equals(ordenarASC)) {
+                    onOrdenarFechaAsc();
+                } else if (selectedToggle.equals(ordenarDESC)) {
+                    onOrdenarFechaDesc();
+                }
+            }
+        });
         Timeline timeline = new Timeline(
                 new KeyFrame(Duration.millis(1000), event -> {
                     String newValue = txtBuscardor.getText().trim();
@@ -138,18 +155,31 @@ public class verPresupuestosController {
     private void buscarPorFechaCreacion(DatePicker dateFechaCreacion) {
         logger.info("Iniciando búsqueda de presupuestos por fecha de creación.");
         LocalDate fecha = dateFechaCreacion.getValue();
+
         if (fecha != null) {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
             String fechaFormateada = fecha.format(formatter);
-            logger.debug("Fecha seleccionada para búsqueda: "+ fechaFormateada);
+            logger.debug("Fecha seleccionada para búsqueda: " + fechaFormateada);
+
             presupuestoDAO = new PresupuestoDAO();
             List<Presupuestos> listaPresupuestos = presupuestoDAO.buscarPorFechaCreacion(fechaFormateada);
-            logger.info("Se encontraron " +listaPresupuestos.size()+ " presupuestos para la fecha "+ fechaFormateada);
-            cargarDatos(listaPresupuestos);
+
+            if (listaPresupuestos.isEmpty()) {
+                logger.warn("No se encontraron presupuestos para la fecha: " + fechaFormateada);
+                mostrarAlerta("Sin resultados", "No se encontró ningún presupuesto para la fecha seleccionada", Alert.AlertType.WARNING);
+
+                // Recargar todos los presupuestos
+                List<Presupuestos> todosPresupuestos = presupuestoDAO.selectAllPresupuestos(); // asumido el método
+                cargarDatos(todosPresupuestos);
+            } else {
+                logger.info("Se encontraron " + listaPresupuestos.size() + " presupuestos para la fecha " + fechaFormateada);
+                cargarDatos(listaPresupuestos);
+            }
         } else {
             logger.warn("No se seleccionó una fecha para la búsqueda de presupuestos.");
         }
     }
+
     private void cargarDatos(List<Presupuestos> listaPresupuestos) {
         logger.info("Intento de cargar datos de la tabla presupuestos");
         presupuestos = FXCollections.observableArrayList();
@@ -174,7 +204,7 @@ public class verPresupuestosController {
         Presupuestos prVer = tablaPresupuestos.getSelectionModel().getSelectedItem();
         if (prVer == null){
             logger.warn("No se ha seleccionado ningún presupuesto");
-            MostrarAlerta.mostrarAlerta("Presupuestos", "Debe seleccionar un presupuesto para poder ver los detalles", Alert.AlertType.WARNING);
+            mostrarAlerta("Presupuestos", "Debe seleccionar un presupuesto para poder ver los detalles", Alert.AlertType.WARNING);
             return;
         }
         int idpresupuesto = prVer.getIdpresupuesto();
@@ -185,7 +215,7 @@ public class verPresupuestosController {
             if (file.exists()) {
                 Desktop.getDesktop().open(file);
             } else {
-                MostrarAlerta.mostrarAlerta("Presupuestos", "El archivo que contenia los detalles del presupuesto ya no existe o su nombre fue cambiado y no se pudo encontrarlo", Alert.AlertType.WARNING);
+                mostrarAlerta("Presupuestos", "El archivo que contenia los detalles del presupuesto ya no existe o su nombre fue cambiado y no se pudo encontrarlo", Alert.AlertType.WARNING);
             }
         } catch (Exception e) {
             logger.error("Ha ocurrido una excepción al tratar de abrir el presupuesto. Detalles: "+ e.getMessage() + ". " + e);
@@ -201,7 +231,7 @@ public class verPresupuestosController {
 
         if (equipoSeleccionado == null) {
             logger.warn("No se ha seleccionado ningún equipo para crear un presupuesto");
-            MostrarAlerta.mostrarAlerta("Crear Presupuesto", "No se encontró ningún equipo con el número ingresado.", Alert.AlertType.WARNING);
+            mostrarAlerta("Crear Presupuesto", "No se encontró ningún equipo con el número ingresado.", Alert.AlertType.WARNING);
             return;
         }
         abrirVentanaCrearPresupuesto(equipoSeleccionado);
@@ -223,7 +253,7 @@ public class verPresupuestosController {
         try {
             return Integer.parseInt(resultado.get());
         } catch (NumberFormatException e) {
-            MostrarAlerta.mostrarAlerta("Crear Presupuesto", "Debe ingresar un número de equipo válido. No se permiten letras ni símbolos.", Alert.AlertType.WARNING);
+            mostrarAlerta("Crear Presupuesto", "Debe ingresar un número de equipo válido. No se permiten letras ni símbolos.", Alert.AlertType.WARNING);
             return null;
         }
     }
@@ -267,13 +297,13 @@ public class verPresupuestosController {
 
                 stage.showAndWait();
             } catch (IOException e) {
-                MostrarAlerta.mostrarAlerta("Error", "No se puede crear presupuestos en este momento.", Alert.AlertType.ERROR);
+                mostrarAlerta("Error", "No se puede crear presupuestos en este momento.", Alert.AlertType.ERROR);
                 logger.error("Error, Ocurrio una excepción al tratar de cargar el formulario de cración. Detalles:"+e.getMessage()+ ". "+e);
             }
         }else {
             String nombreEquipo = equipo.getDispositivo();
             logger.info("No se puede crear un nuevo presupuesto para este equipo." + nombreEquipo + ". Hasta que el presupuesto actual esté cancelado o pagado");
-            MostrarAlerta.mostrarAlerta("Sacar Presupuesto","No puede crear un nuevo presupuesto hasta que el actual esté cancelado o pagado", Alert.AlertType.ERROR);
+            mostrarAlerta("Sacar Presupuesto","No puede crear un nuevo presupuesto hasta que el actual esté cancelado o pagado", Alert.AlertType.ERROR);
         }
     }
 
@@ -282,7 +312,7 @@ public class verPresupuestosController {
         Presupuestos pre_mod = tablaPresupuestos.getSelectionModel().getSelectedItem();
         if (pre_mod == null){
             logger.warn("No se ha seleccionado ningún presupuesto para modificar");
-            MostrarAlerta.mostrarAlerta("Presupuestos", "Debe seleccionar un presupuesto para poder modificarlo", Alert.AlertType.WARNING);
+            mostrarAlerta("Presupuestos", "Debe seleccionar un presupuesto para poder modificarlo", Alert.AlertType.WARNING);
         }else {
             EquipoDAO equipoDAO = new EquipoDAO();
             Equipos equipo = equipoDAO.obtenerEquipoPorId(equipoDAO.obtener_IDequipo_con_idpresupuesto(pre_mod.getIdpresupuesto()));
@@ -307,7 +337,7 @@ public class verPresupuestosController {
             controller.setStage(stage);
             stage.showAndWait();
         } catch (IOException e) {
-            MostrarAlerta.mostrarAlerta("Error", "No se puede crear presupuestos en este momento.", Alert.AlertType.ERROR);
+            mostrarAlerta("Error", "No se puede crear presupuestos en este momento.", Alert.AlertType.ERROR);
             logger.error("Error, No se pudo cargar el formulario. Detalles:"+e.getMessage()+ ". "+ e);
         }
     }
@@ -319,7 +349,7 @@ public class verPresupuestosController {
 
             if (pr == null) {
                 logger.warn("No se ha seleccionado ningún presupuesto");
-                MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "Debe seleccionar un presupuesto antes de continuar.", Alert.AlertType.WARNING);
+                mostrarAlerta("Pago de Presupuesto", "Debe seleccionar un presupuesto antes de continuar.", Alert.AlertType.WARNING);
                 return;
             }
 
@@ -329,7 +359,7 @@ public class verPresupuestosController {
 
             if (presupuestoDAO.verificarEstadoPagado(pr.getIdpresupuesto())) {
                 logger.debug("El presupuesto N°" + pr.getIdpresupuesto() + " ya ha sido pagado anteriormente");
-                MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "Este presupuesto ya fue pagado anteriormente.", Alert.AlertType.WARNING);
+                mostrarAlerta("Pago de Presupuesto", "Este presupuesto ya fue pagado anteriormente.", Alert.AlertType.WARNING);
                 return;
             }
 
@@ -354,7 +384,7 @@ public class verPresupuestosController {
 
                     if (cajaestablecida == null) {
                         logger.warn("No se puede registrar el movimiento. No se ha seleccionado una caja");
-                        MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "Debe establecer una caja en Caja -> Establecer Caja.", Alert.AlertType.WARNING);
+                        mostrarAlerta("Pago de Presupuesto", "Debe establecer una caja en Caja -> Establecer Caja.", Alert.AlertType.WARNING);
                     } else {
                         CajaDAO cajadao = new CajaDAO();
                         int idCaja = cajaestablecida.getIdcaja();
@@ -373,19 +403,19 @@ public class verPresupuestosController {
 
                             if ("Error: Ocurrió un problema al registrar el movimiento.".equals(respuesta)) {
                                 logger.error("Ha ocurrido un error en la base de datos al tratar de registrar el movimiento");
-                                MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "Error: Ocurrió un problema al registrar el movimiento en la caja", Alert.AlertType.WARNING);
+                                mostrarAlerta("Pago de Presupuesto", "Error: Ocurrió un problema al registrar el movimiento en la caja", Alert.AlertType.WARNING);
                             } else if (cambiarEstadoEquipo(pr)) {
                                 logger.info("Movimiento registrado con éxito. Cambiando estado de presupuesto a PAGADO.");
                                 presupuestoDAO.cambiarEstadoPresupuesto(pr, 4);
-                                MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "El pago en efectivo se ha realizado correctamente.", Alert.AlertType.INFORMATION);
+                                mostrarAlerta("Pago de Presupuesto", "El pago en efectivo se ha realizado correctamente.", Alert.AlertType.INFORMATION);
                                 GenerarComprobante(pr);
                             } else {
                                 logger.error("No se pudo registrar el movimiento. El presupuesto utiliza productos no disponibles en stock");
-                                MostrarAlerta.mostrarAlerta("Error", "El presupuesto utiliza productos no disponibles en stock", Alert.AlertType.INFORMATION);
+                                mostrarAlerta("Error", "El presupuesto utiliza productos no disponibles en stock", Alert.AlertType.INFORMATION);
                             }
                         } else {
                             logger.warn("No se pudo registrar el pago. La caja está cerrada");
-                            MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "La caja establecida está cerrada", Alert.AlertType.WARNING);
+                            mostrarAlerta("Pago de Presupuesto", "La caja establecida está cerrada", Alert.AlertType.WARNING);
                         }
                     }
 
@@ -420,15 +450,15 @@ public class verPresupuestosController {
 
                             if (cambiarEstadoEquipo(pr)) {
                                 presupuestoDAO.cambiarEstadoPresupuesto(pr, 4);
-                                MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "El pago en efectivo se ha realizado correctamente.", Alert.AlertType.INFORMATION);
+                                mostrarAlerta("Pago de Presupuesto", "El pago en efectivo se ha realizado correctamente.", Alert.AlertType.INFORMATION);
                                 GenerarComprobante(pr);
                             } else {
                                 logger.error("No se pudo completar el pago digital. El presupuesto usa productos no disponibles en stock");
-                                MostrarAlerta.mostrarAlerta("Error", "El presupuesto utiliza productos no disponibles en stock", Alert.AlertType.INFORMATION);
+                                mostrarAlerta("Error", "El presupuesto utiliza productos no disponibles en stock", Alert.AlertType.INFORMATION);
                             }
                         } catch (Exception e) {
                             logger.error("Error al registrar la transacción digital", e);
-                            MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "Error al registrar la transacción digital.", Alert.AlertType.ERROR);
+                            mostrarAlerta("Pago de Presupuesto", "Error al registrar la transacción digital.", Alert.AlertType.ERROR);
                         }
                     }
 
@@ -439,12 +469,12 @@ public class verPresupuestosController {
 
             } else {
                 logger.warn("El presupuesto no está en estado aprobado. No puede pagarse.");
-                MostrarAlerta.mostrarAlerta("Pago de presupuesto", "El presupuesto debe estar aprobado", Alert.AlertType.INFORMATION);
+                mostrarAlerta("Pago de presupuesto", "El presupuesto debe estar aprobado", Alert.AlertType.INFORMATION);
             }
 
         } catch (Exception e) {
             logger.error("Error inesperado durante el proceso de pago del presupuesto", e);
-            MostrarAlerta.mostrarAlerta("Pago de Presupuesto", "Ocurrió un error inesperado: " + e.getMessage(), Alert.AlertType.ERROR);
+            mostrarAlerta("Pago de Presupuesto", "Ocurrió un error inesperado: " + e.getMessage(), Alert.AlertType.ERROR);
         }
     }
 
@@ -506,7 +536,7 @@ public class verPresupuestosController {
         Presupuestos pr = tablaPresupuestos.getSelectionModel().getSelectedItem();
         if (pr == null) {
             logger.warn("No se ha seleccionado ningún presupuesto para modificar su estado");
-            MostrarAlerta.mostrarAlerta("Error","Debe seleccionar un presupuesto para cambiar su estado", Alert.AlertType.WARNING);
+            mostrarAlerta("Error","Debe seleccionar un presupuesto para cambiar su estado", Alert.AlertType.WARNING);
             return;
         }
         int estadoActual = pr.getEstado();
@@ -523,7 +553,7 @@ public class verPresupuestosController {
         } else {
             String estadoDescripcion = presupuestoDAO.obtenerDescripcionEstadoDesdeBD(estadoActual);
             logger.info("Cambio de estado no permitido. El presupuesto ya fue."+ estadoDescripcion.toLowerCase());
-            MostrarAlerta.mostrarAlerta("Cambio no permitido","No se puede cambiar el estado. Este presupuesto ya fue "+presupuestoDAO.obtenerDescripcionEstadoDesdeBD(estadoActual).toLowerCase(), Alert.AlertType.INFORMATION);
+            mostrarAlerta("Cambio no permitido","No se puede cambiar el estado. Este presupuesto ya fue "+presupuestoDAO.obtenerDescripcionEstadoDesdeBD(estadoActual).toLowerCase(), Alert.AlertType.INFORMATION);
             return; // Se sale del método para no continuar con el diálogo
         }
         if (comboBox.getItems().isEmpty()) {
@@ -819,10 +849,10 @@ public class verPresupuestosController {
             File file = new File(destino);
             if (file.exists()) {
                 Desktop.getDesktop().open(file);
-                MostrarAlerta.mostrarAlerta("Crear Comprobante", "El comprobante ha sido creado", Alert.AlertType.INFORMATION);
+                mostrarAlerta("Crear Comprobante", "El comprobante ha sido creado", Alert.AlertType.INFORMATION);
             } else {
                 logger.error("Error, al abrir el archivo en la ruta indicada:" + destino);
-                MostrarAlerta.mostrarAlerta("Error", "Error al abrir el archivo", Alert.AlertType.ERROR);
+                mostrarAlerta("Error", "Error al abrir el archivo", Alert.AlertType.ERROR);
             }
         } catch (Exception e) {
             logger.error("Ha ocurrido un error al intentar abrir el comprobante. Detalles:" + e.getMessage() + ". "+ e);
@@ -869,6 +899,14 @@ public class verPresupuestosController {
                 tablaPresupuestos.getItems().setAll(equiposFiltrados);
             }
         });
+    }
+
+    public void onOrdenarFechaAsc() {
+        cargarDatos(presupuestoDAO.ordenarPresupuestos("ASC"));
+    }
+
+    public void onOrdenarFechaDesc() {
+        cargarDatos(presupuestoDAO.ordenarPresupuestos("DESC"));
     }
 }
 

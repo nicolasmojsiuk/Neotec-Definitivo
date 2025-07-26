@@ -10,7 +10,7 @@
 <?import javafx.scene.layout.Pane?>
 <?import javafx.scene.text.Font?>
 
-<Pane fx:id="workspace" stylesheets="@../css/estilos.css" prefHeight="642.0" prefWidth="1300.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.proyecto.neotec.controllers.VerEquiposController">
+<Pane fx:id="workspace" prefHeight="642.0" prefWidth="1300.0" stylesheets="@../css/estilos.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.proyecto.neotec.controllers.VerEquiposController">
     <children>
         <Label fx:id="lblEquipos" layoutX="14.0" layoutY="8.0" text="Equipos">
             <font>
@@ -53,20 +53,23 @@
             </font>
         </Button>
         <TextField fx:id="txtBuscardor" layoutX="17.0" layoutY="61.0" prefHeight="25.0" prefWidth="266.0" promptText="Buscar..." />
-        <ToggleButton fx:id="toggleCliente" layoutX="402.0" layoutY="61.0" mnemonicParsing="false" text="Cliente" />
-        <ToggleButton fx:id="toggleActivos" layoutX="589.0" layoutY="61.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="69.0" text="Activos" />
-        <DatePicker fx:id="dateFechaEntrada" layoutX="804.0" layoutY="61.0" promptText="dd/MM/yyyy" />
-        <ToggleButton fx:id="toggleInactivos" layoutX="674.0" layoutY="61.0" mnemonicParsing="false" text="Innactivos" />
-        <Label layoutX="804.0" layoutY="35.0" text="Filtrar por fecha entrada:" />
-        <Label layoutX="326.0" layoutY="35.0" text="Filtros:" />
-        <ToggleButton fx:id="toggleDispositivo" layoutX="486.0" layoutY="61.0" mnemonicParsing="false" text="Dispositivo" />
-        <Label layoutX="1051.0" layoutY="35.0" text="Filtrar por fecha salida:" />
-        <DatePicker fx:id="dateFechaSalida" layoutX="1049.0" layoutY="61.0" promptText="dd/MM/yyyy" />
-        <Button fx:id="btnEstados" layoutX="326.0" layoutY="61.0" mnemonicParsing="false" onAction="#DefinirEstados" text="Estado" />
+        <ToggleButton fx:id="toggleCliente" layoutX="382.0" layoutY="61.0" mnemonicParsing="false" text="Cliente" />
+        <ToggleButton fx:id="toggleActivos" layoutX="561.0" layoutY="61.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="69.0" text="Activos" />
+        <DatePicker fx:id="dateFechaEntrada" layoutX="844.0" layoutY="61.0" promptText="dd/MM/yyyy" />
+        <ToggleButton fx:id="toggleInactivos" layoutX="644.0" layoutY="61.0" mnemonicParsing="false" text="Innactivos" />
+        <Label layoutX="844.0" layoutY="35.0" text="Filtrar por fecha entrada:" />
+        <Label layoutX="306.0" layoutY="35.0" text="Filtros:" />
+        <ToggleButton fx:id="toggleDispositivo" layoutX="456.0" layoutY="61.0" mnemonicParsing="false" text="Dispositivo" />
+        <Label layoutX="1064.0" layoutY="35.0" text="Filtrar por fecha salida:" />
+        <DatePicker fx:id="dateFechaSalida" layoutX="1063.0" layoutY="61.0" promptText="dd/MM/yyyy" />
+        <Button fx:id="btnEstados" layoutX="306.0" layoutY="61.0" mnemonicParsing="false" onAction="#DefinirEstados" text="Estado" />
         <Button fx:id="btnEntregarEquipo" layoutX="201.0" layoutY="583.0" mnemonicParsing="false" onAction="#entregarEquipo" prefHeight="35.0" prefWidth="164.0" text="Entregar Equipo">
             <font>
                 <Font size="16.0" />
             </font>
         </Button>
+      <ToggleButton fx:id="ordenarASC" layoutX="745.0" layoutY="62.0" mnemonicParsing="false" onAction="#onOrdenarFechaAsc" style="-fx-font-size: 14px;" text="🔼" />
+      <Label layoutX="748.0" layoutY="35.0" text="Ordenar " />
+      <ToggleButton fx:id="ordenarDESC" layoutX="785.0" layoutY="62.0" mnemonicParsing="false" onAction="#onOrdenarFechaDesc" style="-fx-font-size: 14px;" text="🔽" />
     </children>
 </Pane>

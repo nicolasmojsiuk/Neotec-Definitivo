@@ -11,6 +11,8 @@ import com.itextpdf.layout.element.Image;
 
 import java.awt.*;
 import java.io.File;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.text.DecimalFormat;
@@ -18,6 +20,7 @@ import java.text.DecimalFormat;
 import com.itextpdf.layout.property.TextAlignment;
 import com.itextpdf.layout.property.UnitValue;
 import com.proyecto.neotec.DAO.*;
+import com.proyecto.neotec.bbdd.Database;
 import com.proyecto.neotec.models.Caja;
 import com.proyecto.neotec.models.Producto;
 import com.proyecto.neotec.util.CajaEstablecida;
@@ -223,7 +226,6 @@ public class NuevaVentaController {
             txfTotalLinea.clear();
             return;
         }
-
         float precio = Float.parseFloat(txfPrecio.getText());
         int cantidad = spCantidad.getValue();
         logger.debug("Precio unitario:"+precio+ " Cantidad seleccionada:"+ cantidad);
@@ -386,6 +388,7 @@ public class NuevaVentaController {
                     MostrarAlerta.mostrarAlerta("Venta","Error: Ocurrió un problema al registrar el movimiento en la caja", Alert.AlertType.WARNING);
                     cancelarTicket();
                 } else if (respuesta == "Registro exitoso") {
+                    //linea nueva agregada
                     logger.debug("Registro de movimiento exitoso");
                     registrarVenta();
                 }
@@ -429,7 +432,6 @@ public class NuevaVentaController {
                 logger.debug("Se ha aceptado la observación: " + observacion);
                 mensaje.set(observacion);
                 TransaccionesDigitalesDAO tdd = new TransaccionesDigitalesDAO();
-                System.out.println("Total de txfTotal en linea 422: "+ txfTotal.getText());
                 // Registrar la transacción con la observación ingresada
                 tdd.registrarTransaccion(0, Float.parseFloat(txfTotal.getText()), 1, mensaje.get());
                 registrarVenta();
@@ -471,33 +473,13 @@ public class NuevaVentaController {
             // 4) Fecha y hora de la venta
             LocalDateTime fechaHora = LocalDateTime.now();
 
-            // 5) Ruta del ticket PDF
-            //Opcional: Probar Crear la carpeta si no existe. NO CHECKEADO
-            /*
-            // Crear la carpeta si no existe
-            String carpeta = "C:/TICKETS_NEOTEC";
-             File directorio = new File(carpeta);
+           // String ruta = "C:/TICKETS_NEOTEC/Ticket_" + fechaHora.format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".pdf";
 
-            if (!directorio.exists()) {
-                boolean creada = directorio.mkdirs();
-                if (creada) {
-                    logger.info("Carpeta creada en: " + carpeta);
-                } else {
-                    logger.error("No se pudo crear la carpeta: " + carpeta);
-                    MostrarAlerta.mostrarAlerta("Error", "No se pudo crear la carpeta para guardar el ticket.", Alert.AlertType.ERROR);
-                    return;
-                }
-            }
-
-            // Crear la ruta completa del archivo PDF
-            String ruta = carpeta + "/Ticket_" + fechaHora.format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".pdf";
-            */
-            String ruta = "C:/TICKETS_NEOTEC/Ticket_" + fechaHora.format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".pdf";
-
-            // 6) Registrar ticket en base de datos
+            // 5) Registrar ticket en base de datos
             TicketVentaDAO ticketDAO = new TicketVentaDAO();
-            int numeroDeTicket = ticketDAO.insertTicket(idCliente, idUsuarioVendedor, total, ruta, fechaHora);
+            int numeroDeTicket = ticketDAO.insertTicket(idCliente, idUsuarioVendedor, total, fechaHora);
 
+            //verificar si se creo el ticket en la bbdd antes de crear el ticket en pdf
             if (numeroDeTicket == -1) {
                 logger.error("Error al registrar la venta en la base de datos");
                 MostrarAlerta.mostrarAlerta("Venta", "No se pudo registrar la venta. Reintente más tarde.", Alert.AlertType.WARNING);
@@ -508,12 +490,23 @@ public class NuevaVentaController {
             }
 
             // 7) Registrar productos en la base de datos
-            logger.debug("Registrando productos de la venta...");
+            //versión antigua sin rollback en caso de fallo
             ProductosDAO productosDAO = new ProductosDAO();
-            for (Producto producto : listaProductos) {
+            /*for (Producto producto : listaProductos) {
                 int idProducto = productosDAO.obtenerIDconCodigoProducto(producto.getCodigoProducto());
+                //modificar insertProductoTicketVenta para que no tome la conexión si no funciona la nueva implementación de ese metodo
                 ticketDAO.insertProductoTicketVenta(numeroDeTicket, idProducto, producto.getCantidad());
+            }*/
+            logger.debug("Registrando productos de la venta...");
+            boolean productosRegistrados = ticketDAO.registrarProductosEnTransaccion(numeroDeTicket, listaProductos);
+
+            if (!productosRegistrados) {
+                logger.error("No se pudieron registrar los productos. Cancelando venta.");
+                MostrarAlerta.mostrarAlerta("Venta", "Ocurrió un error al registrar los productos. La venta fue cancelada.", Alert.AlertType.ERROR);
+                cancelarTicket();
+                return;
             }
+
             logger.debug("Productos registrados correctamente.");
 
             // 8) Generar PDF del ticket
@@ -548,7 +541,7 @@ public class NuevaVentaController {
         txfCodigo.clear();
     }
 
-    public void generarPDFTicket(String cliente, String dniCliente, String totalGeneral, LocalDateTime fechayhora, int numerodeticket) {
+    public String generarPDFTicket(String cliente, String dniCliente, String totalGeneral, LocalDateTime fechayhora, int numerodeticket) {
         DecimalFormat formatoPrecio = new DecimalFormat("#0.00");
         String destino = "";
         try {
@@ -582,6 +575,7 @@ public class NuevaVentaController {
             infoTable.setWidth(UnitValue.createPercentValue(100));
 
             // Logo con validación de existencia
+            //reemplazar rutaLogo con la ruta donde se encuentra el logo en el equipo
             String rutaLogo = "C:/Users/54375/Desktop/git/Neotec-Definitivo/src/main/resources/img/NeotecLogo.png";
             File logoFile = new File(rutaLogo);
             if (logoFile.exists()) {
@@ -650,7 +644,8 @@ public class NuevaVentaController {
 
             document.close();
             logger.debug("El PDF ha sido generado en: " + destino);
-
+            TicketVentaDAO ticketVentaDAO = new TicketVentaDAO();
+            ticketVentaDAO.establecerRutaTicketPDF(destino, numerodeticket);
         } catch (Exception e) {
             logger.error("Se ha producido un error al crear el PDF. Detalles:" + e.getMessage(), e);
         }
@@ -666,6 +661,7 @@ public class NuevaVentaController {
         } catch (Exception e) {
             logger.error("Error, El sistema a arrojado una excepción. Detalles: " + e.getMessage());
         }
+        return destino;
     }
 
     public void ingresoManual() {

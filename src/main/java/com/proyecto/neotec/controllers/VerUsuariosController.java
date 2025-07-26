@@ -8,6 +8,7 @@ import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -19,6 +20,8 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.apache.log4j.Logger;
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,6 +38,12 @@ public class VerUsuariosController {
     public ToggleButton toggleEmail;
     @FXML
     public ToggleButton toggleDNI;
+
+    public ToggleButton ordenarASC;
+
+    public ToggleButton ordenarDESC;
+    public DatePicker dateFechaCreacion;
+    public DatePicker dateFechaUltimoIngreso;
     @FXML
     private TableView<Usuario> tablaUsuarios;
     @FXML
@@ -66,8 +75,32 @@ public class VerUsuariosController {
         usuarioDAO = new UsuarioDAO();
         // Cargar datos
         cargarDatos();
-        txtBuscardor.setDisable(true);
+        //evitar ingreso manual para no tener problemas.
+        dateFechaCreacion.getEditor().setDisable(true);
+        dateFechaCreacion.setEditable(false);
 
+        dateFechaUltimoIngreso.getEditor().setDisable(true);
+        dateFechaUltimoIngreso.setEditable(false);
+        dateFechaCreacion.valueProperty().addListener((observable,oldValue, newValue)->{
+            buscarFechaCreacion(newValue);
+        });
+        dateFechaUltimoIngreso.valueProperty().addListener((observable, oldvalue, newValue) ->{
+            buscarUltimoAcceso(newValue);
+        });
+        txtBuscardor.setDisable(true);
+        ToggleGroup toggleFechas = new ToggleGroup();
+        ordenarASC.setToggleGroup(toggleFechas);
+        ordenarDESC.setToggleGroup(toggleFechas);
+        toggleFechas.selectedToggleProperty().addListener((observable, oldvalue, newValue )->{
+            if (newValue != null) {
+                ToggleButton selectedToggle = (ToggleButton) newValue;
+                if (selectedToggle.equals(ordenarASC)) {
+                    onOrdenarFechaAsc();
+                } else if (selectedToggle.equals(ordenarDESC)) {
+                    onOrdenarFechaDesc();
+                }
+            }
+        });
         ToggleGroup toggleGroup = new ToggleGroup();
         toggleDNI.setToggleGroup(toggleGroup);
         toggleEmail.setToggleGroup(toggleGroup);
@@ -133,6 +166,59 @@ public class VerUsuariosController {
             }
         });
     }
+
+    private void buscarUltimoAcceso(LocalDate newValue) {
+        logger.info("Iniciando búsqueda de usuarios por fecha de último acceso.");
+
+        if (newValue != null) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            String fechaFormateada = newValue.format(formatter);
+            logger.debug("Fecha seleccionada para búsqueda: " + fechaFormateada);
+
+            List<Usuario> listaUsuarios = usuarioDAO.buscarPorUltimoAcceso(fechaFormateada);
+
+            if (listaUsuarios.isEmpty()) {
+                logger.warn("No se encontraron usuarios con último acceso en la fecha: " + fechaFormateada);
+                mostrarAlerta("Sin resultados", "No se encontró ningún usuario para la fecha seleccionada", Alert.AlertType.WARNING);
+                cargarDatos();
+            } else {
+                logger.info("Se encontraron " + listaUsuarios.size() + " usuarios con último acceso en la fecha " + fechaFormateada);
+                usuarios.clear();
+                usuarios.addAll(listaUsuarios);
+                // Configurar el TableView con la lista observable
+                tablaUsuarios.setItems(usuarios);
+            }
+        } else {
+            logger.warn("No se seleccionó una fecha para la búsqueda de usuarios.");
+        }
+    }
+
+
+    private void buscarFechaCreacion(LocalDate newValue) {
+        logger.info("Iniciando búsqueda de presupuestos por fecha de creación.");
+        if (newValue != null) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            String fechaFormateada = newValue.format(formatter);
+            logger.debug("Fecha seleccionada para búsqueda: " + fechaFormateada);
+
+            List<Usuario> listaUsuarios = usuarioDAO.buscarPorFechaCreacion(fechaFormateada);
+
+            if (listaUsuarios.isEmpty()) {
+                logger.warn("No se encontraron usuarios para la fecha: " + fechaFormateada);
+                mostrarAlerta("Sin resultados", "No se encontró ningún usuario para la fecha seleccionada", Alert.AlertType.WARNING);
+                cargarDatos();
+            } else {
+                logger.info("Se encontraron " + listaUsuarios.size() + " usuarios para la fecha " + fechaFormateada);
+                usuarios.clear();
+                usuarios.addAll(listaUsuarios);
+                // Configurar el TableView con la lista observable
+                tablaUsuarios.setItems(usuarios);
+            }
+        } else {
+            logger.warn("No se seleccionó una fecha para la búsqueda de usuario.");
+        }
+    }
+
 
     private void cargarDatos() {
         logger.debug("Intento de cargar datos por pantalla");
@@ -260,5 +346,23 @@ public class VerUsuariosController {
         alert.setHeaderText(null);
         alert.setContentText(mensaje);
         alert.showAndWait();
+    }
+
+    public void onOrdenarFechaAsc() {
+        List<Usuario> listaUsuarios = usuarioDAO.ordenarUsuarios("ASC");
+        // Limpiar la lista observable y agregar los nuevos datos
+        usuarios.clear();
+        usuarios.addAll(listaUsuarios);
+        // Configurar el TableView con la lista observable
+        tablaUsuarios.setItems(usuarios);
+    }
+
+    public void onOrdenarFechaDesc() {
+        List<Usuario> listaUsuarios = usuarioDAO.ordenarUsuarios("DESC");
+        // Limpiar la lista observable y agregar los nuevos datos
+        usuarios.clear();
+        usuarios.addAll(listaUsuarios);
+        // Configurar el TableView con la lista observable
+        tablaUsuarios.setItems(usuarios);
     }
 }

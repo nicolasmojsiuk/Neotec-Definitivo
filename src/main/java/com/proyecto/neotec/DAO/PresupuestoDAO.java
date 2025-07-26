@@ -6,6 +6,8 @@ import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.proyecto.neotec.util.FechaFormatear;
 import org.apache.log4j.Logger;
 
 public class PresupuestoDAO {
@@ -49,9 +51,6 @@ public class PresupuestoDAO {
 
         return idGenerado; // Devolver el id del presupuesto que fue actualizado (el mismo id)
     }
-
-
-
     public boolean existePresupuestoParaEquipo(int idEquipo) {
         String query = "SELECT COUNT(*) FROM presupuestos WHERE idEquipo = ?";
         try (Connection conn = Database.getConnection();
@@ -110,9 +109,6 @@ public class PresupuestoDAO {
 
         return IDgenerado;
     }
-
-
-
     public void insertProductoPresupuesto(int idPresupuesto, int idProductos, int cantidadUtilizada) {
         logger.debug("Intento de insertar producto en presupuesto. IDpresupuesto: " + idPresupuesto + ", IDproducto: " + idProductos + ", Cantidad: " + cantidadUtilizada);
         String query = "INSERT INTO productopresupuesto (IDpresupuestos, IDproductos, cantidadUtilizada) VALUES(?, ?, ?)";
@@ -131,10 +127,13 @@ public class PresupuestoDAO {
             Database.handleSQLException(e);
         }
     }
-    public List<Presupuestos> selectAllPresupuestos() {
+    public List<Presupuestos> ordenarPresupuestos(String orden) {
+        if (!orden.equalsIgnoreCase("ASC") && !orden.equalsIgnoreCase("DESC")) {
+            orden = "DESC"; // valor por defecto
+        }
         logger.debug("Inicio de la consulta para obtener todos los presupuestos");
         List<Presupuestos> listaPresupuestos = new ArrayList<>();
-        String sql= "SELECT * FROM presupuestos";
+        String sql= "SELECT * FROM presupuestos ORDER BY fechaHora "+ orden;
         try(Connection conn= Database.getConnection();
             PreparedStatement stmt = conn.prepareStatement(sql);
             ResultSet rs = stmt.executeQuery()){
@@ -151,17 +150,47 @@ public class PresupuestoDAO {
                 presupuestos.setDiasEstimados(rs.getInt("diasEstimados"));
                 presupuestos.setPropietario(clienteDAO.obtenerNombre(equipoDAO.obtenerPropietario(rs.getInt("idEquipo")).getIdcliente()));
                 Timestamp fecha = (rs.getTimestamp("fechaHora"));
-                String fechaHora;
-                if (fecha != null) {
-                    fechaHora = String.valueOf(fecha.toLocalDateTime());
-                } else {
-                    fechaHora = "-";
-                }
+
+                String fechaHora = (fecha != null) ? FechaFormatear.formatear(fecha.toLocalDateTime()) : "-";
                 presupuestos.setFechaHora(fechaHora);
                 presupuestos.setTotalProductos(rs.getFloat("totalProductos"));
                 presupuestos.setObservaciones(rs.getString("observaciones"));
                 listaPresupuestos.add(presupuestos);
-                logger.debug("Presupuesto cargado con ID: " + presupuestos.getIdpresupuesto());
+            }
+            logger.debug("Total de presupuestos obtenidos: " + listaPresupuestos.size());
+
+        }catch(SQLException e){
+            logger.error("Error al consultar todos los presupuestos", e);
+            Database.handleSQLException(e);
+        }
+        return listaPresupuestos;
+    }
+    public List<Presupuestos> selectAllPresupuestos() {
+        logger.debug("Inicio de la consulta para obtener todos los presupuestos");
+        List<Presupuestos> listaPresupuestos = new ArrayList<>();
+        String sql= "SELECT * FROM presupuestos ORDER BY fechaHora DESC";
+        try(Connection conn= Database.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery()){
+            while (rs.next()){
+                EquipoDAO equipoDAO = new EquipoDAO();
+                ClienteDAO clienteDAO = new ClienteDAO();
+                Presupuestos presupuestos = new Presupuestos();
+                presupuestos.setIdpresupuesto(rs.getInt("idpresupuestos"));
+                presupuestos.setEquipo(equipoDAO.obtenerPropietario(rs.getInt("idEquipo")).getDispositivo());
+                presupuestos.setEstado(rs.getInt("estado"));
+                presupuestos.setCostosVariables(rs.getInt("costosVariables"));
+                presupuestos.setPrecioTotal(rs.getInt("precioTotal"));
+                presupuestos.setManoDeObra(rs.getInt("costoManoDeObra"));
+                presupuestos.setDiasEstimados(rs.getInt("diasEstimados"));
+                presupuestos.setPropietario(clienteDAO.obtenerNombre(equipoDAO.obtenerPropietario(rs.getInt("idEquipo")).getIdcliente()));
+                Timestamp fecha = (rs.getTimestamp("fechaHora"));
+
+                String fechaHora = (fecha != null) ? FechaFormatear.formatear(fecha.toLocalDateTime()) : "-";
+                presupuestos.setFechaHora(fechaHora);
+                presupuestos.setTotalProductos(rs.getFloat("totalProductos"));
+                presupuestos.setObservaciones(rs.getString("observaciones"));
+                listaPresupuestos.add(presupuestos);
             }
             logger.debug("Total de presupuestos obtenidos: " + listaPresupuestos.size());
 
@@ -257,9 +286,7 @@ public class PresupuestoDAO {
 
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    int idEstado = rs.getInt("idestadospresupuestos");
-                    logger.debug("ID del estado encontrado: " + idEstado);
-                    return idEstado;
+                    return rs.getInt("idestadospresupuestos");
                 } else {
                     logger.warn("No se encontró ningún estado con la descripción: " + descripcion);
                 }
@@ -274,8 +301,6 @@ public class PresupuestoDAO {
 
 
     public String obtenerDescripcionEstadoDesdeBD(int idEstado) {
-        logger.debug("Buscando descripción del estado con ID: " + idEstado);
-
         String query = "SELECT descripcion FROM estadospresupuestos WHERE idestadospresupuestos = ?";
 
         try (Connection conn = Database.getConnection();
@@ -285,9 +310,7 @@ public class PresupuestoDAO {
 
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    String descripcion = rs.getString("descripcion");
-                    logger.debug("Descripción del estado encontrada: " + descripcion);
-                    return descripcion;
+                    return rs.getString("descripcion");
                 } else {
                     logger.warn("No se encontró ninguna descripción para el estado con ID: " + idEstado);
                 }

@@ -5,14 +5,24 @@ import com.proyecto.neotec.models.Cliente;
 import com.proyecto.neotec.models.Equipos;
 
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.proyecto.neotec.util.FechaFormatear;
 import org.apache.log4j.Logger;
 public class EquipoDAO {
     private static final Logger logger = Logger.getLogger(EquipoDAO.class);
-    public List<Equipos> selectAllEquipos() {
+    public List<Equipos> ordenarEquipos(String orden) {
+        if (!orden.equalsIgnoreCase("ASC") && !orden.equalsIgnoreCase("DESC")) {
+            orden = "DESC"; // valor por defecto
+        }
         List<Equipos> equipos = new ArrayList<>();
-        String sql = "SELECT idequipos, idclientes, estado, observaciones,dispositivo,activo, fechaIngreso, fechaModificacion,fechaSalida FROM equipos";
+        String sql = "SELECT e.idequipos, e.idclientes, c.nombre, c.apellido, e.estado, e.observaciones, e.dispositivo, e.activo, " +
+                "e.fechaIngreso, e.fechaModificacion, e.fechaSalida " +
+                "FROM equipos e " +
+                "INNER JOIN clientes c ON e.idclientes = c.idclientes " +
+                "ORDER BY e.fechaIngreso " + orden;
 
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
@@ -34,26 +44,22 @@ public class EquipoDAO {
                 // Procesamiento de fechas
                 Timestamp fechaIngresoTimestamp = rs.getTimestamp("fechaIngreso");
                 String fechaIngreso = (fechaIngresoTimestamp != null) ?
-                        String.valueOf(fechaIngresoTimestamp.toLocalDateTime()) : "-";
+                        FechaFormatear.formatear(fechaIngresoTimestamp.toLocalDateTime()) : "-";
                 equipo.setFechaIngreso(fechaIngreso);
 
                 Timestamp fechaModificacionTimestamp = rs.getTimestamp("fechaModificacion");
                 String fechaModificacion = (fechaModificacionTimestamp != null) ?
-                        String.valueOf(fechaModificacionTimestamp.toLocalDateTime()) : "-";
+                        FechaFormatear.formatear(fechaModificacionTimestamp.toLocalDateTime()) : "-";
                 equipo.setFechaModificacion(fechaModificacion);
 
                 Timestamp fechaSalidaTimestamp = rs.getTimestamp("fechaSalida");
                 String fechaSalida = (fechaSalidaTimestamp != null) ?
-                        String.valueOf(fechaSalidaTimestamp.toLocalDateTime()) : "-";
+                        FechaFormatear.formatear(fechaSalidaTimestamp.toLocalDateTime()) : "-";
                 equipo.setFechaSalida(fechaSalida);
+                String nombreCompleto = rs.getString("nombre") + " " + rs.getString("apellido");
+                equipo.setNombreCompletoCliente(nombreCompleto);
 
                 equipos.add(equipo);
-
-                logger.debug("Equipo #" + contador +
-                        " | ID: " + equipo.getId() +
-                        " | Dispositivo: " + equipo.getDispositivo() +
-                        " | Estado: " + equipo.getEstado() +
-                        " | Cliente ID: " + equipo.getIdcliente());
             }
 
             logger.info("Total de equipos encontrados: " + contador);
@@ -65,6 +71,86 @@ public class EquipoDAO {
 
         logger.info("Retornando lista de equipos. Cantidad: " + equipos.size());
         return equipos;
+    }
+
+    public List<Equipos> selectAllEquipos() {
+
+        List<Equipos> equipos = new ArrayList<>();
+        String sql = "SELECT e.idequipos, e.idclientes, c.nombre, c.apellido, e.estado, e.observaciones, e.dispositivo, e.activo, " +
+                "e.fechaIngreso, e.fechaModificacion, e.fechaSalida " +
+                "FROM equipos e " +
+                "INNER JOIN clientes c ON e.idclientes = c.idclientes " +
+                "ORDER BY e.fechaIngreso DESC" ;
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            logger.info("Iniciando consulta para obtener todos los equipos");
+            int contador = 0;
+
+            while (rs.next()) {
+                contador++;
+                Equipos equipo = new Equipos();
+                equipo.setId(rs.getInt("idequipos"));
+                equipo.setIdcliente(rs.getInt("idclientes"));
+                equipo.setEstado(rs.getInt("estado"));
+                equipo.setObservaciones(rs.getString("observaciones"));
+                equipo.setDispositivo(rs.getString("dispositivo"));
+                equipo.setActivo(rs.getInt("activo"));
+
+                // Procesamiento de fechas
+                Timestamp fechaIngresoTimestamp = rs.getTimestamp("fechaIngreso");
+                String fechaIngreso = (fechaIngresoTimestamp != null) ?
+                        FechaFormatear.formatear(fechaIngresoTimestamp.toLocalDateTime()) : "-";
+                equipo.setFechaIngreso(fechaIngreso);
+
+                Timestamp fechaModificacionTimestamp = rs.getTimestamp("fechaModificacion");
+                String fechaModificacion = (fechaModificacionTimestamp != null) ?
+                        FechaFormatear.formatear(fechaModificacionTimestamp.toLocalDateTime()) : "-";
+                equipo.setFechaModificacion(fechaModificacion);
+
+                Timestamp fechaSalidaTimestamp = rs.getTimestamp("fechaSalida");
+                String fechaSalida = (fechaSalidaTimestamp != null) ?
+                        FechaFormatear.formatear(fechaSalidaTimestamp.toLocalDateTime()) : "-";
+                equipo.setFechaSalida(fechaSalida);
+                String nombreCompleto = rs.getString("nombre") + " " + rs.getString("apellido");
+                equipo.setNombreCompletoCliente(nombreCompleto);
+
+                equipos.add(equipo);
+            }
+
+            logger.info("Total de equipos encontrados: " + contador);
+
+        } catch (SQLException e) {
+            logger.error("Error al obtener todos los equipos: " + e.getMessage());
+            Database.handleSQLException(e);
+        }
+
+        logger.info("Retornando lista de equipos. Cantidad: " + equipos.size());
+        return equipos;
+    }
+    public void asignarFechaSalida(int idEquipo) {
+        String sql = "UPDATE equipos SET fechaSalida = NOW() WHERE idequipos = ?";
+
+        logger.debug("Iniciando asignación de fecha de salida para el equipo N°: " + idEquipo);
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, idEquipo);
+            int filasAfectadas = pstmt.executeUpdate();
+
+            if (filasAfectadas > 0) {
+                logger.info("Fecha de salida asignada correctamente para el equipo N°: " + idEquipo);
+            } else {
+                logger.warn("No se encontró el equipo N°: " + idEquipo + " para asignar la fecha de salida.");
+            }
+
+        } catch (SQLException e) {
+            logger.error("Error al asignar la fecha de salida para el equipo N°: " + idEquipo + ". Detalles: " + e.getMessage());
+            Database.handleSQLException(e);
+        }
     }
 
     public boolean AgregarEquipoConImagenes(Equipos equipos) {
@@ -289,15 +375,12 @@ public class EquipoDAO {
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            logger.info("Buscando propietario del equipo ID: " + idEquipo);
             stmt.setInt(1, idEquipo);
 
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     equipos.setDispositivo(rs.getString("dispositivo"));
                     equipos.setIdcliente(rs.getInt("idclientes"));
-                    logger.info("Propietario encontrado - Equipo: " + equipos.getDispositivo() +
-                            " | ID Cliente: " + equipos.getIdcliente());
                 } else {
                     logger.warn("No se encontró el equipo con ID: " + idEquipo);
                 }
@@ -381,13 +464,16 @@ public class EquipoDAO {
         Timestamp timestamp = rs.getTimestamp(columna);
 
         if (timestamp != null) {
-            logger.debug("Fecha obtenida para columna '" + columna + "': " + timestamp.toLocalDateTime());
-            return timestamp.toLocalDateTime().toString();
+            LocalDateTime fecha = timestamp.toLocalDateTime();
+            String formateada = FechaFormatear.formatear(fecha);
+            logger.debug("Fecha obtenida y formateada para columna '" + columna + "': " + formateada);
+            return formateada;
         } else {
             logger.debug("Columna '" + columna + "' es null, retornando '-'");
             return "-";
         }
     }
+
     public List<Equipos> obtenerEquiposPorClientes(List<Cliente> clientes) {
         List<Equipos> equipos = new ArrayList<>();
 
@@ -427,10 +513,9 @@ public class EquipoDAO {
                     equipo.setObservaciones(rs.getString("observaciones"));
                     equipo.setActivo(rs.getInt("activo"));
 
-                    // Asignar las fechas
-                    equipo.setFechaIngreso(String.valueOf(rs.getTimestamp("fechaIngreso")));
-                    equipo.setFechaModificacion(String.valueOf(rs.getTimestamp("fechaModificacion")));
-                    equipo.setFechaSalida(String.valueOf(rs.getTimestamp("fechaSalida")));
+                    equipo.setFechaIngreso(obtenerFecha(rs, "fechaIngreso"));
+                    equipo.setFechaModificacion(obtenerFecha(rs, "fechaModificacion"));
+                    equipo.setFechaSalida(obtenerFecha(rs, "fechaSalida"));
 
                     equipos.add(equipo);
                     logger.debug("Equipo #" + contadorEquipos + " encontrado - ID: " + equipo.getId() +
@@ -465,9 +550,9 @@ public class EquipoDAO {
                 equipo.setDispositivo(rs.getString("dispositivo"));
                 equipo.setActivo(rs.getInt("activo"));
                 equipo.setEstado(rs.getInt("estado"));
-                equipo.setFechaIngreso(rs.getString("fechaIngreso"));
-                equipo.setFechaModificacion(rs.getString("fechaModificacion"));
-                equipo.setFechaSalida(rs.getString("fechaSalida"));
+                equipo.setFechaIngreso(obtenerFecha(rs, "fechaIngreso"));
+                equipo.setFechaModificacion(obtenerFecha(rs, "fechaModificacion"));
+                equipo.setFechaSalida(obtenerFecha(rs, "fechaSalida"));
                 equipo.setObservaciones(rs.getString("observaciones"));
                 // Obtener el propietario
                 Equipos propietario = equipoDAO.obtenerPropietario(equipo.getId());
@@ -512,20 +597,14 @@ public class EquipoDAO {
                 equipo.setDispositivo(rs.getString("dispositivo"));
                 equipo.setActivo(rs.getInt("activo"));
                 equipo.setEstado(rs.getInt("estado"));
-                equipo.setFechaIngreso(rs.getString("fechaIngreso"));
-                equipo.setFechaModificacion(rs.getString("fechaModificacion"));
-                equipo.setFechaSalida(rs.getString("fechaSalida"));
+                equipo.setFechaIngreso(obtenerFecha(rs, "fechaIngreso"));
+                equipo.setFechaModificacion(obtenerFecha(rs, "fechaModificacion"));
+                equipo.setFechaSalida(obtenerFecha(rs, "fechaSalida"));
+
                 equipo.setObservaciones(rs.getString("observaciones"));
 
                 Equipos propietario = equipoDAO.obtenerPropietario(equipo.getId());
                 equipo.setIdcliente(propietario.getIdcliente());
-
-                logger.debug("Equipo #" + contador +
-                        " | ID: " + equipo.getId() +
-                        " | Dispositivo: " + equipo.getDispositivo() +
-                        " | Estado: " + equipo.getEstado() +
-                        " | Cliente ID: " + propietario.getIdcliente());
-
                 equipos.add(equipo);
             }
 
@@ -607,15 +686,11 @@ public class EquipoDAO {
                     equipo.setActivo(rs.getInt("activo"));
                     equipo.setEstado(rs.getInt("estado"));
                     equipo.setIdcliente(rs.getInt("idclientes"));
-                    equipo.setFechaIngreso(rs.getString("fechaIngreso"));
-                    equipo.setFechaModificacion(rs.getString("fechaModificacion"));
-                    equipo.setFechaSalida(rs.getString("fechaSalida"));
+                    equipo.setFechaIngreso(obtenerFecha(rs, "fechaIngreso"));
+                    equipo.setFechaModificacion(obtenerFecha(rs, "fechaModificacion"));
+                    equipo.setFechaSalida(obtenerFecha(rs, "fechaSalida"));
                     equipo.setObservaciones(rs.getString("observaciones"));
                     equipos.add(equipo);
-                    logger.debug("Equipo encontrado #" + contador +
-                            " | ID: " + equipo.getId() +
-                            " | Dispositivo: " + equipo.getDispositivo() +
-                            " | Estado: " + equipo.getEstado());
                 }
                 logger.info("Total de equipos encontrados: " + contador);
             }
@@ -647,16 +722,13 @@ public class EquipoDAO {
                     equipo.setActivo(rs.getInt("activo"));
                     equipo.setEstado(rs.getInt("estado"));
                     equipo.setIdcliente(rs.getInt("idclientes"));
-                    equipo.setFechaIngreso(rs.getString("fechaIngreso"));
-                    equipo.setFechaModificacion(rs.getString("fechaModificacion"));
-                    equipo.setFechaSalida(rs.getString("fechaSalida"));
+                    equipo.setFechaIngreso(obtenerFecha(rs, "fechaIngreso"));
+                    equipo.setFechaModificacion(obtenerFecha(rs, "fechaModificacion"));
+                    equipo.setFechaSalida(obtenerFecha(rs, "fechaSalida"));
+
                     equipo.setObservaciones(rs.getString("observaciones"));
 
                     equipos.add(equipo);
-                    logger.debug("Equipo #" + contador +
-                            " | ID: " + equipo.getId() +
-                            " | Dispositivo: " + equipo.getDispositivo() +
-                            " | Fecha Ingreso: " + equipo.getFechaIngreso());
                 }
                 logger.info("Total de equipos encontrados: " + contador);
             }
@@ -689,16 +761,13 @@ public class EquipoDAO {
                     equipo.setActivo(rs.getInt("activo"));
                     equipo.setEstado(rs.getInt("estado"));
                     equipo.setIdcliente(rs.getInt("idclientes"));
-                    equipo.setFechaIngreso(rs.getString("fechaIngreso"));
-                    equipo.setFechaModificacion(rs.getString("fechaModificacion"));
-                    equipo.setFechaSalida(rs.getString("fechaSalida"));
+                    equipo.setFechaIngreso(obtenerFecha(rs, "fechaIngreso"));
+                    equipo.setFechaModificacion(obtenerFecha(rs, "fechaModificacion"));
+                    equipo.setFechaSalida(obtenerFecha(rs, "fechaSalida"));
+
                     equipo.setObservaciones(rs.getString("observaciones"));
 
                     equipos.add(equipo);
-                    logger.debug("Equipo #" + contador +
-                            " | ID: " + equipo.getId() +
-                            " | Dispositivo: " + equipo.getDispositivo() +
-                            " | Fecha Salida: " + equipo.getFechaSalida());
                 }
                 logger.info("Total de equipos encontrados con fecha de salida " + texto + ": " + contador);
             }
@@ -739,23 +808,20 @@ public class EquipoDAO {
     }
 
     public String obtenerDescripcionEstadoEquipoDesdeBD(int idEstado) {
-        logger.info("Inicio de obtenerDescripcionEstadoEquipoDesdeBD con idEstado: " + idEstado);
 
         String query = "SELECT descripcion FROM estadosequipos WHERE idestadosequipos = ?";
 
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
 
-            logger.debug("Conexión a la base de datos establecida correctamente.");
             stmt.setInt(1, idEstado);
 
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     String descripcion = rs.getString("descripcion");
-                    logger.info("Descripción obtenida: " + descripcion);
                     return descripcion;
                 } else {
-                    logger.warn("No se encontró ninguna descripción para el ID: " + idEstado);
+                    logger.warn("No se encontró ninguna descripción desde la base de datos para el ID: " + idEstado);
                 }
             }
         } catch (SQLException e) {

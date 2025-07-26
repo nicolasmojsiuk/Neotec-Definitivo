@@ -1,7 +1,6 @@
 package com.proyecto.neotec.controllers;
 
 
-import com.mysql.cj.x.protobuf.MysqlxExpr;
 import com.proyecto.neotec.DAO.*;
 import com.proyecto.neotec.models.*;
 import com.proyecto.neotec.util.MostrarAlerta;
@@ -30,6 +29,7 @@ import javafx.util.Duration;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -52,6 +52,10 @@ public class VerEquiposController {
     @FXML
     public Button btnEstados;
     @FXML
+    public ToggleButton ordenarASC;
+    @FXML
+    public ToggleButton ordenarDESC;
+    @FXML
     private Button btnMod;
     @FXML
     private TableView<Equipos> tablaEquipos;
@@ -68,7 +72,7 @@ public class VerEquiposController {
     @FXML
     private TableColumn<Equipos, String> columna6;
     @FXML
-    private TableColumn<Equipos, String> columna7;
+    private TableColumn<Equipos, LocalDate> columna7;
     @FXML
     private TableColumn<Equipos, String> columna8;
     @FXML
@@ -89,6 +93,19 @@ public class VerEquiposController {
         // Cargar datos
         cargarDatos();
         txtBuscardor.setDisable(true);
+        ToggleGroup toggleFechas = new ToggleGroup();
+        ordenarASC.setToggleGroup(toggleFechas);
+        ordenarDESC.setToggleGroup(toggleFechas);
+        toggleFechas.selectedToggleProperty().addListener((observable, oldvalue, newValue )->{
+            if (newValue != null) {
+                ToggleButton selectedToggle = (ToggleButton) newValue;
+                if (selectedToggle.equals(ordenarASC)) {
+                    onOrdenarFechaAsc();
+                } else if (selectedToggle.equals(ordenarDESC)) {
+                    onOrdenarFechaDesc();
+                }
+            }
+        });
         ToggleGroup toggleGroup = new ToggleGroup();
         toggleCliente.setToggleGroup(toggleGroup);
         toggleDispositivo.setToggleGroup(toggleGroup);
@@ -171,12 +188,8 @@ public class VerEquiposController {
         equipos = FXCollections.observableArrayList();
         // Configurar columnas
         columna1.setCellValueFactory(new PropertyValueFactory<>("id"));
-        columna2.setCellValueFactory(cellData -> {
-            int idCliente = cellData.getValue().getIdcliente();
-            ClienteDAO clienteDAO = new ClienteDAO();
-            String nombreCompleto = clienteDAO.obtenerNombreCompletoPorId(idCliente);
-            return new SimpleStringProperty(nombreCompleto);
-        });
+        columna2.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getNombreCompletoCliente()));
+
         columna3.setCellValueFactory(cellData -> {// Obtener el valor de estado del objeto `Equipos`
             int estadoInt = cellData.getValue().getEstado();
             // Convertir el valor int a una cadena de texto usando el método anterior
@@ -204,34 +217,78 @@ public class VerEquiposController {
         // Configurar el TableView con la lista observable
         tablaEquipos.setItems(equipos);
     }
-    public void buscarPorFechasalida(DatePicker datePicker) {
 
-        LocalDate fecha = datePicker.getValue();
-        if (fecha != null) {
-            //  mismo formato que espera la base de datos
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-            String fechaFormateada = fecha.format(formatter);
-            logger.debug("Intento de filtrar equipo por fecha salida:"+fechaFormateada);
-            EquipoDAO equiposDAO = new EquipoDAO();
-            List<Equipos> listaEquipos = equiposDAO.buscarFechaSalida(fechaFormateada);
-            tablaEquipos.getItems().setAll(listaEquipos);
-
-        }
+    @FXML
+    private void onOrdenarFechaAsc() {
+        EquipoDAO equipoDAO = new EquipoDAO();
+        List<Equipos> listaEquipos = equipoDAO.ordenarEquipos("ASC");
+        // Limpiar la lista observable y agregar los nuevos datos
+        equipos.clear();
+        equipos.addAll(listaEquipos);
+        // Configurar el TableView con la lista observable
+        tablaEquipos.setItems(equipos);
+    }
+    @FXML
+    private void onOrdenarFechaDesc() {
+        EquipoDAO equipoDAO = new EquipoDAO();
+        List<Equipos> listaEquipos = equipoDAO.ordenarEquipos("DESC");
+        // Limpiar la lista observable y agregar los nuevos datos
+        equipos.clear();
+        equipos.addAll(listaEquipos);
+        // Configurar el TableView con la lista observable
+        tablaEquipos.setItems(equipos);
     }
 
+    public void buscarPorFechasalida(DatePicker datePicker) {
+        LocalDate fecha = datePicker.getValue();
+        if (fecha != null) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            String fechaFormateada = fecha.format(formatter);
+            logger.debug("Intento de filtrar equipo por fecha salida:" + fechaFormateada);
+
+            EquipoDAO equiposDAO = new EquipoDAO();
+            List<Equipos> listaEquipos = equiposDAO.buscarFechaSalida(fechaFormateada);
+
+            if (listaEquipos.isEmpty()) {
+                logger.error("No se encontro ningún equipo para la fecha seleccionada: " + fechaFormateada);
+                EquipoDAO equipoDAO = new EquipoDAO();
+                List<Equipos> selectAllEquipos = equipoDAO.selectAllEquipos();
+                equipos.clear();
+                equipos.addAll(selectAllEquipos);
+                tablaEquipos.setItems(equipos); // ← se actualiza con todos
+                mostrarAlerta("Error", "No se encontró ningún equipo para la fecha seleccionada", Alert.AlertType.WARNING);
+            } else {
+                tablaEquipos.getItems().setAll(listaEquipos); // ← se actualiza solo si hay resultados
+            }
+        }
+    }
     public void buscarPorFechaEntrada(DatePicker datePicker) {
         LocalDate fecha = datePicker.getValue();
         if (fecha != null) {
-            //  mismo formato que espera la base de datos
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
             String fechaFormateada = fecha.format(formatter);
-            logger.debug("Intento de filtrar equipo por fecha entrada:"+fechaFormateada);
+            logger.debug("Intento de filtrar equipo por fecha entrada:" + fechaFormateada);
+
             EquipoDAO equiposDAO = new EquipoDAO();
             List<Equipos> listaEquipos = equiposDAO.buscarPorFechaIngreso(fechaFormateada);
-            tablaEquipos.getItems().setAll(listaEquipos);
 
+            if (listaEquipos.isEmpty()) {
+                logger.error("No se encontro ningún equipo para la fecha seleccionada: " + fechaFormateada);
+                mostrarAlerta("Error", "No se encontró ningún equipo para la fecha seleccionada", Alert.AlertType.WARNING);
+
+                EquipoDAO equipoDAO = new EquipoDAO();
+                List<Equipos> selectAllEquipos = equipoDAO.selectAllEquipos();
+                equipos.clear();
+                equipos.addAll(selectAllEquipos);
+                tablaEquipos.setItems(equipos); // ← actualizar con todos si no hay coincidencias
+            } else {
+                equipos.clear();
+                equipos.addAll(listaEquipos);
+                tablaEquipos.setItems(equipos); // ← actualizar con resultados filtrados
+            }
         }
     }
+
     private void BuscarActivosInnactivos(int estado) {
         logger.debug("Intento de buscar equipos por estado: "+ estado);
         EquipoDAO equipoDAO = new EquipoDAO();
@@ -541,6 +598,7 @@ public class VerEquiposController {
                 equipoDAO.actualizarEstadoEquipo(equipoSeleccionado.getId(), 7);
                 logger.debug("El equipo "+equipoDAO.obtenerEquipoPorId(listaPresupuestos.get(0).getIdEquipo()).getDispositivo()+" ha sido entregado con exito");
                 mostrarAlerta("Entregar Equipo", "El equipo ha sido entregado", Alert.AlertType.INFORMATION);
+                equipoDAO.asignarFechaSalida((listaPresupuestos.get(0).getIdEquipo()));
                 cargarDatos();
             } else {
 

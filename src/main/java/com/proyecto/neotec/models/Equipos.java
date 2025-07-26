@@ -15,9 +15,17 @@ public class Equipos {
     private String img3;
     private String img4;
 
-
     public String getImg1() {
         return img1;
+    }
+    private String nombreCompletoCliente;
+
+    public String getNombreCompletoCliente() {
+        return nombreCompletoCliente;
+    }
+
+    public void setNombreCompletoCliente(String nombreCompletoCliente) {
+        this.nombreCompletoCliente = nombreCompletoCliente;
     }
 
     public void setImg1(String img1) {

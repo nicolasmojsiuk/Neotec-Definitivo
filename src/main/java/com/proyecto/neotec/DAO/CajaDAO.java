@@ -42,7 +42,6 @@ public class CajaDAO {
         }
         return idcajas;
     }
-
     public Caja selectCajaPorId(int idcaja) {
         Caja caja = new Caja();
         String sql = "SELECT * FROM cajas WHERE idcaja = ?";

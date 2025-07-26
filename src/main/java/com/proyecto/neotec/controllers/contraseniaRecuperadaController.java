@@ -21,6 +21,7 @@ public class contraseniaRecuperadaController {
     @FXML
     public Pane workspace;
 
+
     public void actualizar() {
         if(!(txfContrasenia.getText().equals(txfContrasenia2.getText()))){
             MostrarAlerta.mostrarAlerta("Actualizacion de contraseña","Las contraseñas no coinciden", Alert.AlertType.WARNING);

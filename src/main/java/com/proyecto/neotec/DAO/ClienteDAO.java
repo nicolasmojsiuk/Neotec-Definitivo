@@ -176,12 +176,11 @@ public class ClienteDAO {
 
         return nombre;
     }
-
     public String obtenerNombrePorDni(int dni) {
         String sql = "SELECT nombre, apellido FROM clientes WHERE dni = ?";
         String nombre = "";
         String apellido = "";
-        logger.debug("Obteniendo nombre y apellido del cliente - DNI: " + dni);
+
         try (Connection conn = Database.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
@@ -191,7 +190,6 @@ public class ClienteDAO {
                 if (rs.next()) {
                     nombre = rs.getString("nombre");
                     apellido = rs.getString("apellido");
-                    logger.info("Cliente encontrado - DNI: " + dni + ", Nombre completo: " + nombre + " " + apellido);
                 } else {
                     logger.warn("No se encontró cliente con DNI: " + dni);
                 }
@@ -218,7 +216,6 @@ public class ClienteDAO {
                 if (rs.next()) {
                     nombre = rs.getString("nombre");
                     apellido = rs.getString("apellido");
-                    logger.info("Cliente encontrado - ID: " + id + ", Nombre completo: " + nombre + " " + apellido);
                 } else {
                     logger.warn("No se encontró cliente con ID: " + id);
                 }
@@ -311,7 +308,7 @@ public class ClienteDAO {
 
                     clientes.add(cliente);
                 }
-                logger.info("Clientes encontrados con texto \"" + text + "\": " + clientes.size());
+                logger.info("Clientes encontrados con texto " + text + ": " + clientes.size());
             }
         } catch (SQLException e) {
             logger.error("Error al buscar clientes por texto | Error: " + e.getMessage() +

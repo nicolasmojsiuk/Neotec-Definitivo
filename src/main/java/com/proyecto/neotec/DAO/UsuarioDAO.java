@@ -3,6 +3,7 @@ package com.proyecto.neotec.DAO;
 import com.proyecto.neotec.bbdd.Database;
 import com.proyecto.neotec.models.Cliente;
 import com.proyecto.neotec.models.Usuario;
+import com.proyecto.neotec.util.FechaFormatear;
 import org.apache.log4j.Logger;
 import org.mindrot.jbcrypt.BCrypt;
 
@@ -123,6 +124,15 @@ public class UsuarioDAO {
                 usuario.setApellido(resultSet.getString("apellido"));
                 usuario.setEmail(resultSet.getString("email"));
                 usuario.setDni(resultSet.getInt("dni"));
+                //formatear fecha
+                Timestamp fechaCreacionTs = resultSet.getTimestamp("fecha_creacion");
+                usuario.setFechaCreacion(fechaCreacionTs != null ? FechaFormatear.formatear(fechaCreacionTs.toLocalDateTime()) : "-");
+
+                Timestamp fechaModificacionTs = resultSet.getTimestamp("fecha_modificacion");
+                usuario.setFechaModificacion(fechaModificacionTs != null ? FechaFormatear.formatear(fechaModificacionTs.toLocalDateTime()) : "-");
+
+                Timestamp ultimoAccesoTs = resultSet.getTimestamp("ultimo_acceso");
+                usuario.setUltimoAcceso(ultimoAccesoTs != null ? FechaFormatear.formatear(ultimoAccesoTs.toLocalDateTime()) : "-");
 
                 // Log seguro (no mostrar datos sensibles)
                 logger.debug("Datos básicos usuario: " +
@@ -373,9 +383,13 @@ public class UsuarioDAO {
         logger.debug("Resultado final: " + mensaje);
         return mensaje;
     }
-    public List<Usuario> selectAllUsuarios() {
+
+    public List<Usuario> ordenarUsuarios(String orden) {
+        if (!orden.equalsIgnoreCase("ASC") && !orden.equalsIgnoreCase("DESC")) {
+            orden = "DESC"; // valor por defecto
+        }
         List<Usuario> usuarios = new ArrayList<>();
-        String sql = "SELECT idusuarios, nombre, apellido, dni, email, rol, activo, ultimo_acceso, fecha_creacion, fecha_modificacion FROM usuarios";
+        String sql = "SELECT idusuarios, nombre, apellido, dni, email, rol, activo, ultimo_acceso, fecha_creacion, fecha_modificacion FROM usuarios ORDER BY fecha_creacion "+ orden;
 
         // Log de inicio
         logger.info("Iniciando consulta de todos los usuarios");
@@ -394,48 +408,73 @@ public class UsuarioDAO {
                 usuario.setApellido(rs.getString("apellido"));
                 usuario.setDni(rs.getInt("dni"));
                 usuario.setEmail(rs.getString("email"));
+                //formatear fecha
+                Timestamp fechaCreacionTs = rs.getTimestamp("fecha_creacion");
+                usuario.setFechaCreacion(fechaCreacionTs != null ? FechaFormatear.formatear(fechaCreacionTs.toLocalDateTime()) : "-");
+
+                Timestamp fechaModificacionTs = rs.getTimestamp("fecha_modificacion");
+                usuario.setFechaModificacion(fechaModificacionTs != null ? FechaFormatear.formatear(fechaModificacionTs.toLocalDateTime()) : "-");
+
+                Timestamp ultimoAccesoTs = rs.getTimestamp("ultimo_acceso");
+                usuario.setUltimoAcceso(ultimoAccesoTs != null ? FechaFormatear.formatear(ultimoAccesoTs.toLocalDateTime()) : "-");
 
                 // Convertir rol y activo a String
                 usuario.setRol(rs.getInt("rol") == 1 ? "Empleado" : "Admin");
                 usuario.setActivo(rs.getInt("activo") == 1 ? "Activo" : "Inactivo");
 
-                // Verificación de "ultimo_acceso"
-                Timestamp ultimoAccesoTimestamp = rs.getTimestamp("ultimo_acceso");
-                String ultimoAcceso;
-                if (ultimoAccesoTimestamp != null) {
-                    ultimoAcceso = String.valueOf(ultimoAccesoTimestamp.toLocalDateTime());
-                } else {
-                    ultimoAcceso = "-";
-                }
-                usuario.setUltimoAcceso(ultimoAcceso);
+                usuarios.add(usuario);
+                contadorUsuarios++;
+            }
 
-                // Verificación de "fecha_creacion"
-                Timestamp fechaCreacionTimestamp = rs.getTimestamp("fecha_creacion");
-                String fechaCreacion;
-                if (fechaCreacionTimestamp != null) {
-                    fechaCreacion = String.valueOf(fechaCreacionTimestamp.toLocalDateTime());
-                } else {
-                    fechaCreacion = "-";
-                }
-                usuario.setFechaCreacion(fechaCreacion);
+            logger.info("Consulta completada. Total usuarios encontrados: " + contadorUsuarios);
 
-                // Verificación de "fecha_modificacion"
-                Timestamp fechaModificacionTimestamp = rs.getTimestamp("fecha_modificacion");
-                String fechaModificacion;
-                if (fechaModificacionTimestamp != null) {
-                    fechaModificacion = String.valueOf(fechaModificacionTimestamp.toLocalDateTime());
-                } else {
-                    fechaModificacion = "-";
-                }
-                usuario.setFechaModificacion(fechaModificacion);
+        } catch (SQLException e) {
+            logger.error( "Error al obtener lista de usuarios. Error: " + e.getMessage() +
+                    " | SQL State: " + e.getSQLState());
+            logger.debug("StackTrace completo:", e);
+            Database.handleSQLException(e);
+        }
+
+        return usuarios;
+    }
+    public List<Usuario> selectAllUsuarios() {
+
+        List<Usuario> usuarios = new ArrayList<>();
+        String sql = "SELECT idusuarios, nombre, apellido, dni, email, rol, activo, ultimo_acceso, fecha_creacion, fecha_modificacion FROM usuarios ORDER BY fecha_creacion DESC ";
+
+        // Log de inicio
+        logger.info("Iniciando consulta de todos los usuarios");
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            logger.trace("Ejecutando consulta...");
+            int contadorUsuarios = 0;
+
+            while (rs.next()) {
+                Usuario usuario = new Usuario();
+                usuario.setIdusuarios(rs.getInt("idusuarios"));
+                usuario.setNombre(rs.getString("nombre"));
+                usuario.setApellido(rs.getString("apellido"));
+                usuario.setDni(rs.getInt("dni"));
+                usuario.setEmail(rs.getString("email"));
+                //formatear fecha
+                Timestamp fechaCreacionTs = rs.getTimestamp("fecha_creacion");
+                usuario.setFechaCreacion(fechaCreacionTs != null ? FechaFormatear.formatear(fechaCreacionTs.toLocalDateTime()) : "-");
+
+                Timestamp fechaModificacionTs = rs.getTimestamp("fecha_modificacion");
+                usuario.setFechaModificacion(fechaModificacionTs != null ? FechaFormatear.formatear(fechaModificacionTs.toLocalDateTime()) : "-");
+
+                Timestamp ultimoAccesoTs = rs.getTimestamp("ultimo_acceso");
+                usuario.setUltimoAcceso(ultimoAccesoTs != null ? FechaFormatear.formatear(ultimoAccesoTs.toLocalDateTime()) : "-");
+
+                // Convertir rol y activo a String
+                usuario.setRol(rs.getInt("rol") == 1 ? "Empleado" : "Admin");
+                usuario.setActivo(rs.getInt("activo") == 1 ? "Activo" : "Inactivo");
 
                 usuarios.add(usuario);
                 contadorUsuarios++;
-
-                // Log detallado por usuario (solo en DEBUG)
-                logger.debug("Usuario encontrado: ID=" + usuario.getIdusuarios() +
-                        ", Nombre=" + usuario.getNombre() + " " + usuario.getApellido() +
-                        ", Rol=" + usuario.getRol() + ", Estado=" + usuario.getActivo());
             }
 
             logger.info("Consulta completada. Total usuarios encontrados: " + contadorUsuarios);
@@ -521,6 +560,15 @@ public class UsuarioDAO {
                 usuario.setDni(resultSet.getInt("dni"));
                 usuario.setContrasenna(resultSet.getString("contrasenna"));
                 usuario.setActivo(String.valueOf(resultSet.getBoolean("activo")));
+                //formatear fecha
+                Timestamp fechaCreacionTs = resultSet.getTimestamp("fecha_creacion");
+                usuario.setFechaCreacion(fechaCreacionTs != null ? FechaFormatear.formatear(fechaCreacionTs.toLocalDateTime()) : "-");
+
+                Timestamp fechaModificacionTs = resultSet.getTimestamp("fecha_modificacion");
+                usuario.setFechaModificacion(fechaModificacionTs != null ? FechaFormatear.formatear(fechaModificacionTs.toLocalDateTime()) : "-");
+
+                Timestamp ultimoAccesoTs = resultSet.getTimestamp("ultimo_acceso");
+                usuario.setUltimoAcceso(ultimoAccesoTs != null ? FechaFormatear.formatear(ultimoAccesoTs.toLocalDateTime()) : "-");
 
                 int rol = resultSet.getInt("rol");
                 String rolUsuario = (rol == 1) ? "Empleado" : "Administrador";
@@ -567,10 +615,17 @@ public class UsuarioDAO {
                     usuario.setDni(rs.getInt("dni"));
                     usuario.setActivo(rs.getInt("activo") == 1 ? "Activo" : "Inactivo");
                     usuario.setContrasenna(rs.getString("contrasenna"));
-                    usuario.setFechaCreacion(rs.getString("fecha_creacion"));
-                    usuario.setFechaModificacion(rs.getString("fecha_modificacion"));
                     usuario.setRol(rs.getString("rol"));
-                    usuario.setUltimoAcceso(rs.getString("ultimo_acceso"));
+                    //formatear fecha
+                    Timestamp fechaCreacionTs = rs.getTimestamp("fecha_creacion");
+                    usuario.setFechaCreacion(fechaCreacionTs != null ? FechaFormatear.formatear(fechaCreacionTs.toLocalDateTime()) : "-");
+
+                    Timestamp fechaModificacionTs = rs.getTimestamp("fecha_modificacion");
+                    usuario.setFechaModificacion(fechaModificacionTs != null ? FechaFormatear.formatear(fechaModificacionTs.toLocalDateTime()) : "-");
+
+                    Timestamp ultimoAccesoTs = rs.getTimestamp("ultimo_acceso");
+                    usuario.setUltimoAcceso(ultimoAccesoTs != null ? FechaFormatear.formatear(ultimoAccesoTs.toLocalDateTime()) : "-");
+
 
                     usuarios.add(usuario);
                     contador++;
@@ -615,10 +670,16 @@ public class UsuarioDAO {
                     usuario.setDni(rs.getInt("dni"));
                     usuario.setActivo(rs.getInt("activo") == 1 ? "Activo" : "Inactivo");
                     usuario.setContrasenna(rs.getString("contrasenna"));
-                    usuario.setFechaCreacion(rs.getString("fecha_creacion"));
-                    usuario.setFechaModificacion(rs.getString("fecha_modificacion"));
                     usuario.setRol(rs.getString("rol"));
-                    usuario.setUltimoAcceso(rs.getString("ultimo_acceso"));
+                    //formatear fecha
+                    Timestamp fechaCreacionTs = rs.getTimestamp("fecha_creacion");
+                    usuario.setFechaCreacion(fechaCreacionTs != null ? FechaFormatear.formatear(fechaCreacionTs.toLocalDateTime()) : "-");
+
+                    Timestamp fechaModificacionTs = rs.getTimestamp("fecha_modificacion");
+                    usuario.setFechaModificacion(fechaModificacionTs != null ? FechaFormatear.formatear(fechaModificacionTs.toLocalDateTime()) : "-");
+
+                    Timestamp ultimoAccesoTs = rs.getTimestamp("ultimo_acceso");
+                    usuario.setUltimoAcceso(ultimoAccesoTs != null ? FechaFormatear.formatear(ultimoAccesoTs.toLocalDateTime()) : "-");
 
                     usuarios.add(usuario);
                     contador++;
@@ -664,10 +725,16 @@ public class UsuarioDAO {
                     usuario.setDni(rs.getInt("dni"));
                     usuario.setActivo(rs.getInt("activo") == 1 ? "Activo" : "Inactivo");
                     usuario.setContrasenna(rs.getString("contrasenna"));
-                    usuario.setFechaCreacion(rs.getString("fecha_creacion"));
-                    usuario.setFechaModificacion(rs.getString("fecha_modificacion"));
                     usuario.setRol(rs.getString("rol"));
-                    usuario.setUltimoAcceso(rs.getString("ultimo_acceso"));
+                    //formatear fecha
+                    Timestamp fechaCreacionTs = rs.getTimestamp("fecha_creacion");
+                    usuario.setFechaCreacion(fechaCreacionTs != null ? FechaFormatear.formatear(fechaCreacionTs.toLocalDateTime()) : "-");
+
+                    Timestamp fechaModificacionTs = rs.getTimestamp("fecha_modificacion");
+                    usuario.setFechaModificacion(fechaModificacionTs != null ? FechaFormatear.formatear(fechaModificacionTs.toLocalDateTime()) : "-");
+
+                    Timestamp ultimoAccesoTs = rs.getTimestamp("ultimo_acceso");
+                    usuario.setUltimoAcceso(ultimoAccesoTs != null ? FechaFormatear.formatear(ultimoAccesoTs.toLocalDateTime()) : "-");
 
                     usuarios.add(usuario);
                     contador++;
@@ -711,10 +778,16 @@ public class UsuarioDAO {
                     usuario.setDni(rs.getInt("dni"));
                     usuario.setActivo(rs.getInt("activo") == 1 ? "Activo" : "Inactivo");
                     usuario.setContrasenna(rs.getString("contrasenna"));
-                    usuario.setFechaCreacion(rs.getString("fecha_creacion"));
-                    usuario.setFechaModificacion(rs.getString("fecha_modificacion"));
                     usuario.setRol(rs.getString("rol"));
-                    usuario.setUltimoAcceso(rs.getString("ultimo_acceso"));
+                    //formatear fecha
+                    Timestamp fechaCreacionTs = rs.getTimestamp("fecha_creacion");
+                    usuario.setFechaCreacion(fechaCreacionTs != null ? FechaFormatear.formatear(fechaCreacionTs.toLocalDateTime()) : "-");
+
+                    Timestamp fechaModificacionTs = rs.getTimestamp("fecha_modificacion");
+                    usuario.setFechaModificacion(fechaModificacionTs != null ? FechaFormatear.formatear(fechaModificacionTs.toLocalDateTime()) : "-");
+
+                    Timestamp ultimoAccesoTs = rs.getTimestamp("ultimo_acceso");
+                    usuario.setUltimoAcceso(ultimoAccesoTs != null ? FechaFormatear.formatear(ultimoAccesoTs.toLocalDateTime()) : "-");
 
                     usuarios.add(usuario);
                     contador++;
@@ -771,5 +844,84 @@ public class UsuarioDAO {
         logger.debug( "Finalizado proceso de actualización para ID: " + idusuario);
         return mensaje;
     }
+    public List<Usuario> buscarPorFechaCreacion(String texto) {
+        List<Usuario> usuarios = new ArrayList<>();
+        String query = "SELECT * FROM usuarios WHERE DATE(fecha_creacion) = ?";
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+
+            logger.info("Buscando usuarios por fecha de creación: " + texto);
+            stmt.setString(1, texto); // formato "yyyy-MM-dd"
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                int contador = 0;
+                while (rs.next()) {
+                    contador++;
+                    Usuario usuario = new Usuario();
+                    usuario.setIdusuarios(rs.getInt("idusuarios"));
+                    usuario.setNombre(rs.getString("nombre"));
+                    usuario.setApellido(rs.getString("apellido"));
+                    usuario.setDni(rs.getInt("dni"));
+                    usuario.setContrasenna(rs.getString("contrasenna"));
+                    usuario.setEmail(rs.getString("email"));
+                    usuario.setRol(rs.getString("rol"));
+                    usuario.setActivo(rs.getString("activo"));
+                    usuario.setUltimoAcceso(rs.getString("ultimo_acceso") );
+                    usuario.setFechaCreacion(rs.getString("fecha_creacion"));
+                    usuario.setFechaModificacion(rs.getString("fecha_modificacion") );
+
+                    usuarios.add(usuario);
+                }
+                logger.info("Total de usuarios encontrados: " + contador);
+            }
+        } catch (SQLException e) {
+            logger.error("Error al buscar usuarios por fecha '" + texto + "': " + e.getMessage() + ". Detalle del error: " + e);
+            Database.handleSQLException(e);
+        }
+
+        logger.debug("Retornando " + usuarios.size() + " usuarios");
+        return usuarios;
+    }
+
+    public List<Usuario> buscarPorUltimoAcceso(String texto) {
+        List<Usuario> usuarios = new ArrayList<>();
+        String query = "SELECT * FROM usuarios WHERE DATE(ultimo_acceso) = ?";
+
+        try (Connection conn = Database.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+
+            logger.info("Buscando usuarios por último acceso: " + texto);
+            stmt.setString(1, texto);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                int contador = 0;
+                while (rs.next()) {
+                    contador++;
+                    Usuario usuario = new Usuario();
+                    usuario.setIdusuarios(rs.getInt("idusuarios"));
+                    usuario.setNombre(rs.getString("nombre"));
+                    usuario.setApellido(rs.getString("apellido"));
+                    usuario.setDni(rs.getInt("dni"));
+                    usuario.setContrasenna(rs.getString("contrasenna"));
+                    usuario.setEmail(rs.getString("email"));
+                    usuario.setRol(rs.getString("rol"));
+                    usuario.setActivo(rs.getString("activo"));
+                    usuario.setUltimoAcceso(rs.getString("ultimo_acceso") );
+                    usuario.setFechaCreacion(rs.getString("fecha_creacion"));
+                    usuario.setFechaModificacion(rs.getString("fecha_modificacion") );
+                    usuarios.add(usuario);
+                }
+                logger.info("Total de usuarios encontrados: " + contador);
+            }
+        } catch (SQLException e) {
+            logger.error("Error al buscar usuarios por último acceso '" + texto + "': " + e.getMessage() + ". Detalle: " + e);
+            Database.handleSQLException(e);
+        }
+
+        logger.debug("Retornando " + usuarios.size() + " usuarios");
+        return usuarios;
+    }
+
 }
 
